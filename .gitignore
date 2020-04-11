@@ -1,0 +1,4 @@
+*.prof
+go-jwlm
+*.pdf
+*.DS_Store
