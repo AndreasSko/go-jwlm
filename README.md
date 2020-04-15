@@ -1,3 +1,5 @@
+[![Coverage Status](https://coveralls.io/repos/github/AndreasSko/go-jwlm/badge.svg?branch=ci-tests)](https://coveralls.io/github/AndreasSko/go-jwlm?branch=ci-tests)
+
 # go-jwlm
 A utility to merge multiple JW Library backup files, written in Go
 
