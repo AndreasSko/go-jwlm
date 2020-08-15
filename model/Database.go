@@ -16,6 +16,8 @@ import (
 
 // Destination to temporarily unzip backups
 const tmpFolder = ".jwlm-tmp"
+const dbFilename = "user_data.db"
+const manifestFilename = "manifest.json"
 
 // Database represents the JW Library database as a struct
 type Database struct {
@@ -31,9 +33,6 @@ type Database struct {
 // ImportJWLBackup unzips a given JW Library Backup file and imports the
 // included SQLite DB to the Database struct
 func (db *Database) ImportJWLBackup(filename string) error {
-	const dbFilename = "user_data.db"
-	const manifestFilename = "manifest.json"
-
 	// Create tmp folder and unzip backup content there
 	if err := os.Mkdir(tmpFolder, 0755); err != nil {
 		return errors.Wrap(err, fmt.Sprintf("Could not create temporary directory %s", tmpFolder))
