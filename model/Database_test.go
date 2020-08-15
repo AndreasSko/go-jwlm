@@ -54,7 +54,7 @@ func Test_fetchFromSQLite(t *testing.T) {
 	location, err := fetchFromSQLite(sqlite, &Location{})
 	assert.NoError(t, err)
 	assert.Len(t, location, 8)
-	assert.Contains(t, location, Location{4, sql.NullInt32{Int32: 66, Valid: true}, sql.NullInt32{Int32: 21, Valid: true}, sql.NullInt32{}, sql.NullInt32{}, 0, "nwtsty", 2, 0, sql.NullString{String: "Offenbarung 21", Valid: true}})
+	assert.Contains(t, location, Location{4, sql.NullInt32{Int32: 66, Valid: true}, sql.NullInt32{Int32: 21, Valid: true}, sql.NullInt32{}, sql.NullInt32{}, 0, sql.NullString{String: "nwtsty", Valid: true}, 2, 0, sql.NullString{String: "Offenbarung 21", Valid: true}})
 
 	note, err := fetchFromSQLite(sqlite, &Note{})
 	assert.NoError(t, err)

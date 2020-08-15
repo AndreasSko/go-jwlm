@@ -12,7 +12,7 @@ type Location struct {
 	DocumentID     sql.NullInt32
 	Track          sql.NullInt32
 	IssueTagNumber int
-	KeySymbol      string
+	KeySymbol      sql.NullString
 	MepsLanguage   int
 	LocationType   int
 	Title          sql.NullString

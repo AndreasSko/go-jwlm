@@ -26,7 +26,7 @@ type manifest struct {
 // validateManifest checks if the backup file is compatible by validating its manifest.json
 func validateManifest(path string) error {
 	const version = 1
-	const schemaVersion = 7
+	const schemaVersion = 8
 
 	file, err := os.Open(path)
 	if err != nil {
