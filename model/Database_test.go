@@ -59,7 +59,7 @@ func Test_fetchFromSQLite(t *testing.T) {
 	note, err := fetchFromSQLite(sqlite, &Note{})
 	assert.NoError(t, err)
 	assert.Len(t, note, 3)
-	assert.Contains(t, note, Note{2, "F75A18EE-FC17-4E0B-ABB6-CC16DABE9610", sql.NullInt32{Int32: 3, Valid: true}, sql.NullInt32{Int32: 3, Valid: true}, sql.NullString{String: "For all things I have the strength through the one who gives me power.", Valid: true}, sql.NullString{String: "!", Valid: true}, "2020-04-14T18:42:14+00:00", 2, sql.NullInt32{Int32: 13, Valid: true}})
+	assert.Contains(t, note, Note{2, "F75A18EE-FC17-4E0B-ABB6-CC16DABE9610", sql.NullInt32{Int32: 3, Valid: true}, sql.NullInt32{Int32: 3, Valid: true}, sql.NullString{String: "For all things I have the strength through the one who gives me power.", Valid: true}, sql.NullString{String: "", Valid: true}, "2020-04-14T18:42:14+00:00", 2, sql.NullInt32{Int32: 13, Valid: true}})
 
 	tag, err := fetchFromSQLite(sqlite, &Tag{})
 	assert.NoError(t, err)
