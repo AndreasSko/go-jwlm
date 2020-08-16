@@ -22,7 +22,7 @@ func main() {
 	fmt.Println("Hello world!")
 	start := time.Now()
 	db := new(model.Database)
-	err = db.ImportJWLBackup("UserDataBackup_2020-04-11_Andreas-iPhone-Xs.zip")
+	err = db.ImportJWLBackup("UserDataBackup_2020-08-06_Andreas-iPad-2.jwlibrary")
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -33,6 +33,8 @@ func main() {
 	fmt.Println(len(db.Tag))
 	fmt.Println(len(db.TagMap))
 	fmt.Println(len(db.UserMark))
+
+	fmt.Println(db.ExportJWLBackup("test.jwlibrary"))
 
 	duration := time.Since(start)
 	fmt.Printf("Ran in %s", duration)

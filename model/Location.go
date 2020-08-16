@@ -12,7 +12,7 @@ type Location struct {
 	DocumentID     sql.NullInt32
 	Track          sql.NullInt32
 	IssueTagNumber int
-	KeySymbol      string
+	KeySymbol      sql.NullString
 	MepsLanguage   int
 	LocationType   int
 	Title          sql.NullString
@@ -31,13 +31,13 @@ func (m Location) idName() string {
 	return "LocationId"
 }
 
-// makeSlice converts a slice of the generice interface model
 func (m Location) scanRow(rows *sql.Rows) (model, error) {
 	err := rows.Scan(&m.LocationID, &m.BookNumber, &m.ChapterNumber, &m.DocumentID, &m.Track,
 		&m.IssueTagNumber, &m.KeySymbol, &m.MepsLanguage, &m.LocationType, &m.Title)
 	return m, err
 }
 
+// makeSlice converts a slice of the generice interface model
 func (Location) makeSlice(mdl []model) []Location {
 	result := make([]Location, len(mdl))
 	for i := range mdl {

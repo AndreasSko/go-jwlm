@@ -32,9 +32,17 @@ func (m Tag) scanRow(rows *sql.Rows) (model, error) {
 func (Tag) makeSlice(mdl []model) []Tag {
 	result := make([]Tag, len(mdl))
 	for i := range mdl {
-		if mdl[i] != nil {
-			result[i] = mdl[i].(Tag)
+		if mdl[i] == nil {
+			continue
 		}
+		tag := mdl[i].(Tag)
+
+		// The "Favorite" tag is already included with a fresh JW-Library installation
+		if tag.TagID == 1 && tag.TagType == 0 && tag.Name == "Favorite" {
+			continue
+		}
+
+		result[i] = tag
 	}
 	return result
 }
