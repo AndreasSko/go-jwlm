@@ -36,8 +36,10 @@ type Database struct {
 // included SQLite DB to the Database struct
 func (db *Database) ImportJWLBackup(filename string) error {
 	// Create tmp folder and unzip backup content there
-	if err := os.Mkdir(tmpFolder, 0755); err != nil {
-		return errors.Wrap(err, fmt.Sprintf("Could not create temporary directory %s", tmpFolder))
+	if _, err := os.Stat(tmpFolder); os.IsNotExist(err) {
+		if err := os.Mkdir(tmpFolder, 0755); err != nil {
+			return errors.Wrap(err, fmt.Sprintf("Could not create temporary directory %s", tmpFolder))
+		}
 	}
 	defer os.RemoveAll(tmpFolder)
 
@@ -211,8 +213,10 @@ func getSliceCapacity(sqlite *sql.DB, modelType model) (int, error) {
 // ExportJWLBackup creates a .jwlibrary backup file out of a Database{} struct
 func (db *Database) ExportJWLBackup(filename string) error {
 	// Create tmp folder and place all files there
-	if err := os.Mkdir(tmpFolder, 0755); err != nil {
-		return errors.Wrap(err, fmt.Sprintf("Could not create temporary directory %s", tmpFolder))
+	if _, err := os.Stat(tmpFolder); os.IsNotExist(err) {
+		if err := os.Mkdir(tmpFolder, 0755); err != nil {
+			return errors.Wrap(err, fmt.Sprintf("Could not create temporary directory %s", tmpFolder))
+		}
 	}
 	defer os.RemoveAll(tmpFolder)
 
