@@ -15,30 +15,30 @@ type Bookmark struct {
 }
 
 // ID returns the ID of the entry
-func (m Bookmark) ID() int {
+func (m *Bookmark) ID() int {
 	return m.BookmarkID
 }
 
-func (m Bookmark) tableName() string {
+func (m *Bookmark) tableName() string {
 	return "Bookmark"
 }
 
-func (m Bookmark) idName() string {
+func (m *Bookmark) idName() string {
 	return "BookmarkId"
 }
 
-func (m Bookmark) scanRow(rows *sql.Rows) (model, error) {
+func (m *Bookmark) scanRow(rows *sql.Rows) (model, error) {
 	err := rows.Scan(&m.BookmarkID, &m.LocationID, &m.PublicationLocationID, &m.Slot, &m.Title,
 		&m.Snippet, &m.BlockType, &m.BlockIdentifier)
 	return m, err
 }
 
 // makeSlice converts a slice of the generice interface model
-func (Bookmark) makeSlice(mdl []model) []Bookmark {
-	result := make([]Bookmark, len(mdl))
+func (Bookmark) makeSlice(mdl []*model) []*Bookmark {
+	result := make([]*Bookmark, len(mdl))
 	for i := range mdl {
 		if mdl[i] != nil {
-			result[i] = mdl[i].(Bookmark)
+			result[i] = (*mdl[i]).(*Bookmark)
 		}
 	}
 	return result
