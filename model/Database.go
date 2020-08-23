@@ -93,44 +93,44 @@ func (db *Database) importSQLite(filename string) error {
 	if err != nil {
 		return err
 	}
-	db.BlockRange = BlockRange{}.makeSlice(mdl)
+	db.BlockRange = BlockRange{}.MakeSlice(mdl)
 
 	mdl, err = fetchFromSQLite(sqlite, &Bookmark{})
 	if err != nil {
 		return err
 	}
-	db.Bookmark = Bookmark{}.makeSlice(mdl)
+	db.Bookmark = Bookmark{}.MakeSlice(mdl)
 
 	mdl, err = fetchFromSQLite(sqlite, &Location{})
 	if err != nil {
 		return err
 	}
-	db.Location = Location{}.makeSlice(mdl)
+	db.Location = Location{}.MakeSlice(mdl)
 
 	mdl, err = fetchFromSQLite(sqlite, &Note{})
 	if err != nil {
 		return err
 	}
-	db.Note = Note{}.makeSlice(mdl)
+	db.Note = Note{}.MakeSlice(mdl)
 
 	mdl, err = fetchFromSQLite(sqlite, &Tag{})
 	if err != nil {
 		return err
 	}
-	db.Tag = Tag{}.makeSlice(mdl)
+	db.Tag = Tag{}.MakeSlice(mdl)
 
 	mdl, err = fetchFromSQLite(sqlite, &TagMap{})
 	if err != nil {
 		return err
 	}
-	db.TagMap = TagMap{}.makeSlice(mdl)
+	db.TagMap = TagMap{}.MakeSlice(mdl)
 
 	mdl, err = fetchFromSQLite(sqlite, &UserMark{})
 	if err != nil {
 		return err
 	}
 
-	db.UserMark = UserMark{}.makeSlice(mdl)
+	db.UserMark = UserMark{}.MakeSlice(mdl)
 	if err != nil {
 		return err
 	}
@@ -140,13 +140,13 @@ func (db *Database) importSQLite(filename string) error {
 
 // fetchFromSQLite fetches the entries for a given modelType and returns a slice
 // of entries, for which the index corresponds to the ID in the SQLite DB
-func fetchFromSQLite(sqlite *sql.DB, modelType model) ([]*model, error) {
+func fetchFromSQLite(sqlite *sql.DB, modelType Model) ([]Model, error) {
 	// Create slice of correct size (number of entries)
 	capacity, err := getSliceCapacity(sqlite, modelType)
 	if err != nil {
 		return nil, errors.Wrap(err, "Could not determine number of entries in SQLite database")
 	}
-	result := make([]*model, capacity)
+	result := make([]Model, capacity)
 
 	rows, err := sqlite.Query(fmt.Sprintf("SELECT * FROM %s ORDER BY %s", modelType.tableName(), modelType.idName()))
 	if err != nil {
@@ -156,7 +156,7 @@ func fetchFromSQLite(sqlite *sql.DB, modelType model) ([]*model, error) {
 	// Put entries in slice with the index coresponding to the ID in the SQLite DB
 	defer rows.Close()
 	for rows.Next() {
-		var m model
+		var m Model
 		switch tp := modelType.(type) {
 		case *BlockRange:
 			m = &BlockRange{}
@@ -179,7 +179,7 @@ func fetchFromSQLite(sqlite *sql.DB, modelType model) ([]*model, error) {
 		if err != nil {
 			return nil, errors.Wrap(err, "Error while scanning results from SQLite database")
 		}
-		result[mn.ID()] = &mn
+		result[mn.ID()] = mn
 	}
 	err = rows.Err()
 	if err != nil {
@@ -191,7 +191,7 @@ func fetchFromSQLite(sqlite *sql.DB, modelType model) ([]*model, error) {
 
 // getSliceCapacity determines the needed capacity for a slice from a table
 // by looking at the highest ID in the DB
-func getSliceCapacity(sqlite *sql.DB, modelType model) (int, error) {
+func getSliceCapacity(sqlite *sql.DB, modelType Model) (int, error) {
 	row, err := sqlite.Query(fmt.Sprintf("SELECT %s FROM %s ORDER BY %s DESC LIMIT 1",
 		modelType.idName(), modelType.tableName(), modelType.idName()))
 	if err != nil {
@@ -259,7 +259,7 @@ func (db *Database) saveToNewSQLite(filename string) error {
 	dbFields := reflect.ValueOf(db).Elem()
 	for j := 0; j < dbFields.NumField(); j++ {
 		slice := dbFields.Field(j).Interface()
-		mdl, err := makeModelSlice(slice)
+		mdl, err := MakeModelSlice(slice)
 		if err != nil {
 			return err
 		}
@@ -274,7 +274,7 @@ func (db *Database) saveToNewSQLite(filename string) error {
 // insertEntries INSERTs entries of []model into a given SQLite database.
 // It does it by dynamically parsing all fields of a struct implementing
 // model using reflection and creating a query for SQLite out of it.
-func insertEntries(sqlite *sql.DB, m []model) error {
+func insertEntries(sqlite *sql.DB, m []Model) error {
 	if len(m) == 0 {
 		return nil
 	}
