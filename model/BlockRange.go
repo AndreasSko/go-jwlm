@@ -13,29 +13,29 @@ type BlockRange struct {
 }
 
 // ID returns the ID of the entry
-func (m BlockRange) ID() int {
+func (m *BlockRange) ID() int {
 	return m.BlockRangeID
 }
 
-func (m BlockRange) tableName() string {
+func (m *BlockRange) tableName() string {
 	return "BlockRange"
 }
 
-func (m BlockRange) idName() string {
+func (m *BlockRange) idName() string {
 	return "BlockRangeId"
 }
 
-func (m BlockRange) scanRow(rows *sql.Rows) (model, error) {
+func (m *BlockRange) scanRow(rows *sql.Rows) (model, error) {
 	err := rows.Scan(&m.BlockRangeID, &m.BlockType, &m.Identifier, &m.StartToken, &m.EndToken, &m.UserMarkID)
 	return m, err
 }
 
 // makeSlice converts a slice of the generice interface model
-func (BlockRange) makeSlice(mdl []model) []BlockRange {
-	result := make([]BlockRange, len(mdl))
+func (BlockRange) makeSlice(mdl []*model) []*BlockRange {
+	result := make([]*BlockRange, len(mdl))
 	for i := range mdl {
 		if mdl[i] != nil {
-			result[i] = mdl[i].(BlockRange)
+			result[i] = (*mdl[i]).(*BlockRange)
 		}
 	}
 	return result

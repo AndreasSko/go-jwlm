@@ -23,13 +23,13 @@ const manifestFilename = "manifest.json"
 
 // Database represents the JW Library database as a struct
 type Database struct {
-	BlockRange []BlockRange
-	Bookmark   []Bookmark
-	Location   []Location
-	Note       []Note
-	Tag        []Tag
-	TagMap     []TagMap
-	UserMark   []UserMark
+	BlockRange []*BlockRange
+	Bookmark   []*Bookmark
+	Location   []*Location
+	Note       []*Note
+	Tag        []*Tag
+	TagMap     []*TagMap
+	UserMark   []*UserMark
 }
 
 // ImportJWLBackup unzips a given JW Library Backup file and imports the
@@ -140,13 +140,13 @@ func (db *Database) importSQLite(filename string) error {
 
 // fetchFromSQLite fetches the entries for a given modelType and returns a slice
 // of entries, for which the index corresponds to the ID in the SQLite DB
-func fetchFromSQLite(sqlite *sql.DB, modelType model) ([]model, error) {
+func fetchFromSQLite(sqlite *sql.DB, modelType model) ([]*model, error) {
 	// Create slice of correct size (number of entries)
 	capacity, err := getSliceCapacity(sqlite, modelType)
 	if err != nil {
 		return nil, errors.Wrap(err, "Could not determine number of entries in SQLite database")
 	}
-	result := make([]model, capacity)
+	result := make([]*model, capacity)
 
 	rows, err := sqlite.Query(fmt.Sprintf("SELECT * FROM %s ORDER BY %s", modelType.tableName(), modelType.idName()))
 	if err != nil {
@@ -159,19 +159,19 @@ func fetchFromSQLite(sqlite *sql.DB, modelType model) ([]model, error) {
 		var m model
 		switch tp := modelType.(type) {
 		case *BlockRange:
-			m = BlockRange{}
+			m = &BlockRange{}
 		case *Bookmark:
-			m = Bookmark{}
+			m = &Bookmark{}
 		case *Location:
-			m = Location{}
+			m = &Location{}
 		case *Note:
-			m = Note{}
+			m = &Note{}
 		case *Tag:
-			m = Tag{}
+			m = &Tag{}
 		case *TagMap:
-			m = TagMap{}
+			m = &TagMap{}
 		case *UserMark:
-			m = UserMark{}
+			m = &UserMark{}
 		default:
 			panic(fmt.Sprintf("Fetching %T is not supported!", tp))
 		}
@@ -179,7 +179,7 @@ func fetchFromSQLite(sqlite *sql.DB, modelType model) ([]model, error) {
 		if err != nil {
 			return nil, errors.Wrap(err, "Error while scanning results from SQLite database")
 		}
-		result[mn.ID()] = mn
+		result[mn.ID()] = &mn
 	}
 	err = rows.Err()
 	if err != nil {
@@ -271,10 +271,25 @@ func (db *Database) saveToNewSQLite(filename string) error {
 	return nil
 }
 
-// insertEntries INSERTs entries of []model into a given SQLite database
+// insertEntries INSERTs entries of []model into a given SQLite database.
+// It does it by dynamically parsing all fields of a struct implementing
+// model using reflection and creating a query for SQLite out of it.
 func insertEntries(sqlite *sql.DB, m []model) error {
 	if len(m) == 0 {
 		return nil
+	}
+
+	// Figure out tableName and rowCount. As we don't know for sure,
+	// which entry will be nil-pointer, we just try until we find a non-empty
+	// one and call the functions there.
+	tableName := ""
+	rowCount := 0
+	for _, mdl := range m {
+		if reflect.ValueOf(mdl).Elem().IsValid() {
+			tableName = mdl.tableName()
+			rowCount = reflect.ValueOf(mdl).Elem().NumField()
+			break
+		}
 	}
 
 	tx, err := sqlite.Begin()
@@ -282,8 +297,8 @@ func insertEntries(sqlite *sql.DB, m []model) error {
 		return err
 	}
 
-	query := fmt.Sprintf("INSERT INTO %s VALUES (", m[0].tableName())
-	rowCount := reflect.ValueOf(m[0]).NumField()
+	// Dynamically add all column-names of the struct to the query
+	query := fmt.Sprintf("INSERT INTO %s VALUES (", tableName)
 	for i := 0; i < rowCount; i++ {
 		query += "?"
 		if i+1 < rowCount {
@@ -299,13 +314,16 @@ func insertEntries(sqlite *sql.DB, m []model) error {
 	defer stmt.Close()
 
 	for _, entry := range m {
-		if entry.ID() == 0 {
+		// Prepare struct for ingestion with stmt.Exec
+		values := make([]interface{}, rowCount)
+		reflValues := reflect.ValueOf(entry).Elem()
+
+		// Check if entry is actually a nil-pointer and shouldn't be considered
+		if !reflValues.IsValid() {
 			continue
 		}
 
-		// Prepare struct for ingestion with stmt.Exec
-		values := make([]interface{}, rowCount, rowCount)
-		reflValues := reflect.ValueOf(entry)
+		// Add all fields of the struct to the values slice, so we can ingest them later
 		for j := 0; j < reflValues.NumField(); j++ {
 			v := reflValues.Field(j).Interface()
 			values[j] = v

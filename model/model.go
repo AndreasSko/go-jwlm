@@ -13,7 +13,7 @@ type model interface {
 	scanRow(row *sql.Rows) (model, error)
 }
 
-// makeModelSclie converts a slice of model-implementing structs to []model
+// makeModelSclie converts a slice of pointers of model-implementing structs to []model
 func makeModelSlice(arg interface{}) ([]model, error) {
 	slice := reflect.ValueOf(arg)
 

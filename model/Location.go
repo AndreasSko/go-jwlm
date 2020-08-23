@@ -19,30 +19,30 @@ type Location struct {
 }
 
 // ID returns the ID of the entry
-func (m Location) ID() int {
+func (m *Location) ID() int {
 	return m.LocationID
 }
 
-func (m Location) tableName() string {
+func (m *Location) tableName() string {
 	return "Location"
 }
 
-func (m Location) idName() string {
+func (m *Location) idName() string {
 	return "LocationId"
 }
 
-func (m Location) scanRow(rows *sql.Rows) (model, error) {
+func (m *Location) scanRow(rows *sql.Rows) (model, error) {
 	err := rows.Scan(&m.LocationID, &m.BookNumber, &m.ChapterNumber, &m.DocumentID, &m.Track,
 		&m.IssueTagNumber, &m.KeySymbol, &m.MepsLanguage, &m.LocationType, &m.Title)
 	return m, err
 }
 
 // makeSlice converts a slice of the generice interface model
-func (Location) makeSlice(mdl []model) []Location {
-	result := make([]Location, len(mdl))
+func (Location) makeSlice(mdl []*model) []*Location {
+	result := make([]*Location, len(mdl))
 	for i := range mdl {
 		if mdl[i] != nil {
-			result[i] = mdl[i].(Location)
+			result[i] = (*mdl[i]).(*Location)
 		}
 	}
 	return result
