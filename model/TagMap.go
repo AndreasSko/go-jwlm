@@ -2,7 +2,8 @@ package model
 
 import (
 	"database/sql"
-	"fmt"
+	"strconv"
+	"strings"
 )
 
 // TagMap represents the TagMap table inside the JW Library database
@@ -28,7 +29,14 @@ func (m *TagMap) SetID(id int) {
 // UniqueKey returns the key that makes this TagMap unique,
 // so it can be used as a key in a map.
 func (m *TagMap) UniqueKey() string {
-	return fmt.Sprintf("TODO")
+	var sb strings.Builder
+	sb.Grow(15)
+	sb.WriteString(strconv.FormatInt(int64(m.PlaylistItemID.Int32), 10))
+	sb.WriteString("_")
+	sb.WriteString(strconv.FormatInt(int64(m.LocationID.Int32), 10))
+	sb.WriteString("_")
+	sb.WriteString(strconv.FormatInt(int64(m.NoteID.Int32), 10))
+	return sb.String()
 }
 
 // Equals checks if the TagMap is equal to the given one.
