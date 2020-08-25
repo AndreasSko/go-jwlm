@@ -2,7 +2,6 @@ package model
 
 import (
 	"database/sql"
-	"fmt"
 )
 
 // Note represents the Note table inside the JW Library database
@@ -31,11 +30,17 @@ func (m *Note) SetID(id int) {
 // UniqueKey returns the key that makes this Note unique,
 // so it can be used as a key in a map.
 func (m *Note) UniqueKey() string {
-	return fmt.Sprintf("TODO")
+	return m.GUID
 }
 
-// Equals checks if the Note is equal to the given one.
+// Equals checks if the Note is equal to the given one. It
+// uses the GUID and LastModified date for that, as it should
+// be sufficient to detect changes.
 func (m *Note) Equals(m2 Model) bool {
+	if m2, ok := m2.(*Note); ok {
+		return m.GUID == m2.GUID &&
+			m.LastModified == m2.LastModified
+	}
 	return false
 }
 
