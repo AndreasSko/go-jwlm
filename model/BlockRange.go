@@ -2,7 +2,8 @@ package model
 
 import (
 	"database/sql"
-	"fmt"
+	"strconv"
+	"strings"
 )
 
 // BlockRange represents the BlockRange table inside the JW Library database
@@ -28,7 +29,16 @@ func (m *BlockRange) SetID(id int) {
 // UniqueKey returns the key that makes this BlockRange unique,
 // so it can be used as a key in a map.
 func (m *BlockRange) UniqueKey() string {
-	return fmt.Sprintf("TODO")
+	var sb strings.Builder
+	sb.Grow(15)
+	sb.WriteString(strconv.FormatInt(int64(m.BlockType), 10))
+	sb.WriteString("_")
+	sb.WriteString(strconv.FormatInt(int64(m.Identifier), 10))
+	sb.WriteString("_")
+	sb.WriteString(strconv.FormatInt(int64(m.StartToken.Int32), 10))
+	sb.WriteString("_")
+	sb.WriteString(strconv.FormatInt(int64(m.EndToken.Int32), 10))
+	return sb.String()
 }
 
 // Equals checks if the BlockRange is equal to the given one.

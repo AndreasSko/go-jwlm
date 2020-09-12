@@ -2,7 +2,6 @@ package model
 
 import (
 	"database/sql"
-	"fmt"
 )
 
 // UserMark represents the UserMark table inside the JW Library database
@@ -28,11 +27,17 @@ func (m *UserMark) SetID(id int) {
 // UniqueKey returns the key that makes this UserMark unique,
 // so it can be used as a key in a map.
 func (m *UserMark) UniqueKey() string {
-	return fmt.Sprintf("TODO")
+	return m.UserMarkGUID
 }
 
 // Equals checks if the UserMark is equal to the given one.
 func (m *UserMark) Equals(m2 Model) bool {
+	if m2, ok := m2.(*UserMark); ok {
+		return m.ColorIndex == m2.ColorIndex &&
+			m.LocationID == m2.LocationID &&
+			m.StyleIndex == m2.StyleIndex &&
+			m.Version == m2.Version
+	}
 	return false
 }
 
