@@ -71,11 +71,5 @@ func (m *UserMarkBlockRange) scanRow(rows *sql.Rows) (Model, error) {
 
 // MakeSlice converts a slice of the generice interface model
 func (UserMarkBlockRange) MakeSlice(mdl []Model) []*UserMarkBlockRange {
-	result := make([]*UserMarkBlockRange, len(mdl))
-	for i := range mdl {
-		if mdl[i] != nil {
-			result[i] = mdl[i].(*UserMarkBlockRange)
-		}
-	}
-	return result
+	panic("Not supported!")
 }
