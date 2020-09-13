@@ -2,39 +2,88 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"os"
-	"runtime/pprof"
 	"time"
 
+	"github.com/AndreasSko/go-jwlm/merger"
 	"github.com/AndreasSko/go-jwlm/model"
+	"github.com/davecgh/go-spew/spew"
+	log "github.com/sirupsen/logrus"
 )
 
 func main() {
-	var err error
-
-	f, err := os.Create("profile.prof")
-	if err != nil {
-		log.Fatal(err)
-	}
-	pprof.StartCPUProfile(f)
-	defer pprof.StopCPUProfile()
-	fmt.Println("Hello world!")
 	start := time.Now()
-	db := new(model.Database)
-	err = db.ImportJWLBackup("UserDataBackup_2020-08-06_Andreas-iPad-2.jwlibrary")
-	if err != nil {
-		fmt.Println(err)
-	}
-	fmt.Println(len(db.BlockRange))
-	fmt.Println(len(db.Bookmark))
-	fmt.Println(len(db.Location))
-	fmt.Println(len(db.Note))
-	fmt.Println(len(db.Tag))
-	fmt.Println(len(db.TagMap))
-	fmt.Println(len(db.UserMark))
 
-	fmt.Println(db.ExportJWLBackup("test.jwlibrary"))
+	log.Info("Importing left backup")
+	left := model.Database{}
+	err := left.ImportJWLBackup(os.Args[1])
+	if err != nil {
+		log.Warning(err)
+	}
+
+	log.Info("Importing right backup")
+	right := model.Database{}
+	err = right.ImportJWLBackup(os.Args[2])
+	if err != nil {
+		log.Warning(err)
+	}
+	merged := model.Database{}
+
+	log.Info("Merging Locations")
+	mergedLocations, locationIDChanges, err := merger.MergeLocations(left.Location, right.Location)
+	if err != nil {
+		log.Warning(err)
+	}
+	merged.Location = mergedLocations
+	merger.UpdateIDs(left.Bookmark, right.Bookmark, "LocationID", locationIDChanges)
+	merger.UpdateIDs(left.Bookmark, right.Bookmark, "PublicationLocationID", locationIDChanges)
+	merger.UpdateIDs(left.Note, right.Note, "LocationID", locationIDChanges)
+	merger.UpdateIDs(left.TagMap, right.TagMap, "LocationID", locationIDChanges)
+
+	log.Info("Merging Bookmarks")
+	mergedBookmarks, _, err := merger.MergeBookmarks(left.Bookmark, right.Bookmark, nil)
+	if err != nil {
+		log.Warning(err)
+		fmt.Println("Collisions: ")
+		spew.Dump(err.(merger.MergeConflictError).Conflicts)
+	}
+	merged.Bookmark = mergedBookmarks
+
+	log.Info("Merging Tags")
+	mergedTags, tagIDChanges, err := merger.MergeTags(left.Tag, right.Tag, nil)
+	if err != nil {
+		log.Warning(err)
+	}
+	merged.Tag = mergedTags
+	merger.UpdateIDs(left.TagMap, right.TagMap, "TagID", tagIDChanges)
+
+	log.Info("Merging TagMaps")
+	mergedTagMaps, _, err := merger.MergeTagMaps(left.TagMap, right.TagMap, nil)
+	if err != nil {
+		log.Warning(err)
+	}
+	merged.TagMap = mergedTagMaps
+
+	log.Info("Merging UserMarks & BlockRanges")
+	mergedUserMarks, mergedBlockRanges, userMarkIDChanges, err := merger.MergeUserMarkAndBlockRange(left.UserMark, left.BlockRange, right.UserMark, right.BlockRange, nil) //TODO
+	if err != nil {
+		log.Warning(err)
+		fmt.Println("Collisions: ")
+		spew.Dump(err.(merger.MergeConflictError).Conflicts)
+	}
+	merged.UserMark = mergedUserMarks
+	merged.BlockRange = mergedBlockRanges
+
+	merger.UpdateIDs(left.Note, right.Note, "UserMarkID", userMarkIDChanges)
+
+	log.Info("Merging Notes")
+	mergedNotes, _, err := merger.MergeNotes(left.Note, right.Note, nil)
+	if err != nil {
+		log.Warning(err)
+		fmt.Println("Collisions: ")
+		spew.Dump(err.(merger.MergeConflictError).Conflicts)
+	}
+	merged.Note = mergedNotes
 
 	duration := time.Since(start)
 	fmt.Printf("Ran in %s", duration)

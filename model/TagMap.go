@@ -1,6 +1,10 @@
 package model
 
-import "database/sql"
+import (
+	"database/sql"
+	"strconv"
+	"strings"
+)
 
 // TagMap represents the TagMap table inside the JW Library database
 type TagMap struct {
@@ -17,6 +21,29 @@ func (m *TagMap) ID() int {
 	return m.TagMapID
 }
 
+// SetID sets the ID of the entry
+func (m *TagMap) SetID(id int) {
+	m.TagMapID = id
+}
+
+// UniqueKey returns the key that makes this TagMap unique,
+// so it can be used as a key in a map.
+func (m *TagMap) UniqueKey() string {
+	var sb strings.Builder
+	sb.Grow(15)
+	sb.WriteString(strconv.FormatInt(int64(m.PlaylistItemID.Int32), 10))
+	sb.WriteString("_")
+	sb.WriteString(strconv.FormatInt(int64(m.LocationID.Int32), 10))
+	sb.WriteString("_")
+	sb.WriteString(strconv.FormatInt(int64(m.NoteID.Int32), 10))
+	return sb.String()
+}
+
+// Equals checks if the TagMap is equal to the given one.
+func (m *TagMap) Equals(m2 Model) bool {
+	return false
+}
+
 func (m *TagMap) tableName() string {
 	return "TagMap"
 }
@@ -25,17 +52,17 @@ func (m *TagMap) idName() string {
 	return "TagMapId"
 }
 
-func (m *TagMap) scanRow(rows *sql.Rows) (model, error) {
+func (m *TagMap) scanRow(rows *sql.Rows) (Model, error) {
 	err := rows.Scan(&m.TagMapID, &m.PlaylistItemID, &m.LocationID, &m.NoteID, &m.TagID, &m.Position)
 	return m, err
 }
 
-// makeSlice converts a slice of the generice interface model
-func (TagMap) makeSlice(mdl []*model) []*TagMap {
+// MakeSlice converts a slice of the generice interface model
+func (TagMap) MakeSlice(mdl []Model) []*TagMap {
 	result := make([]*TagMap, len(mdl))
 	for i := range mdl {
 		if mdl[i] != nil {
-			result[i] = (*mdl[i]).(*TagMap)
+			result[i] = mdl[i].(*TagMap)
 		}
 	}
 	return result
