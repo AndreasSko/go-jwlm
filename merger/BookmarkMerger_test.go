@@ -219,7 +219,7 @@ func TestMergeBookmarks(t *testing.T) {
 		},
 	}
 
-	expectedConflicts := map[string]mergeConflict{
+	expectedConflicts := map[string]MergeConflict{
 		"1_1": {
 			left: &model.Bookmark{
 				BookmarkID:            1,
@@ -268,7 +268,7 @@ func TestMergeBookmarks(t *testing.T) {
 
 	_, _, err = MergeBookmarks(left, right, nil)
 	assert.Error(t, err)
-	assert.Equal(t, expectedConflicts, err.(mergeConflictError).conflicts)
+	assert.Equal(t, expectedConflicts, err.(MergeConflictError).Conflicts)
 
 	// Succeed using mergeSolution
 	conflictSolution := map[string]mergeSolution{

@@ -343,7 +343,7 @@ func Benchmark_MergeLocations(b *testing.B) {
 }
 
 func Test_solveLocationMergeConflict(t *testing.T) {
-	conflicts := map[string]mergeConflict{
+	conflicts := map[string]MergeConflict{
 		"ChooseLeftConflict": {
 			left: &model.Location{
 				LocationID:     1,

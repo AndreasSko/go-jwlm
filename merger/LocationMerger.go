@@ -17,7 +17,7 @@ func MergeLocations(left []*model.Location, right []*model.Location) ([]*model.L
 
 // solveLocationMergeConflict solves a merge conflict by trying to choose the Location that has
 // a Title. If both don't have one, choose the right.
-func solveLocationMergeConflict(conflicts map[string]mergeConflict) (map[string]mergeSolution, error) {
+func solveLocationMergeConflict(conflicts map[string]MergeConflict) (map[string]mergeSolution, error) {
 	solution := make(map[string]mergeSolution, len(conflicts))
 
 	for key, value := range conflicts {

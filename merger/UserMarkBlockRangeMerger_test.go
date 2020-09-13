@@ -337,7 +337,7 @@ func TestMergeUserMarkAndBlockRange_with_conflict(t *testing.T) {
 		},
 	}
 
-	expectedConflicts := []mergeConflict{
+	expectedConflicts := []MergeConflict{
 		{
 			left: &model.UserMarkBlockRange{
 				UserMark: &model.UserMark{
@@ -412,6 +412,7 @@ func TestMergeUserMarkAndBlockRange_with_conflict(t *testing.T) {
 	}
 
 	_, _, _, err := MergeUserMarkAndBlockRange(leftUM, leftBR, rightUM, rightBR, nil)
+	conflictResult := mergeConflictMapToSliceHelper(err.(MergeConflictError).Conflicts)
 	assert.Error(t, err)
 	assert.Equal(t, expectedConflicts, conflictResult)
 
@@ -902,7 +903,7 @@ func Test_mergeUserMarkBlockRange_with_conflict(t *testing.T) {
 		},
 	}
 
-	expectedConflicts := []mergeConflict{
+	expectedConflicts := []MergeConflict{
 		{
 			left: &model.UserMarkBlockRange{
 				UserMark: &model.UserMark{
@@ -977,6 +978,7 @@ func Test_mergeUserMarkBlockRange_with_conflict(t *testing.T) {
 	}
 
 	result, _, err := mergeUMBR(left, right, nil)
+	conflictResult := mergeConflictMapToSliceHelper(err.(MergeConflictError).Conflicts)
 	assert.Empty(t, result)
 	assert.Error(t, err)
 	assert.Equal(t, expectedConflicts, conflictResult)
@@ -1167,8 +1169,8 @@ func Test_mergeUserMarkBlockRange_with_conflict(t *testing.T) {
 // mergeConflictMapToSliceHelper is a helper function that converts a mergeConflict map
 // to a sorted slice. This makes testing reliable, as we are able to trust
 // the order of a map.
-func mergeConflictMapToSliceHelper(mp map[string]mergeConflict) []mergeConflict {
-	result := []mergeConflict{}
+func mergeConflictMapToSliceHelper(mp map[string]MergeConflict) []MergeConflict {
+	result := []MergeConflict{}
 	for _, entry := range mp {
 		result = append(result, entry)
 	}

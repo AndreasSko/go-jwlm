@@ -23,25 +23,25 @@ const (
 	rightSide mergeSide = "rightSide"
 )
 
-// mergeConflict represents two Models that collide because of the same
+// MergeConflict represents two Models that collide because of the same
 // UniqueKey or other similarities.
-type mergeConflict struct {
+type MergeConflict struct {
 	left  model.Model
 	right model.Model
 }
 
-// mergeConflictError indicates that a conflict happened while trying to merge
+// MergeConflictError indicates that a conflict happened while trying to merge
 // two slices of Model. It contains the conflicts in order for the caller to solve them.
-type mergeConflictError struct {
+type MergeConflictError struct {
 	Err       string
-	conflicts map[string]mergeConflict
+	Conflicts map[string]MergeConflict
 }
 
 // mergeConflictSolver describes a function that is able to handle mergeConflicts semi-automatic
-type mergeConflictSolver func(map[string]mergeConflict) (map[string]mergeSolution, error)
+type mergeConflictSolver func(map[string]MergeConflict) (map[string]mergeSolution, error)
 
-func (e mergeConflictError) Error() string {
-	return fmt.Sprintf("There were conflicts while trying to merge: %s", e.conflicts)
+func (e MergeConflictError) Error() string {
+	return fmt.Sprintf("There were conflicts while trying to merge: %s", e.Conflicts)
 }
 
 // merge merges a left and a right slice of structs implementing the Model interface.
@@ -55,7 +55,7 @@ func merge(left interface{}, right interface{}, conflictSolution map[string]merg
 	}
 
 	duplicateCheck := make(map[string]mergeSolution, reflect.ValueOf(left).Len()+reflect.ValueOf(right).Len())
-	collisions := make(map[string]mergeConflict, maxLen)
+	collisions := make(map[string]MergeConflict, maxLen)
 
 	// First add all entries of the left slice
 	switch reflect.TypeOf(left).Kind() {
@@ -87,7 +87,7 @@ func merge(left interface{}, right interface{}, conflictSolution map[string]merg
 				if solution, ok := conflictSolution[r.UniqueKey()]; ok {
 					duplicateCheck[r.UniqueKey()] = solution
 				} else {
-					collisions[r.UniqueKey()] = mergeConflict{
+					collisions[r.UniqueKey()] = MergeConflict{
 						left:  conflict.solution,
 						right: r,
 					}
@@ -99,9 +99,9 @@ func merge(left interface{}, right interface{}, conflictSolution map[string]merg
 	}
 
 	if len(collisions) != 0 {
-		return duplicateCheck, mergeConflictError{
+		return duplicateCheck, MergeConflictError{
 			Err:       "There were conflicts while trying to merge",
-			conflicts: collisions,
+			Conflicts: collisions,
 		}
 	}
 
@@ -131,14 +131,14 @@ Loop:
 		}
 
 		switch err := err.(type) {
-		case mergeConflictError:
+		case MergeConflictError:
 			// If we couldn't shrink number of conflicts in last iteration, break
-			if prevConflicts == len(err.conflicts) {
+			if prevConflicts == len(err.Conflicts) {
 				break Loop
 			}
 
 			// merge automatic conflict solution with existing/given solution
-			autoConflictSolution, _ := conflictSolver(err.conflicts)
+			autoConflictSolution, _ := conflictSolver(err.Conflicts)
 			for key, autoSol := range autoConflictSolution {
 				if sol, exists := conflictSolution[key]; exists {
 					return []model.Model{}, IDChanges{}, fmt.Errorf("One of the given conflictSolution is conflicting with the one generated automatically: given %s, automatic: %s", sol, autoSol)
@@ -146,7 +146,7 @@ Loop:
 				conflictSolution[key] = autoSol
 			}
 
-			prevConflicts = len(err.conflicts)
+			prevConflicts = len(err.Conflicts)
 		default:
 			return []model.Model{}, IDChanges{}, err
 		}
@@ -210,9 +210,9 @@ func prepareMergeSolution(solutionMap *map[string]mergeSolution) ([]model.Model,
 // solveEqualityMergeConflict solves conflicts that arise, if the same Model entry exists
 // on both sides. For other conflicts it returns a mergeConflictError asking the caller
 // to handle it.
-func solveEqualityMergeConflict(conflicts map[string]mergeConflict) (map[string]mergeSolution, error) {
+func solveEqualityMergeConflict(conflicts map[string]MergeConflict) (map[string]mergeSolution, error) {
 	solution := make(map[string]mergeSolution, len(conflicts))
-	unsolvableConflicts := map[string]mergeConflict{}
+	unsolvableConflicts := map[string]MergeConflict{}
 
 	for key, value := range conflicts {
 		if value.left.Equals(value.right) {
@@ -223,7 +223,7 @@ func solveEqualityMergeConflict(conflicts map[string]mergeConflict) (map[string]
 	}
 
 	if len(unsolvableConflicts) != 0 {
-		return solution, mergeConflictError{Err: "Could not solve all conflicts", conflicts: unsolvableConflicts}
+		return solution, MergeConflictError{Err: "Could not solve all conflicts", Conflicts: unsolvableConflicts}
 	}
 
 	return solution, nil

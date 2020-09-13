@@ -218,7 +218,7 @@ func TestMergeNotes(t *testing.T) {
 		},
 	}
 
-	expectedCollisions := map[string]mergeConflict{
+	expectedCollisions := map[string]MergeConflict{
 		"FirstGUIDUpdating": {
 			left: &model.Note{
 				NoteID:          1,
@@ -271,7 +271,7 @@ func TestMergeNotes(t *testing.T) {
 
 	_, _, err = MergeNotes(left, right, nil)
 	assert.Error(t, err)
-	assert.Equal(t, expectedCollisions, err.(mergeConflictError).conflicts)
+	assert.Equal(t, expectedCollisions, err.(MergeConflictError).Conflicts)
 
 	// Merge successfully with given conflict solution
 	conflictSolution := map[string]mergeSolution{

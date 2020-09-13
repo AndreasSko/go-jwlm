@@ -46,8 +46,8 @@ func MergeUserMarkAndBlockRange(leftUM []*model.UserMark, leftBR []*model.BlockR
 
 	// If merge failed, try to solve conflicts using solveEqualityMergeConflict
 	switch err := err.(type) {
-	case mergeConflictError:
-		autoConflictSolution, _ := solveEqualityMergeConflict(err.conflicts)
+	case MergeConflictError:
+		autoConflictSolution, _ := solveEqualityMergeConflict(err.Conflicts)
 		for key, autoSol := range autoConflictSolution {
 			conflictSolution["_"+key] = autoSol
 		}
@@ -71,7 +71,7 @@ func mergeUMBR(left []*model.UserMarkBlockRange, right []*model.UserMarkBlockRan
 	// and right side, so we don't detect them again.
 	changes, invertedChanges := replaceUMBRConflictsWithSolution(&left, &right, conflictSolution)
 
-	conflicts := map[string]mergeConflict{}
+	conflicts := map[string]MergeConflict{}
 
 	// Ingest UserMarks & BlockRanges in a Map[LocationID]map[Identifier][]*model.BlockRange
 	blRanges := ingestUMBR(left, right)
@@ -97,9 +97,9 @@ func mergeUMBR(left []*model.UserMarkBlockRange, right []*model.UserMarkBlockRan
 					// If its one different sites, add it to conflicts & make sure
 					// that entries are on correct side of mergeConflict{}
 					if br.side == leftSide {
-						conflicts[fmt.Sprint(conflictsCount)] = mergeConflict{left[br.br.UserMarkID], right[identifierBlock[j].br.UserMarkID]}
+						conflicts[fmt.Sprint(conflictsCount)] = MergeConflict{left[br.br.UserMarkID], right[identifierBlock[j].br.UserMarkID]}
 					} else {
-						conflicts[fmt.Sprint(conflictsCount)] = mergeConflict{left[identifierBlock[j].br.UserMarkID], right[br.br.UserMarkID]}
+						conflicts[fmt.Sprint(conflictsCount)] = MergeConflict{left[identifierBlock[j].br.UserMarkID], right[br.br.UserMarkID]}
 					}
 					conflictsCount++
 				}
