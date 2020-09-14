@@ -143,6 +143,11 @@ func TestUpdateIDs_Bookmarks(t *testing.T) {
 	assert.Equal(t, expectedLeft, left)
 	assert.Equal(t, expectedRight, right)
 
+	assert.NotPanics(t, func() {
+		UpdateIDs(left, nil, "LocationID", changes)
+		UpdateIDs(nil, right, "LocationID", changes)
+		UpdateIDs(nil, nil, "LocationID", changes)
+	})
 	assert.PanicsWithValue(t, "Given struct does not contain field WrongField", func() {
 		UpdateIDs(left, right, "WrongField", changes)
 	})

@@ -18,15 +18,19 @@ type IDChanges struct {
 // UpdateIDs updates a given ID (named by IDName) on the left and right
 // slices of *model.Model according to the given IDChanges.
 func UpdateIDs(left interface{}, right interface{}, IDName string, changes IDChanges) {
-	for _, mSide := range []mergeSide{leftSide, rightSide} {
+	for _, mSide := range []MergeSide{LeftSide, RightSide} {
 		var side interface{}
 		var chges map[int]int
-		if mSide == leftSide {
+		if mSide == LeftSide {
 			side = left
 			chges = changes.Left
 		} else {
 			side = right
 			chges = changes.Right
+		}
+
+		if side == nil {
+			continue
 		}
 
 		switch reflect.TypeOf(side).Kind() {
