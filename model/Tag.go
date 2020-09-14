@@ -69,11 +69,6 @@ func (Tag) MakeSlice(mdl []Model) []*Tag {
 		}
 		tag := mdl[i].(*Tag)
 
-		// The "Favorite" tag is already included with a fresh JW-Library installation
-		if tag.TagID == 1 && tag.TagType == 0 && tag.Name == "Favorite" {
-			continue
-		}
-
 		result[i] = tag
 	}
 	return result
