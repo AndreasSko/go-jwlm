@@ -8,26 +8,29 @@ import (
 	"github.com/AndreasSko/go-jwlm/model"
 )
 
-// mergeSolution indicates wheter a entry came from the left or right
+// MergeSolution indicates wheter a entry came from the left or right
 // side of a to-be-merged model slice pair.
-type mergeSolution struct {
-	side      mergeSide
-	solution  model.Model
-	discarded model.Model
+type MergeSolution struct {
+	Side      MergeSide
+	Solution  model.Model
+	Discarded model.Model
 }
 
-type mergeSide string
+// MergeSide indicates the side of a merge
+type MergeSide string
 
 const (
-	leftSide  mergeSide = "leftSide"
-	rightSide mergeSide = "rightSide"
+	// LeftSide is the left side of a merge
+	LeftSide MergeSide = "leftSide"
+	// RightSide is the right side of a merge
+	RightSide MergeSide = "rightSide"
 )
 
 // MergeConflict represents two Models that collide because of the same
 // UniqueKey or other similarities.
 type MergeConflict struct {
-	left  model.Model
-	right model.Model
+	Left  model.Model
+	Right model.Model
 }
 
 // MergeConflictError indicates that a conflict happened while trying to merge
@@ -38,7 +41,7 @@ type MergeConflictError struct {
 }
 
 // mergeConflictSolver describes a function that is able to handle mergeConflicts semi-automatic
-type mergeConflictSolver func(map[string]MergeConflict) (map[string]mergeSolution, error)
+type mergeConflictSolver func(map[string]MergeConflict) (map[string]MergeSolution, error)
 
 func (e MergeConflictError) Error() string {
 	return fmt.Sprintf("There were conflicts while trying to merge: %s", e.Conflicts)
@@ -46,7 +49,7 @@ func (e MergeConflictError) Error() string {
 
 // merge merges a left and a right slice of structs implementing the Model interface.
 // If there is a collision in the process, it returns an error asking for specification how it should handle it.
-func merge(left interface{}, right interface{}, conflictSolution map[string]mergeSolution) (map[string]mergeSolution, error) {
+func merge(left interface{}, right interface{}, conflictSolution map[string]MergeSolution) (map[string]MergeSolution, error) {
 	maxLen := 0
 	if reflect.ValueOf(left).Len() > reflect.ValueOf(right).Len() {
 		maxLen = reflect.ValueOf(left).Len()
@@ -54,7 +57,7 @@ func merge(left interface{}, right interface{}, conflictSolution map[string]merg
 		maxLen = reflect.ValueOf(right).Len()
 	}
 
-	duplicateCheck := make(map[string]mergeSolution, reflect.ValueOf(left).Len()+reflect.ValueOf(right).Len())
+	duplicateCheck := make(map[string]MergeSolution, reflect.ValueOf(left).Len()+reflect.ValueOf(right).Len())
 	collisions := make(map[string]MergeConflict, maxLen)
 
 	// First add all entries of the left slice
@@ -68,7 +71,7 @@ func merge(left interface{}, right interface{}, conflictSolution map[string]merg
 			}
 
 			l := s.Index(i).Interface().(model.Model)
-			duplicateCheck[l.UniqueKey()] = mergeSolution{side: leftSide, solution: l}
+			duplicateCheck[l.UniqueKey()] = MergeSolution{Side: LeftSide, Solution: l}
 		}
 	}
 
@@ -88,12 +91,12 @@ func merge(left interface{}, right interface{}, conflictSolution map[string]merg
 					duplicateCheck[r.UniqueKey()] = solution
 				} else {
 					collisions[r.UniqueKey()] = MergeConflict{
-						left:  conflict.solution,
-						right: r,
+						Left:  conflict.Solution,
+						Right: r,
 					}
 				}
 			} else {
-				duplicateCheck[r.UniqueKey()] = mergeSolution{side: rightSide, solution: r}
+				duplicateCheck[r.UniqueKey()] = MergeSolution{Side: RightSide, Solution: r}
 			}
 		}
 	}
@@ -112,12 +115,12 @@ func merge(left interface{}, right interface{}, conflictSolution map[string]merg
 // slice of structs implementing the Model interface. It tries to solve possible
 // conflicts using the given mergeConflictSolver and will return a mergeConflictError
 // if it wasn't able to solve all conflicts on its own.
-func tryMergeWithConflictSolver(left interface{}, right interface{}, conflictSolution map[string]mergeSolution, conflictSolver mergeConflictSolver) ([]model.Model, IDChanges, error) {
-	var solutionMap map[string]mergeSolution
+func tryMergeWithConflictSolver(left interface{}, right interface{}, conflictSolution map[string]MergeSolution, conflictSolver mergeConflictSolver) ([]model.Model, IDChanges, error) {
+	var solutionMap map[string]MergeSolution
 	var err error
 
 	if conflictSolution == nil {
-		conflictSolution = map[string]mergeSolution{}
+		conflictSolution = map[string]MergeSolution{}
 	}
 
 	// Try to merge with automatic conflic resolution until the number of conflicts
@@ -163,9 +166,9 @@ Loop:
 
 // prepareMergeSolution creates are sorted slice of the solutions given in the solutionMap
 // and updates the IDs of the entries if necessary. IDChanges will track changed IDs.
-func prepareMergeSolution(solutionMap *map[string]mergeSolution) ([]model.Model, IDChanges) {
+func prepareMergeSolution(solutionMap *map[string]MergeSolution) ([]model.Model, IDChanges) {
 	// Convert map to slice and sort it so we have a deterministic output
-	solutionSlice := make([]mergeSolution, len(*solutionMap))
+	solutionSlice := make([]MergeSolution, len(*solutionMap))
 	i := 0
 	for _, sol := range *solutionMap {
 		solutionSlice[i] = sol
@@ -181,24 +184,24 @@ func prepareMergeSolution(solutionMap *map[string]mergeSolution) ([]model.Model,
 
 	i = 1
 	for _, sol := range solutionSlice {
-		result[i] = sol.solution
+		result[i] = sol.Solution
 		// Update ID if needed
-		if sol.solution.ID() != i {
-			if sol.side == leftSide {
-				changes.Left[sol.solution.ID()] = i
+		if sol.Solution.ID() != i {
+			if sol.Side == LeftSide {
+				changes.Left[sol.Solution.ID()] = i
 			} else {
-				changes.Right[sol.solution.ID()] = i
+				changes.Right[sol.Solution.ID()] = i
 			}
 			result[i].SetID(i)
 		}
 
 		// If we merged a duplicate, we also need to cope with
 		// changing the ID of the other side
-		if sol.discarded != nil && sol.discarded.ID() != i {
-			if sol.side == leftSide {
-				changes.Right[sol.discarded.ID()] = i
+		if sol.Discarded != nil && sol.Discarded.ID() != i {
+			if sol.Side == LeftSide {
+				changes.Right[sol.Discarded.ID()] = i
 			} else {
-				changes.Left[sol.discarded.ID()] = i
+				changes.Left[sol.Discarded.ID()] = i
 			}
 		}
 		i++
@@ -210,13 +213,13 @@ func prepareMergeSolution(solutionMap *map[string]mergeSolution) ([]model.Model,
 // solveEqualityMergeConflict solves conflicts that arise, if the same Model entry exists
 // on both sides. For other conflicts it returns a mergeConflictError asking the caller
 // to handle it.
-func solveEqualityMergeConflict(conflicts map[string]MergeConflict) (map[string]mergeSolution, error) {
-	solution := make(map[string]mergeSolution, len(conflicts))
+func solveEqualityMergeConflict(conflicts map[string]MergeConflict) (map[string]MergeSolution, error) {
+	solution := make(map[string]MergeSolution, len(conflicts))
 	unsolvableConflicts := map[string]MergeConflict{}
 
 	for key, value := range conflicts {
-		if value.left.Equals(value.right) {
-			solution[key] = mergeSolution{side: leftSide, solution: value.left, discarded: value.right}
+		if value.Left.Equals(value.Right) {
+			solution[key] = MergeSolution{Side: LeftSide, Solution: value.Left, Discarded: value.Right}
 		} else {
 			unsolvableConflicts[key] = value
 		}
@@ -232,12 +235,12 @@ func solveEqualityMergeConflict(conflicts map[string]MergeConflict) (map[string]
 // sortMergeSolution sorts a slice of mergeSolution according to the ID of the model.
 // If both IDs are equal, a solution being on the left side is considered greater
 // than one on the right.
-func sortMergeSolution(solution *[]mergeSolution) {
+func sortMergeSolution(solution *[]MergeSolution) {
 	sort.Slice(*solution, func(i, j int) bool {
 		// If ID are the same, then leftSide > rightSide
-		if (*solution)[i].solution.ID() == (*solution)[j].solution.ID() {
-			return (*solution)[i].side == leftSide
+		if (*solution)[i].Solution.ID() == (*solution)[j].Solution.ID() {
+			return (*solution)[i].Side == LeftSide
 		}
-		return (*solution)[i].solution.ID() < (*solution)[j].solution.ID()
+		return (*solution)[i].Solution.ID() < (*solution)[j].Solution.ID()
 	})
 }

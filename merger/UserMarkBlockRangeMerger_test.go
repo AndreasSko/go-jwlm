@@ -339,7 +339,7 @@ func TestMergeUserMarkAndBlockRange_with_conflict(t *testing.T) {
 
 	expectedConflicts := []MergeConflict{
 		{
-			left: &model.UserMarkBlockRange{
+			Left: &model.UserMarkBlockRange{
 				UserMark: &model.UserMark{
 					UserMarkID: 1,
 					LocationID: 1,
@@ -361,7 +361,7 @@ func TestMergeUserMarkAndBlockRange_with_conflict(t *testing.T) {
 					},
 				},
 			},
-			right: &model.UserMarkBlockRange{
+			Right: &model.UserMarkBlockRange{
 				UserMark: &model.UserMark{
 					UserMarkID: 5,
 					LocationID: 1,
@@ -378,7 +378,7 @@ func TestMergeUserMarkAndBlockRange_with_conflict(t *testing.T) {
 			},
 		},
 		{
-			left: &model.UserMarkBlockRange{
+			Left: &model.UserMarkBlockRange{
 				UserMark: &model.UserMark{
 					UserMarkID: 5,
 					LocationID: 10,
@@ -393,7 +393,7 @@ func TestMergeUserMarkAndBlockRange_with_conflict(t *testing.T) {
 					},
 				},
 			},
-			right: &model.UserMarkBlockRange{
+			Right: &model.UserMarkBlockRange{
 				UserMark: &model.UserMark{
 					UserMarkID: 1,
 					LocationID: 10,
@@ -417,11 +417,11 @@ func TestMergeUserMarkAndBlockRange_with_conflict(t *testing.T) {
 	assert.Equal(t, expectedConflicts, conflictResult)
 
 	// Solve conflict
-	conflictSolution := map[string]mergeSolution{
+	conflictSolution := map[string]MergeSolution{
 		// Merge both markings to one
 		"0": {
-			side: leftSide,
-			solution: &model.UserMarkBlockRange{
+			Side: LeftSide,
+			Solution: &model.UserMarkBlockRange{
 				UserMark: &model.UserMark{
 					UserMarkID: 1,
 					LocationID: 1,
@@ -443,7 +443,7 @@ func TestMergeUserMarkAndBlockRange_with_conflict(t *testing.T) {
 					},
 				},
 			},
-			discarded: &model.UserMarkBlockRange{
+			Discarded: &model.UserMarkBlockRange{
 				UserMark: &model.UserMark{
 					UserMarkID: 5,
 					LocationID: 1,
@@ -460,8 +460,8 @@ func TestMergeUserMarkAndBlockRange_with_conflict(t *testing.T) {
 			},
 		},
 		"1": {
-			side: rightSide,
-			solution: &model.UserMarkBlockRange{
+			Side: RightSide,
+			Solution: &model.UserMarkBlockRange{
 				UserMark: &model.UserMark{
 					UserMarkID: 1,
 					LocationID: 10,
@@ -476,7 +476,7 @@ func TestMergeUserMarkAndBlockRange_with_conflict(t *testing.T) {
 					},
 				},
 			},
-			discarded: &model.UserMarkBlockRange{
+			Discarded: &model.UserMarkBlockRange{
 				UserMark: &model.UserMark{
 					UserMarkID: 5,
 					LocationID: 10,
@@ -905,7 +905,7 @@ func Test_mergeUserMarkBlockRange_with_conflict(t *testing.T) {
 
 	expectedConflicts := []MergeConflict{
 		{
-			left: &model.UserMarkBlockRange{
+			Left: &model.UserMarkBlockRange{
 				UserMark: &model.UserMark{
 					UserMarkID: 2,
 					LocationID: 1,
@@ -927,7 +927,7 @@ func Test_mergeUserMarkBlockRange_with_conflict(t *testing.T) {
 					},
 				},
 			},
-			right: &model.UserMarkBlockRange{
+			Right: &model.UserMarkBlockRange{
 				UserMark: &model.UserMark{
 					UserMarkID: 4,
 					LocationID: 1,
@@ -944,7 +944,7 @@ func Test_mergeUserMarkBlockRange_with_conflict(t *testing.T) {
 			},
 		},
 		{
-			left: &model.UserMarkBlockRange{
+			Left: &model.UserMarkBlockRange{
 				UserMark: &model.UserMark{
 					UserMarkID: 6,
 					LocationID: 10,
@@ -959,7 +959,7 @@ func Test_mergeUserMarkBlockRange_with_conflict(t *testing.T) {
 					},
 				},
 			},
-			right: &model.UserMarkBlockRange{
+			Right: &model.UserMarkBlockRange{
 				UserMark: &model.UserMark{
 					UserMarkID: 1,
 					LocationID: 10,
@@ -984,11 +984,11 @@ func Test_mergeUserMarkBlockRange_with_conflict(t *testing.T) {
 	assert.Equal(t, expectedConflicts, conflictResult)
 
 	// Solve conflict
-	conflictSolution := map[string]mergeSolution{
+	conflictSolution := map[string]MergeSolution{
 		// Merge both markings to one
 		"0": {
-			side: leftSide,
-			solution: &model.UserMarkBlockRange{
+			Side: LeftSide,
+			Solution: &model.UserMarkBlockRange{
 				UserMark: &model.UserMark{
 					UserMarkID: 2,
 					LocationID: 1,
@@ -1010,7 +1010,7 @@ func Test_mergeUserMarkBlockRange_with_conflict(t *testing.T) {
 					},
 				},
 			},
-			discarded: &model.UserMarkBlockRange{
+			Discarded: &model.UserMarkBlockRange{
 				UserMark: &model.UserMark{
 					UserMarkID: 4,
 					LocationID: 1,
@@ -1027,8 +1027,8 @@ func Test_mergeUserMarkBlockRange_with_conflict(t *testing.T) {
 			},
 		},
 		"1": {
-			side: rightSide,
-			solution: &model.UserMarkBlockRange{
+			Side: RightSide,
+			Solution: &model.UserMarkBlockRange{
 				UserMark: &model.UserMark{
 					UserMarkID: 1,
 					LocationID: 10,
@@ -1043,7 +1043,7 @@ func Test_mergeUserMarkBlockRange_with_conflict(t *testing.T) {
 					},
 				},
 			},
-			discarded: &model.UserMarkBlockRange{
+			Discarded: &model.UserMarkBlockRange{
 				UserMark: &model.UserMark{
 					UserMarkID: 6,
 					LocationID: 10,
@@ -1176,7 +1176,7 @@ func mergeConflictMapToSliceHelper(mp map[string]MergeConflict) []MergeConflict 
 	}
 
 	sort.SliceStable(result, func(i, j int) bool {
-		return result[i].left.ID() < result[j].left.ID()
+		return result[i].Left.ID() < result[j].Left.ID()
 	})
 
 	return result
@@ -1266,10 +1266,10 @@ func Test_replaceUMBRConflictsWithSolution(t *testing.T) {
 		},
 	}
 
-	conflictSolution := map[string]mergeSolution{
+	conflictSolution := map[string]MergeSolution{
 		"0": {
-			side: leftSide,
-			solution: &model.UserMarkBlockRange{
+			Side: LeftSide,
+			Solution: &model.UserMarkBlockRange{
 				UserMark: &model.UserMark{
 					UserMarkID: 1,
 					LocationID: 1,
@@ -1284,7 +1284,7 @@ func Test_replaceUMBRConflictsWithSolution(t *testing.T) {
 					},
 				},
 			},
-			discarded: &model.UserMarkBlockRange{
+			Discarded: &model.UserMarkBlockRange{
 				UserMark: &model.UserMark{
 					UserMarkID: 1,
 					LocationID: 1,
@@ -1301,8 +1301,8 @@ func Test_replaceUMBRConflictsWithSolution(t *testing.T) {
 			},
 		},
 		"1": {
-			side: rightSide,
-			solution: &model.UserMarkBlockRange{
+			Side: RightSide,
+			Solution: &model.UserMarkBlockRange{
 				UserMark: &model.UserMark{
 					UserMarkID: 2,
 					LocationID: 3,
@@ -1317,7 +1317,7 @@ func Test_replaceUMBRConflictsWithSolution(t *testing.T) {
 					},
 				},
 			},
-			discarded: &model.UserMarkBlockRange{
+			Discarded: &model.UserMarkBlockRange{
 				UserMark: &model.UserMark{
 					UserMarkID: 3,
 					LocationID: 3,
@@ -1518,7 +1518,7 @@ func Test_ingestUMBR(t *testing.T) {
 		1: {
 			1: []brFrom{
 				{
-					side: leftSide,
+					side: LeftSide,
 					br: &model.BlockRange{
 						BlockRangeID: 1,
 						UserMarkID:   1,
@@ -1526,7 +1526,7 @@ func Test_ingestUMBR(t *testing.T) {
 					},
 				},
 				{
-					side: leftSide,
+					side: LeftSide,
 					br: &model.BlockRange{
 						BlockRangeID: 2,
 						UserMarkID:   1,
@@ -1534,7 +1534,7 @@ func Test_ingestUMBR(t *testing.T) {
 					},
 				},
 				{
-					side: rightSide,
+					side: RightSide,
 					br: &model.BlockRange{
 						BlockRangeID: 1,
 						UserMarkID:   1,
@@ -1542,7 +1542,7 @@ func Test_ingestUMBR(t *testing.T) {
 					},
 				},
 				{
-					side: rightSide,
+					side: RightSide,
 					br: &model.BlockRange{
 						BlockRangeID: 2,
 						UserMarkID:   1,
@@ -1550,7 +1550,7 @@ func Test_ingestUMBR(t *testing.T) {
 					},
 				},
 				{
-					side: rightSide,
+					side: RightSide,
 					br: &model.BlockRange{
 						BlockRangeID: 4,
 						UserMarkID:   4,
@@ -1560,7 +1560,7 @@ func Test_ingestUMBR(t *testing.T) {
 			},
 			10: []brFrom{
 				{
-					side: rightSide,
+					side: RightSide,
 					br: &model.BlockRange{
 						BlockRangeID: 5,
 						UserMarkID:   4,
@@ -1572,7 +1572,7 @@ func Test_ingestUMBR(t *testing.T) {
 		2: {
 			1: []brFrom{
 				{
-					side: leftSide,
+					side: LeftSide,
 					br: &model.BlockRange{
 						BlockRangeID: 3,
 						UserMarkID:   2,
@@ -1582,7 +1582,7 @@ func Test_ingestUMBR(t *testing.T) {
 			},
 			2: []brFrom{
 				{
-					side: leftSide,
+					side: LeftSide,
 					br: &model.BlockRange{
 						BlockRangeID: 4,
 						UserMarkID:   2,
@@ -1594,7 +1594,7 @@ func Test_ingestUMBR(t *testing.T) {
 		20: {
 			1: []brFrom{
 				{
-					side: rightSide,
+					side: RightSide,
 					br: &model.BlockRange{
 						BlockRangeID: 3,
 						UserMarkID:   2,
@@ -1604,7 +1604,7 @@ func Test_ingestUMBR(t *testing.T) {
 			},
 			2: []brFrom{
 				{
-					side: rightSide,
+					side: RightSide,
 					br: &model.BlockRange{
 						BlockRangeID: 4,
 						UserMarkID:   2,

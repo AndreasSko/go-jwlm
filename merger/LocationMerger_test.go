@@ -345,7 +345,7 @@ func Benchmark_MergeLocations(b *testing.B) {
 func Test_solveLocationMergeConflict(t *testing.T) {
 	conflicts := map[string]MergeConflict{
 		"ChooseLeftConflict": {
-			left: &model.Location{
+			Left: &model.Location{
 				LocationID:     1,
 				BookNumber:     sql.NullInt32{Int32: 1, Valid: true},
 				ChapterNumber:  sql.NullInt32{Int32: 1, Valid: true},
@@ -357,7 +357,7 @@ func Test_solveLocationMergeConflict(t *testing.T) {
 				LocationType:   0,
 				Title:          sql.NullString{String: "ChooseLeft", Valid: true},
 			},
-			right: &model.Location{
+			Right: &model.Location{
 				LocationID:     5,
 				BookNumber:     sql.NullInt32{Int32: 1, Valid: true},
 				ChapterNumber:  sql.NullInt32{Int32: 1, Valid: true},
@@ -371,7 +371,7 @@ func Test_solveLocationMergeConflict(t *testing.T) {
 			},
 		},
 		"ChooseRightConflict": {
-			left: &model.Location{
+			Left: &model.Location{
 				LocationID:     2,
 				BookNumber:     sql.NullInt32{Int32: 2, Valid: true},
 				ChapterNumber:  sql.NullInt32{Int32: 2, Valid: true},
@@ -383,7 +383,7 @@ func Test_solveLocationMergeConflict(t *testing.T) {
 				LocationType:   0,
 				Title:          sql.NullString{String: "", Valid: true},
 			},
-			right: &model.Location{
+			Right: &model.Location{
 				LocationID:     6,
 				BookNumber:     sql.NullInt32{Int32: 2, Valid: true},
 				ChapterNumber:  sql.NullInt32{Int32: 2, Valid: true},
@@ -397,7 +397,7 @@ func Test_solveLocationMergeConflict(t *testing.T) {
 			},
 		},
 		"ChooseRightBecauseBothEmpty": {
-			left: &model.Location{
+			Left: &model.Location{
 				LocationID:     3,
 				BookNumber:     sql.NullInt32{Int32: 3, Valid: true},
 				ChapterNumber:  sql.NullInt32{Int32: 3, Valid: true},
@@ -409,7 +409,7 @@ func Test_solveLocationMergeConflict(t *testing.T) {
 				LocationType:   0,
 				Title:          sql.NullString{String: "", Valid: true},
 			},
-			right: &model.Location{
+			Right: &model.Location{
 				LocationID:     7,
 				BookNumber:     sql.NullInt32{Int32: 3, Valid: true},
 				ChapterNumber:  sql.NullInt32{Int32: 3, Valid: true},
@@ -424,10 +424,10 @@ func Test_solveLocationMergeConflict(t *testing.T) {
 		},
 	}
 
-	expectedResult := map[string]mergeSolution{
+	expectedResult := map[string]MergeSolution{
 		"ChooseLeftConflict": {
-			side: leftSide,
-			solution: &model.Location{
+			Side: LeftSide,
+			Solution: &model.Location{
 				LocationID:     1,
 				BookNumber:     sql.NullInt32{Int32: 1, Valid: true},
 				ChapterNumber:  sql.NullInt32{Int32: 1, Valid: true},
@@ -439,7 +439,7 @@ func Test_solveLocationMergeConflict(t *testing.T) {
 				LocationType:   0,
 				Title:          sql.NullString{String: "ChooseLeft", Valid: true},
 			},
-			discarded: &model.Location{
+			Discarded: &model.Location{
 				LocationID:     5,
 				BookNumber:     sql.NullInt32{Int32: 1, Valid: true},
 				ChapterNumber:  sql.NullInt32{Int32: 1, Valid: true},
@@ -453,8 +453,8 @@ func Test_solveLocationMergeConflict(t *testing.T) {
 			},
 		},
 		"ChooseRightConflict": {
-			side: rightSide,
-			solution: &model.Location{
+			Side: RightSide,
+			Solution: &model.Location{
 				LocationID:     6,
 				BookNumber:     sql.NullInt32{Int32: 2, Valid: true},
 				ChapterNumber:  sql.NullInt32{Int32: 2, Valid: true},
@@ -466,7 +466,7 @@ func Test_solveLocationMergeConflict(t *testing.T) {
 				LocationType:   0,
 				Title:          sql.NullString{String: "ChooseRight", Valid: true},
 			},
-			discarded: &model.Location{
+			Discarded: &model.Location{
 				LocationID:     2,
 				BookNumber:     sql.NullInt32{Int32: 2, Valid: true},
 				ChapterNumber:  sql.NullInt32{Int32: 2, Valid: true},
@@ -480,8 +480,8 @@ func Test_solveLocationMergeConflict(t *testing.T) {
 			},
 		},
 		"ChooseRightBecauseBothEmpty": {
-			side: rightSide,
-			solution: &model.Location{
+			Side: RightSide,
+			Solution: &model.Location{
 				LocationID:     7,
 				BookNumber:     sql.NullInt32{Int32: 3, Valid: true},
 				ChapterNumber:  sql.NullInt32{Int32: 3, Valid: true},
@@ -493,7 +493,7 @@ func Test_solveLocationMergeConflict(t *testing.T) {
 				LocationType:   0,
 				Title:          sql.NullString{String: "", Valid: true},
 			},
-			discarded: &model.Location{
+			Discarded: &model.Location{
 				LocationID:     3,
 				BookNumber:     sql.NullInt32{Int32: 3, Valid: true},
 				ChapterNumber:  sql.NullInt32{Int32: 3, Valid: true},
@@ -515,8 +515,8 @@ func Test_solveLocationMergeConflict(t *testing.T) {
 	assert.PanicsWithValue(t, "No other type than *model.Location is supported! Given: *model.Bookmark", func() {
 		panicConflict := map[string]MergeConflict{
 			"WrongType": {
-				left:  &model.Bookmark{},
-				right: &model.Bookmark{},
+				Left:  &model.Bookmark{},
+				Right: &model.Bookmark{},
 			},
 		}
 		solveLocationMergeConflict(panicConflict)

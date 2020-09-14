@@ -9,10 +9,10 @@ import (
 )
 
 func Test_sortMergeSolution(t *testing.T) {
-	solution := []mergeSolution{
+	solution := []MergeSolution{
 		{
-			side: rightSide,
-			solution: &model.Location{
+			Side: RightSide,
+			Solution: &model.Location{
 				LocationID:     3,
 				BookNumber:     sql.NullInt32{Int32: 1, Valid: true},
 				ChapterNumber:  sql.NullInt32{Int32: 1, Valid: true},
@@ -26,8 +26,8 @@ func Test_sortMergeSolution(t *testing.T) {
 			},
 		},
 		{
-			side: leftSide,
-			solution: &model.Location{
+			Side: LeftSide,
+			Solution: &model.Location{
 				LocationID:     3,
 				BookNumber:     sql.NullInt32{Int32: 2, Valid: true},
 				ChapterNumber:  sql.NullInt32{Int32: 2, Valid: true},
@@ -41,8 +41,8 @@ func Test_sortMergeSolution(t *testing.T) {
 			},
 		},
 		{
-			side: leftSide,
-			solution: &model.Location{
+			Side: LeftSide,
+			Solution: &model.Location{
 				LocationID:     2,
 				BookNumber:     sql.NullInt32{Int32: 3, Valid: true},
 				ChapterNumber:  sql.NullInt32{Int32: 3, Valid: true},
@@ -56,8 +56,8 @@ func Test_sortMergeSolution(t *testing.T) {
 			},
 		},
 		{
-			side: rightSide,
-			solution: &model.Location{
+			Side: RightSide,
+			Solution: &model.Location{
 				LocationID:     1,
 				BookNumber:     sql.NullInt32{Int32: 4, Valid: true},
 				ChapterNumber:  sql.NullInt32{Int32: 4, Valid: true},
@@ -72,10 +72,10 @@ func Test_sortMergeSolution(t *testing.T) {
 		},
 	}
 
-	expectedResult := []mergeSolution{
+	expectedResult := []MergeSolution{
 		{
-			side: rightSide,
-			solution: &model.Location{
+			Side: RightSide,
+			Solution: &model.Location{
 				LocationID:     1,
 				BookNumber:     sql.NullInt32{Int32: 4, Valid: true},
 				ChapterNumber:  sql.NullInt32{Int32: 4, Valid: true},
@@ -89,8 +89,8 @@ func Test_sortMergeSolution(t *testing.T) {
 			},
 		},
 		{
-			side: leftSide,
-			solution: &model.Location{
+			Side: LeftSide,
+			Solution: &model.Location{
 				LocationID:     2,
 				BookNumber:     sql.NullInt32{Int32: 3, Valid: true},
 				ChapterNumber:  sql.NullInt32{Int32: 3, Valid: true},
@@ -104,8 +104,8 @@ func Test_sortMergeSolution(t *testing.T) {
 			},
 		},
 		{
-			side: leftSide,
-			solution: &model.Location{
+			Side: LeftSide,
+			Solution: &model.Location{
 				LocationID:     3,
 				BookNumber:     sql.NullInt32{Int32: 2, Valid: true},
 				ChapterNumber:  sql.NullInt32{Int32: 2, Valid: true},
@@ -119,8 +119,8 @@ func Test_sortMergeSolution(t *testing.T) {
 			},
 		},
 		{
-			side: rightSide,
-			solution: &model.Location{
+			Side: RightSide,
+			Solution: &model.Location{
 				LocationID:     3,
 				BookNumber:     sql.NullInt32{Int32: 1, Valid: true},
 				ChapterNumber:  sql.NullInt32{Int32: 1, Valid: true},

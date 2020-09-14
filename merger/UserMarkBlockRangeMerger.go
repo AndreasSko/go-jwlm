@@ -10,14 +10,14 @@ import (
 // brFrom indicates from which mergeSide a *BlockRange
 // is coming from.
 type brFrom struct {
-	side mergeSide
+	side MergeSide
 	br   *model.BlockRange
 }
 
 // umbrFrom indicates from which mergeSide a []*UserMarkBlockRange
 // is coming from.
 type umbrFrom struct {
-	side mergeSide
+	side MergeSide
 	umbr []*model.UserMarkBlockRange
 }
 
@@ -30,9 +30,9 @@ type umbrFrom struct {
 // The returned IDChanges indicate if a UserMarkID has changed in the merge process.
 func MergeUserMarkAndBlockRange(leftUM []*model.UserMark, leftBR []*model.BlockRange,
 	rightUM []*model.UserMark, rightBR []*model.BlockRange,
-	conflictSolution map[string]mergeSolution) ([]*model.UserMark, []*model.BlockRange, IDChanges, error) {
+	conflictSolution map[string]MergeSolution) ([]*model.UserMark, []*model.BlockRange, IDChanges, error) {
 	if conflictSolution == nil {
-		conflictSolution = map[string]mergeSolution{}
+		conflictSolution = map[string]MergeSolution{}
 	}
 
 	left := joinToUserMarkBlockRange(leftUM, leftBR)
@@ -66,7 +66,7 @@ func MergeUserMarkAndBlockRange(leftUM []*model.UserMark, leftBR []*model.BlockR
 // if it finds some, asking the caller for specification how it should handle it.
 // IDChanges indicate if a UserMarkID has changed in the merge process.
 func mergeUMBR(left []*model.UserMarkBlockRange, right []*model.UserMarkBlockRange,
-	conflictSolution map[string]mergeSolution) ([]*model.UserMarkBlockRange, IDChanges, error) {
+	conflictSolution map[string]MergeSolution) ([]*model.UserMarkBlockRange, IDChanges, error) {
 	// First, replace conflictSolution entries with the conflicting ones on the left
 	// and right side, so we don't detect them again.
 	changes, invertedChanges := replaceUMBRConflictsWithSolution(&left, &right, conflictSolution)
@@ -96,7 +96,7 @@ func mergeUMBR(left []*model.UserMarkBlockRange, right []*model.UserMarkBlockRan
 
 					// If its one different sites, add it to conflicts & make sure
 					// that entries are on correct side of mergeConflict{}
-					if br.side == leftSide {
+					if br.side == LeftSide {
 						conflicts[fmt.Sprint(conflictsCount)] = MergeConflict{left[br.br.UserMarkID], right[identifierBlock[j].br.UserMarkID]}
 					} else {
 						conflicts[fmt.Sprint(conflictsCount)] = MergeConflict{left[identifierBlock[j].br.UserMarkID], right[br.br.UserMarkID]}
@@ -114,9 +114,9 @@ func mergeUMBR(left []*model.UserMarkBlockRange, right []*model.UserMarkBlockRan
 	// Add left and right to result & update (UserMark-)ID
 	result := make([]*model.UserMarkBlockRange, len(left)+len(right)+2)
 	i := 1
-	for _, mergeSide := range []mergeSide{leftSide, rightSide} {
+	for _, mergeSide := range []MergeSide{LeftSide, RightSide} {
 		var side []*model.UserMarkBlockRange
-		if mergeSide == leftSide {
+		if mergeSide == LeftSide {
 			side = left
 		} else {
 			side = right
@@ -128,7 +128,7 @@ func mergeUMBR(left []*model.UserMarkBlockRange, right []*model.UserMarkBlockRan
 			}
 			// Note IDChanges if necessary
 			if entry.ID() != i {
-				if mergeSide == leftSide {
+				if mergeSide == LeftSide {
 					// Check if on the other side an ID has changed to entry.ID
 					// after its entry was discareded. If so, we again need update
 					// the entry, as the current ID it is pointing at will be changed too.
@@ -156,7 +156,7 @@ func mergeUMBR(left []*model.UserMarkBlockRange, right []*model.UserMarkBlockRan
 // replaceUMBRConflictsWithSolution removes conflicting entries on the left and right
 // and replaces one of them with the given solution in conflictSolution. IDChanges
 // and its inverted counterpart indicate possible changes of IDs.
-func replaceUMBRConflictsWithSolution(left *[]*model.UserMarkBlockRange, right *[]*model.UserMarkBlockRange, conflictSolution map[string]mergeSolution) (IDChanges, IDChanges) {
+func replaceUMBRConflictsWithSolution(left *[]*model.UserMarkBlockRange, right *[]*model.UserMarkBlockRange, conflictSolution map[string]MergeSolution) (IDChanges, IDChanges) {
 	changes := IDChanges{
 		Left:  map[int]int{},
 		Right: map[int]int{},
@@ -168,20 +168,20 @@ func replaceUMBRConflictsWithSolution(left *[]*model.UserMarkBlockRange, right *
 
 	for _, sol := range conflictSolution {
 		var side, other *[]*model.UserMarkBlockRange
-		if sol.side == leftSide {
+		if sol.Side == LeftSide {
 			side = left
 			other = right
-			changes.Right[sol.discarded.ID()] = sol.solution.ID()
-			invertedChanges.Right[sol.solution.ID()] = sol.discarded.ID()
+			changes.Right[sol.Discarded.ID()] = sol.Solution.ID()
+			invertedChanges.Right[sol.Solution.ID()] = sol.Discarded.ID()
 		} else {
 			side = right
 			other = left
-			changes.Left[sol.discarded.ID()] = sol.solution.ID()
-			invertedChanges.Left[sol.solution.ID()] = sol.discarded.ID()
+			changes.Left[sol.Discarded.ID()] = sol.Solution.ID()
+			invertedChanges.Left[sol.Solution.ID()] = sol.Discarded.ID()
 		}
 
-		(*side)[sol.solution.ID()] = (sol.solution).(*model.UserMarkBlockRange)
-		(*other)[sol.discarded.ID()] = nil
+		(*side)[sol.Solution.ID()] = (sol.Solution).(*model.UserMarkBlockRange)
+		(*other)[sol.Discarded.ID()] = nil
 	}
 
 	return changes, invertedChanges
@@ -190,7 +190,7 @@ func replaceUMBRConflictsWithSolution(left *[]*model.UserMarkBlockRange, right *
 // ingestUMBR ingest UserMarks & BlockRanges in a Map[LocationID]map[Identifier][]*model.BlockRange
 func ingestUMBR(left []*model.UserMarkBlockRange, right []*model.UserMarkBlockRange) map[int]map[int][]brFrom {
 	result := make(map[int]map[int][]brFrom, estimateLocationCount(left, right))
-	for _, side := range []*umbrFrom{{leftSide, left}, {rightSide, right}} {
+	for _, side := range []*umbrFrom{{LeftSide, left}, {RightSide, right}} {
 		for _, umbr := range side.umbr {
 			if umbr == nil {
 				continue
