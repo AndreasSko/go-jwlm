@@ -220,7 +220,7 @@ func TestMergeNotes(t *testing.T) {
 
 	expectedCollisions := map[string]MergeConflict{
 		"FirstGUIDUpdating": {
-			left: &model.Note{
+			Left: &model.Note{
 				NoteID:          1,
 				GUID:            "FirstGUIDUpdating",
 				UserMarkID:      sql.NullInt32{Int32: 1, Valid: true},
@@ -231,7 +231,7 @@ func TestMergeNotes(t *testing.T) {
 				BlockType:       0,
 				BlockIdentifier: sql.NullInt32{},
 			},
-			right: &model.Note{
+			Right: &model.Note{
 				NoteID:          2,
 				GUID:            "FirstGUIDUpdating",
 				UserMarkID:      sql.NullInt32{Int32: 1, Valid: true},
@@ -244,7 +244,7 @@ func TestMergeNotes(t *testing.T) {
 			},
 		},
 		"AnotherUpdated": {
-			left: &model.Note{
+			Left: &model.Note{
 				NoteID:          3,
 				GUID:            "AnotherUpdated",
 				UserMarkID:      sql.NullInt32{Int32: 1, Valid: true},
@@ -255,7 +255,7 @@ func TestMergeNotes(t *testing.T) {
 				BlockType:       0,
 				BlockIdentifier: sql.NullInt32{},
 			},
-			right: &model.Note{
+			Right: &model.Note{
 				NoteID:          4,
 				GUID:            "AnotherUpdated",
 				UserMarkID:      sql.NullInt32{Int32: 1, Valid: true},
@@ -274,10 +274,10 @@ func TestMergeNotes(t *testing.T) {
 	assert.Equal(t, expectedCollisions, err.(MergeConflictError).Conflicts)
 
 	// Merge successfully with given conflict solution
-	conflictSolution := map[string]mergeSolution{
+	conflictSolution := map[string]MergeSolution{
 		"FirstGUIDUpdating": {
-			side: rightSide,
-			solution: &model.Note{
+			Side: RightSide,
+			Solution: &model.Note{
 				NoteID:          2,
 				GUID:            "FirstGUIDUpdating",
 				UserMarkID:      sql.NullInt32{Int32: 1, Valid: true},
@@ -288,7 +288,7 @@ func TestMergeNotes(t *testing.T) {
 				BlockType:       0,
 				BlockIdentifier: sql.NullInt32{},
 			},
-			discarded: &model.Note{
+			Discarded: &model.Note{
 				NoteID:          1,
 				GUID:            "FirstGUIDUpdating",
 				UserMarkID:      sql.NullInt32{Int32: 1, Valid: true},
@@ -301,8 +301,8 @@ func TestMergeNotes(t *testing.T) {
 			},
 		},
 		"AnotherUpdated": {
-			side: leftSide,
-			solution: &model.Note{
+			Side: LeftSide,
+			Solution: &model.Note{
 				NoteID:          3,
 				GUID:            "AnotherUpdated",
 				UserMarkID:      sql.NullInt32{Int32: 1, Valid: true},
@@ -313,7 +313,7 @@ func TestMergeNotes(t *testing.T) {
 				BlockType:       0,
 				BlockIdentifier: sql.NullInt32{},
 			},
-			discarded: &model.Note{
+			Discarded: &model.Note{
 				NoteID:          4,
 				GUID:            "AnotherUpdated",
 				UserMarkID:      sql.NullInt32{Int32: 1, Valid: true},

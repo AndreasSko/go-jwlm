@@ -17,13 +17,13 @@ func MergeLocations(left []*model.Location, right []*model.Location) ([]*model.L
 
 // solveLocationMergeConflict solves a merge conflict by trying to choose the Location that has
 // a Title. If both don't have one, choose the right.
-func solveLocationMergeConflict(conflicts map[string]MergeConflict) (map[string]mergeSolution, error) {
-	solution := make(map[string]mergeSolution, len(conflicts))
+func solveLocationMergeConflict(conflicts map[string]MergeConflict) (map[string]MergeSolution, error) {
+	solution := make(map[string]MergeSolution, len(conflicts))
 
 	for key, value := range conflicts {
 		var leftTitle string
 
-		switch left := value.left.(type) {
+		switch left := value.Left.(type) {
 		case *model.Location:
 			leftTitle = left.Title.String
 		default:
@@ -31,9 +31,9 @@ func solveLocationMergeConflict(conflicts map[string]MergeConflict) (map[string]
 		}
 
 		if leftTitle != "" {
-			solution[key] = mergeSolution{side: leftSide, solution: value.left, discarded: value.right}
+			solution[key] = MergeSolution{Side: LeftSide, Solution: value.Left, Discarded: value.Right}
 		} else {
-			solution[key] = mergeSolution{side: rightSide, solution: value.right, discarded: value.left}
+			solution[key] = MergeSolution{Side: RightSide, Solution: value.Right, Discarded: value.Left}
 		}
 	}
 

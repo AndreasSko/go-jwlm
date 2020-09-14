@@ -221,7 +221,7 @@ func TestMergeBookmarks(t *testing.T) {
 
 	expectedConflicts := map[string]MergeConflict{
 		"1_1": {
-			left: &model.Bookmark{
+			Left: &model.Bookmark{
 				BookmarkID:            1,
 				LocationID:            1,
 				PublicationLocationID: 1,
@@ -231,7 +231,7 @@ func TestMergeBookmarks(t *testing.T) {
 				BlockType:             0,
 				BlockIdentifier:       sql.NullInt32{},
 			},
-			right: &model.Bookmark{
+			Right: &model.Bookmark{
 				BookmarkID:            2,
 				LocationID:            10,
 				PublicationLocationID: 1,
@@ -243,7 +243,7 @@ func TestMergeBookmarks(t *testing.T) {
 			},
 		},
 		"6_6": {
-			left: &model.Bookmark{
+			Left: &model.Bookmark{
 				BookmarkID:            4,
 				LocationID:            6,
 				PublicationLocationID: 6,
@@ -253,7 +253,7 @@ func TestMergeBookmarks(t *testing.T) {
 				BlockType:             0,
 				BlockIdentifier:       sql.NullInt32{},
 			},
-			right: &model.Bookmark{
+			Right: &model.Bookmark{
 				BookmarkID:            4,
 				LocationID:            6,
 				PublicationLocationID: 6,
@@ -271,10 +271,10 @@ func TestMergeBookmarks(t *testing.T) {
 	assert.Equal(t, expectedConflicts, err.(MergeConflictError).Conflicts)
 
 	// Succeed using mergeSolution
-	conflictSolution := map[string]mergeSolution{
+	conflictSolution := map[string]MergeSolution{
 		"1_1": {
-			side: rightSide,
-			solution: &model.Bookmark{
+			Side: RightSide,
+			Solution: &model.Bookmark{
 				BookmarkID:            2,
 				LocationID:            10,
 				PublicationLocationID: 1,
@@ -284,7 +284,7 @@ func TestMergeBookmarks(t *testing.T) {
 				BlockType:             0,
 				BlockIdentifier:       sql.NullInt32{},
 			},
-			discarded: &model.Bookmark{
+			Discarded: &model.Bookmark{
 				BookmarkID:            1,
 				LocationID:            1,
 				PublicationLocationID: 1,
@@ -296,8 +296,8 @@ func TestMergeBookmarks(t *testing.T) {
 			},
 		},
 		"6_6": {
-			side: leftSide,
-			solution: &model.Bookmark{
+			Side: LeftSide,
+			Solution: &model.Bookmark{
 				BookmarkID:            4,
 				LocationID:            6,
 				PublicationLocationID: 6,
@@ -307,7 +307,7 @@ func TestMergeBookmarks(t *testing.T) {
 				BlockType:             0,
 				BlockIdentifier:       sql.NullInt32{},
 			},
-			discarded: &model.Bookmark{
+			Discarded: &model.Bookmark{
 				BookmarkID:            4,
 				LocationID:            6,
 				PublicationLocationID: 6,
