@@ -16,6 +16,40 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestDatabase_Fetch(t *testing.T) {
+	db := &Database{
+		Location: []*Location{
+			nil,
+			{
+				LocationID: 1,
+				Title:      sql.NullString{"#1", true},
+			},
+			nil,
+			{
+				LocationID: 3,
+				Title:      sql.NullString{"#3", true},
+			},
+		},
+		Bookmark: []*Bookmark{
+			nil,
+			{
+				BookmarkID: 1,
+				Title:      "#1",
+			},
+			nil,
+		},
+	}
+
+	assert.Equal(t, "#1", db.FetchFromTable("Location", 1).(*Location).Title.String)
+	assert.Equal(t, nil, db.FetchFromTable("Location", 2))
+	assert.Equal(t, nil, db.FetchFromTable("Location", 4))
+	assert.Equal(t, nil, db.FetchFromTable("Location", 400))
+	assert.Equal(t, "#1", db.FetchFromTable("Bookmark", 1).(*Bookmark).Title)
+	assert.PanicsWithValue(t, "Table notexists does not exist in Database", func() {
+		db.FetchFromTable("notexists", 2)
+	})
+}
+
 func Test_getSliceCapacity(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	if err != nil {
