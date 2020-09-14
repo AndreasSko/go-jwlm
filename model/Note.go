@@ -44,6 +44,25 @@ func (m *Note) Equals(m2 Model) bool {
 	return false
 }
 
+// PrettyPrint prints Note in a human readable format and
+// adds information about related entries if helpful.
+func (m *Note) PrettyPrint(db *Database) string {
+	fields := []string{"Title", "Content", "LastModified"}
+	result := prettyPrint(m, fields)
+
+	if location := db.FetchFromTable("Location", int(m.LocationID.Int32)); location != nil {
+		result += "\n\n\nRelated Location:\n"
+		result += location.PrettyPrint(db)
+	}
+
+	if userMark := db.FetchFromTable("UserMark", int(m.UserMarkID.Int32)); userMark != nil {
+		result += "\n\n\nRelated UserMark:\n"
+		result += userMark.PrettyPrint(db)
+	}
+
+	return result
+}
+
 func (m *Note) tableName() string {
 	return "Note"
 }

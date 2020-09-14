@@ -47,6 +47,13 @@ func (m *Tag) Equals(m2 Model) bool {
 	return false
 }
 
+// PrettyPrint prints Tag in a human readable format and
+// adds information about related entries if helpful.
+func (m *Tag) PrettyPrint(db *Database) string {
+	fields := []string{"Name"}
+	return prettyPrint(m, fields)
+}
+
 func (m *Tag) tableName() string {
 	return "Tag"
 }

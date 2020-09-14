@@ -1,8 +1,11 @@
 package model
 
 import (
+	"bytes"
 	"database/sql"
+	"fmt"
 	"testing"
+	"text/tabwriter"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -37,4 +40,35 @@ func TestBlockRange_UniqueKey(t *testing.T) {
 		UserMarkID:   3334,
 	}
 	assert.Equal(t, "1_20_15_25", m2.UniqueKey())
+}
+
+func TestBlockRange_PrettyPrint(t *testing.T) {
+	m1 := &BlockRange{
+		BlockRangeID: 1,
+		BlockType:    2,
+		Identifier:   3,
+		StartToken:   sql.NullInt32{Int32: 4, Valid: true},
+		EndToken:     sql.NullInt32{Int32: 5, Valid: true},
+		UserMarkID:   6,
+	}
+
+	buf := new(bytes.Buffer)
+	w := tabwriter.NewWriter(buf, 0, 0, 1, ' ', 0)
+	fmt.Fprint(w, "\nIdentifier:\t3")
+	fmt.Fprint(w, "\nStartToken:\t4")
+	fmt.Fprint(w, "\nEndToken:\t5")
+	w.Flush()
+	expectedResult := buf.String()
+
+	assert.Equal(t, expectedResult, m1.PrettyPrint(nil))
+
+	m1.EndToken.Valid = false
+
+	buf.Reset()
+	fmt.Fprint(w, "\nIdentifier:\t3")
+	fmt.Fprint(w, "\nStartToken:\t4")
+	w.Flush()
+	expectedResult = buf.String()
+
+	assert.Equal(t, expectedResult, m1.PrettyPrint(nil))
 }

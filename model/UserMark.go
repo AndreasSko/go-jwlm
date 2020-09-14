@@ -41,6 +41,15 @@ func (m *UserMark) Equals(m2 Model) bool {
 	return false
 }
 
+// PrettyPrint prints UserMark in a human readable format and
+// adds information about related entries if helpful.
+func (m *UserMark) PrettyPrint(db *Database) string {
+	fields := []string{"ColorIndex"}
+	result := prettyPrint(m, fields)
+
+	return result
+}
+
 func (m *UserMark) tableName() string {
 	return "UserMark"
 }

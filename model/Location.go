@@ -58,6 +58,14 @@ func (m *Location) Equals(m2 Model) bool {
 	return false
 }
 
+// PrettyPrint prints Location in a human readable format and
+// adds information about related entries if helpful.
+func (m *Location) PrettyPrint(db *Database) string {
+	fields := []string{"Title", "BookNumber", "ChapterNumber", "DocumentID", "Track",
+		"IssueTagNumber", "KeySymbol", "MepsLanguage"}
+	return prettyPrint(m, fields)
+}
+
 func (m *Location) tableName() string {
 	return "Location"
 }

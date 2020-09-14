@@ -46,6 +46,13 @@ func (m *BlockRange) Equals(m2 Model) bool {
 	return false
 }
 
+// PrettyPrint prints BlockRange in a human readable format and
+// adds information about related entries if helpful.
+func (m *BlockRange) PrettyPrint(db *Database) string {
+	fields := []string{"Identifier", "StartToken", "EndToken"}
+	return prettyPrint(m, fields)
+}
+
 func (m *BlockRange) tableName() string {
 	return "BlockRange"
 }

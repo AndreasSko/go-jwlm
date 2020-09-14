@@ -57,6 +57,27 @@ func (m *UserMarkBlockRange) Equals(m2 Model) bool {
 		reflect.DeepEqual(mBRKeys, m2BRKeys)
 }
 
+// PrettyPrint prints UserMarkBlockRange in a human readable format and
+// adds information about related entries if helpful.
+func (m *UserMarkBlockRange) PrettyPrint(db *Database) string {
+	umFields := []string{"ColorIndex"}
+	brFields := []string{"Identifier", "StartToken", "EndToken"}
+
+	var result string
+
+	if location := db.FetchFromTable("Location", m.UserMark.LocationID); location != nil {
+		result += location.PrettyPrint(db)
+	}
+
+	result += "\n" + prettyPrint(m.UserMark, umFields) + "\n"
+
+	for _, br := range m.BlockRanges {
+		result += prettyPrint(br, brFields) + "\n"
+	}
+
+	return result
+}
+
 func (m *UserMarkBlockRange) tableName() string {
 	panic("Not supported!")
 }

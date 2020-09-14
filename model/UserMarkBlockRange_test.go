@@ -1,8 +1,11 @@
 package model
 
 import (
+	"bytes"
 	"database/sql"
+	"fmt"
 	"testing"
+	"text/tabwriter"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -206,4 +209,86 @@ func TestUserMarkBlockRange_Equals(t *testing.T) {
 
 	assert.True(t, m1.Equals(m1_1))
 	assert.False(t, m1.Equals(m2))
+}
+
+func TestUserMarkBlockRange_PrettyPrint(t *testing.T) {
+	m1 := &UserMarkBlockRange{
+		UserMark: &UserMark{
+			UserMarkID:   1,
+			ColorIndex:   5,
+			LocationID:   1,
+			StyleIndex:   1,
+			UserMarkGUID: "FIRST",
+			Version:      1,
+		},
+		BlockRanges: []*BlockRange{
+			{
+				BlockRangeID: 1,
+				BlockType:    1,
+				Identifier:   1,
+				StartToken:   sql.NullInt32{0, true},
+				EndToken:     sql.NullInt32{5, true},
+				UserMarkID:   1,
+			},
+			{
+				BlockRangeID: 2,
+				BlockType:    1,
+				Identifier:   2,
+				StartToken:   sql.NullInt32{0, true},
+				EndToken:     sql.NullInt32{4, true},
+				UserMarkID:   1,
+			},
+			{
+				BlockRangeID: 3,
+				BlockType:    1,
+				Identifier:   3,
+				StartToken:   sql.NullInt32{0, true},
+				EndToken:     sql.NullInt32{20, true},
+				UserMarkID:   1,
+			},
+		},
+	}
+
+	buf := new(bytes.Buffer)
+	w := tabwriter.NewWriter(buf, 0, 0, 1, ' ', 0)
+	fmt.Fprint(w, "\n\nColorIndex:\t5\n")
+	fmt.Fprint(w, "\nIdentifier:\t1\n")
+	fmt.Fprint(w, "StartToken:\t0\n")
+	fmt.Fprint(w, "EndToken:\t5\n\n")
+	fmt.Fprint(w, "Identifier:\t2\n")
+	fmt.Fprint(w, "StartToken:\t0\n")
+	fmt.Fprint(w, "EndToken:\t4\n\n")
+	fmt.Fprint(w, "Identifier:\t3\n")
+	fmt.Fprint(w, "StartToken:\t0\n")
+	fmt.Fprint(w, "EndToken:\t20\n")
+	w.Flush()
+	expectedResult := buf.String()
+
+	assert.Equal(t, expectedResult, m1.PrettyPrint(nil))
+
+	db := &Database{
+		Location: []*Location{
+			nil,
+			{
+				LocationID: 1,
+				Title:      sql.NullString{"Location-Title", true},
+			},
+		},
+	}
+
+	buf.Reset()
+	fmt.Fprint(w, "\nTitle:\tLocation-Title\nIssueTagNumber:\t0\nMepsLanguage:\t0")
+	fmt.Fprint(w, "\n\nColorIndex:\t5\n")
+	fmt.Fprint(w, "\nIdentifier:\t1\n")
+	fmt.Fprint(w, "StartToken:\t0\n")
+	fmt.Fprint(w, "EndToken:\t5\n\n")
+	fmt.Fprint(w, "Identifier:\t2\n")
+	fmt.Fprint(w, "StartToken:\t0\n")
+	fmt.Fprint(w, "EndToken:\t4\n\n")
+	fmt.Fprint(w, "Identifier:\t3\n")
+	fmt.Fprint(w, "StartToken:\t0\n")
+	fmt.Fprint(w, "EndToken:\t20\n")
+	w.Flush()
+	expectedResult = buf.String()
+	assert.Equal(t, expectedResult, m1.PrettyPrint(db))
 }
