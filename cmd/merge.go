@@ -1,12 +1,14 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
 
+	"github.com/AlecAivazis/survey/v2"
+	"github.com/AlecAivazis/survey/v2/terminal"
 	"github.com/AndreasSko/go-jwlm/merger"
 	"github.com/AndreasSko/go-jwlm/model"
 	"github.com/jedib0t/go-pretty/table"
-	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
 
 	log "github.com/sirupsen/logrus"
@@ -147,9 +149,9 @@ func merge(leftFilename string, rightFilename string, mergedFilename string) {
 }
 
 func handleMergeConflict(conflicts map[string]merger.MergeConflict, leftDB *model.Database, rightDB *model.Database) map[string]merger.MergeSolution {
-	prompt := promptui.Select{
-		Label: "Select which side should be chosen",
-		Items: []string{"Left", "Right"},
+	prompt := &survey.Select{
+		Message: "Select which side should be chosen:",
+		Options: []string{"Left", "Right"},
 	}
 
 	result := make(map[string]merger.MergeSolution, len(conflicts))
@@ -162,12 +164,18 @@ func handleMergeConflict(conflicts map[string]merger.MergeConflict, leftDB *mode
 		t.AppendRow([]interface{}{conflict.Left.PrettyPrint(leftDB), conflict.Right.PrettyPrint(rightDB)})
 		t.Render()
 
-		i, _, err := prompt.Run()
-		if err != nil {
-			log.Fatalf("Prompt failed %v", err)
+		fmt.Print("\n\n")
+
+		var selected string
+		err := survey.AskOne(prompt, &selected)
+		if err == terminal.InterruptErr {
+			fmt.Println("interrupted")
+			os.Exit(0)
+		} else if err != nil {
+			panic(err)
 		}
 
-		if i == 0 {
+		if selected == "Left" {
 			result[key] = merger.MergeSolution{
 				Side:      merger.LeftSide,
 				Solution:  conflict.Left,
