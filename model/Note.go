@@ -33,13 +33,12 @@ func (m *Note) UniqueKey() string {
 	return m.GUID
 }
 
-// Equals checks if the Note is equal to the given one. It
-// uses the GUID and LastModified date for that, as it should
-// be sufficient to detect changes.
+// Equals checks if the Note is equal to the given one.
 func (m *Note) Equals(m2 Model) bool {
 	if m2, ok := m2.(*Note); ok {
 		return m.GUID == m2.GUID &&
-			m.LastModified == m2.LastModified
+			m.Title == m2.Title &&
+			m.Content == m2.Content
 	}
 	return false
 }
