@@ -5,6 +5,7 @@ go 1.14
 require (
 	github.com/AlecAivazis/survey/v2 v2.1.1
 	github.com/DATA-DOG/go-sqlmock v1.5.0
+	github.com/buger/goterm v0.0.0-20200322175922-2f3e71b85129
 	github.com/go-openapi/strfmt v0.19.5 // indirect
 	github.com/jedib0t/go-pretty v4.3.0+incompatible
 	github.com/mattn/go-isatty v0.0.9 // indirect
