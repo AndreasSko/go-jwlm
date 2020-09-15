@@ -72,7 +72,7 @@ func TestNote_Equals(t *testing.T) {
 	}
 	assert.True(t, m1.Equals(m1_1))
 	assert.False(t, m1.Equals(m2))
-	assert.False(t, m2.Equals(m2_1))
+	assert.True(t, m2.Equals(m2_1))
 }
 
 func TestNote_PrettyPrint(t *testing.T) {

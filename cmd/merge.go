@@ -57,6 +57,7 @@ func merge(leftFilename string, rightFilename string, mergedFilename string) {
 	merger.UpdateIDs(left.Bookmark, right.Bookmark, "PublicationLocationID", locationIDChanges)
 	merger.UpdateIDs(left.Note, right.Note, "LocationID", locationIDChanges)
 	merger.UpdateIDs(left.TagMap, right.TagMap, "LocationID", locationIDChanges)
+	merger.UpdateIDs(left.UserMark, right.UserMark, "LocationID", locationIDChanges)
 
 	log.Info("Merging Bookmarks")
 	var bookmarksConflictSolution map[string]merger.MergeSolution
@@ -68,7 +69,7 @@ func merge(leftFilename string, rightFilename string, mergedFilename string) {
 		}
 		switch err := err.(type) {
 		case merger.MergeConflictError:
-			bookmarksConflictSolution = handleMergeConflict(err.Conflicts, &left, &right)
+			bookmarksConflictSolution = handleMergeConflict(err.Conflicts, &merged)
 		default:
 			log.Fatal(err)
 		}
@@ -85,23 +86,7 @@ func merge(leftFilename string, rightFilename string, mergedFilename string) {
 		}
 		switch err := err.(type) {
 		case merger.MergeConflictError:
-			tagsConflictSolution = handleMergeConflict(err.Conflicts, &left, &right)
-		default:
-			log.Fatal(err)
-		}
-	}
-
-	log.Info("Merging TagMaps")
-	var tagMapsConflictSolution map[string]merger.MergeSolution
-	for {
-		mergedTagMaps, _, err := merger.MergeTagMaps(left.TagMap, right.TagMap, tagMapsConflictSolution)
-		if err == nil {
-			merged.TagMap = mergedTagMaps
-			break
-		}
-		switch err := err.(type) {
-		case merger.MergeConflictError:
-			tagMapsConflictSolution = handleMergeConflict(err.Conflicts, &left, &right)
+			tagsConflictSolution = handleMergeConflict(err.Conflicts, nil) // TODO
 		default:
 			log.Fatal(err)
 		}
@@ -119,7 +104,7 @@ func merge(leftFilename string, rightFilename string, mergedFilename string) {
 		}
 		switch err := err.(type) {
 		case merger.MergeConflictError:
-			UMBRConflictSolution = handleMergeConflict(err.Conflicts, &left, &right)
+			UMBRConflictSolution = handleMergeConflict(err.Conflicts, &merged)
 		default:
 			log.Fatal(err)
 		}
@@ -131,12 +116,28 @@ func merge(leftFilename string, rightFilename string, mergedFilename string) {
 		mergedNotes, notesIDChanges, err := merger.MergeNotes(left.Note, right.Note, notesConflictSolution)
 		if err == nil {
 			merged.Note = mergedNotes
-			merger.UpdateIDs(merged.TagMap, nil, "NoteID", notesIDChanges)
+			merger.UpdateIDs(left.TagMap, right.TagMap, "NoteID", notesIDChanges)
 			break
 		}
 		switch err := err.(type) {
 		case merger.MergeConflictError:
-			notesConflictSolution = handleMergeConflict(err.Conflicts, &left, &right)
+			notesConflictSolution = handleMergeConflict(err.Conflicts, &merged)
+		default:
+			log.Fatal(err)
+		}
+	}
+
+	log.Info("Merging TagMaps")
+	var tagMapsConflictSolution map[string]merger.MergeSolution
+	for {
+		mergedTagMaps, _, err := merger.MergeTagMaps(left.TagMap, right.TagMap, tagMapsConflictSolution)
+		if err == nil {
+			merged.TagMap = mergedTagMaps
+			break
+		}
+		switch err := err.(type) {
+		case merger.MergeConflictError:
+			tagMapsConflictSolution = handleMergeConflict(err.Conflicts, nil)
 		default:
 			log.Fatal(err)
 		}
@@ -149,7 +150,7 @@ func merge(leftFilename string, rightFilename string, mergedFilename string) {
 
 }
 
-func handleMergeConflict(conflicts map[string]merger.MergeConflict, leftDB *model.Database, rightDB *model.Database) map[string]merger.MergeSolution {
+func handleMergeConflict(conflicts map[string]merger.MergeConflict, mergedDB *model.Database) map[string]merger.MergeSolution {
 	prompt := &survey.Select{
 		Message: "Select which side should be chosen:",
 		Options: []string{"Left", "Right"},
@@ -170,9 +171,9 @@ func handleMergeConflict(conflicts map[string]merger.MergeConflict, leftDB *mode
 		t.SetOutputMirror(os.Stdout)
 		if goterm.Width() >= 190 {
 			t.AppendHeader(table.Row{"Left", "Right"})
-			t.AppendRow([]interface{}{conflict.Left.PrettyPrint(leftDB), conflict.Right.PrettyPrint(rightDB)})
+			t.AppendRow([]interface{}{conflict.Left.PrettyPrint(mergedDB), conflict.Right.PrettyPrint(mergedDB)})
 		} else {
-			t.AppendRows([]table.Row{{"Left"}, {conflict.Left.PrettyPrint(leftDB)}, {"Right"}, {conflict.Right.PrettyPrint(rightDB)}})
+			t.AppendRows([]table.Row{{"Left"}, {conflict.Left.PrettyPrint(mergedDB)}, {"Right"}, {conflict.Right.PrettyPrint(mergedDB)}})
 		}
 
 		t.Render()
