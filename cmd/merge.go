@@ -8,6 +8,7 @@ import (
 	"github.com/AlecAivazis/survey/v2/terminal"
 	"github.com/AndreasSko/go-jwlm/merger"
 	"github.com/AndreasSko/go-jwlm/model"
+	"github.com/buger/goterm"
 	"github.com/jedib0t/go-pretty/table"
 	"github.com/spf13/cobra"
 
@@ -158,10 +159,22 @@ func handleMergeConflict(conflicts map[string]merger.MergeConflict, leftDB *mode
 	for key, conflict := range conflicts {
 		t := table.NewWriter()
 		t.SetStyle(table.StyleRounded)
+		t.Style().Options = table.Options{
+			DrawBorder:      true,
+			SeparateColumns: true,
+			SeparateFooter:  true,
+			SeparateHeader:  true,
+			SeparateRows:    true,
+		}
 
 		t.SetOutputMirror(os.Stdout)
-		t.AppendHeader(table.Row{"Left", "Right"})
-		t.AppendRow([]interface{}{conflict.Left.PrettyPrint(leftDB), conflict.Right.PrettyPrint(rightDB)})
+		if goterm.Width() >= 190 {
+			t.AppendHeader(table.Row{"Left", "Right"})
+			t.AppendRow([]interface{}{conflict.Left.PrettyPrint(leftDB), conflict.Right.PrettyPrint(rightDB)})
+		} else {
+			t.AppendRows([]table.Row{{"Left"}, {conflict.Left.PrettyPrint(leftDB)}, {"Right"}, {conflict.Right.PrettyPrint(rightDB)}})
+		}
+
 		t.Render()
 
 		fmt.Print("\n\n")

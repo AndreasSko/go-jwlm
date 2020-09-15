@@ -54,12 +54,12 @@ Loop:
 		}
 		switch field.Interface().(type) {
 		case string:
-			fmt.Fprintf(w, "\n%s:\t%s", fieldName, strings.ReplaceAll(wordwrap.WrapString(field.String(), 80), "\n", "\n\t"))
+			fmt.Fprintf(w, "\n%s:\t%s", fieldName, strings.ReplaceAll(wordwrap.WrapString(field.String(), 70), "\n", "\n\t"))
 		case sql.NullString:
 			if field.Field(1).Bool() == false {
 				continue Loop
 			}
-			fmt.Fprintf(w, "\n%s:\t%s", fieldName, strings.ReplaceAll(wordwrap.WrapString(field.Field(0).String(), 80), "\n", "\n\t"))
+			fmt.Fprintf(w, "\n%s:\t%s", fieldName, strings.ReplaceAll(wordwrap.WrapString(field.Field(0).String(), 70), "\n", "\n\t"))
 		case int:
 			fmt.Fprintf(w, "\n%s:\t%d", fieldName, field.Int())
 		case sql.NullInt32:
