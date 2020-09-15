@@ -91,7 +91,7 @@ func TestNote_PrettyPrint(t *testing.T) {
 	buf := new(bytes.Buffer)
 	w := tabwriter.NewWriter(buf, 0, 0, 1, ' ', 0)
 	fmt.Fprint(w, "\nTitle:\tA Title")
-	fmt.Fprint(w, "\nContent:\tA very long content string that should hopefully result in a line break after\n\tmax. 80 characters...")
+	fmt.Fprint(w, "\nContent:\tA very long content string that should hopefully result in a line\n\tbreak after max. 80 characters...")
 	fmt.Fprint(w, "\nLastModified:\t2017-06-01T19:36:28+0200")
 	w.Flush()
 	expectedResult := buf.String()
@@ -117,7 +117,7 @@ func TestNote_PrettyPrint(t *testing.T) {
 
 	buf.Reset()
 	fmt.Fprint(w, "\nTitle:\tA Title")
-	fmt.Fprint(w, "\nContent:\tA very long content string that should hopefully result in a line break after\n\tmax. 80 characters...")
+	fmt.Fprint(w, "\nContent:\tA very long content string that should hopefully result in a line\n\tbreak after max. 80 characters...")
 	fmt.Fprint(w, "\nLastModified:\t2017-06-01T19:36:28+0200")
 	fmt.Fprint(w, "\n\n\nRelated Location:\n\nTitle:\tLocation-Title\nIssueTagNumber:\t0\nMepsLanguage:\t0")
 	fmt.Fprint(w, "\n\n\nRelated UserMark:\n\nColorIndex:\t5")
