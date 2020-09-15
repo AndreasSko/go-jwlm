@@ -4,3 +4,4 @@ go-jwlm
 *.DS_Store
 2020-08-06.jwlibrary
 2020-03-30.jwlibrary
+dist
