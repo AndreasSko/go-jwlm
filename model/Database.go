@@ -32,6 +32,28 @@ type Database struct {
 	UserMark   []*UserMark
 }
 
+// FetchFromTable tries to fetch a entry with the given ID. If it can't find it
+// or the entry is empty it returns nil.
+func (db *Database) FetchFromTable(tableName string, id int) Model {
+	if db == nil {
+		return nil
+	}
+
+	table := reflect.ValueOf(db).Elem().FieldByName(tableName)
+	if !table.IsValid() {
+		panic(fmt.Sprintf("Table %s does not exist in Database", tableName))
+	}
+
+	if id >= table.Len() {
+		return nil
+	}
+	if table.Index(id).IsNil() {
+		return nil
+	}
+
+	return table.Index(id).Interface().(Model)
+}
+
 // ImportJWLBackup unzips a given JW Library Backup file and imports the
 // included SQLite DB to the Database struct
 func (db *Database) ImportJWLBackup(filename string) error {

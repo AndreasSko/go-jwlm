@@ -55,6 +55,20 @@ func (m *Bookmark) Equals(m2 Model) bool {
 	return false
 }
 
+// PrettyPrint prints Bookmark in a human readable format and
+// adds information about related entries if helpful.
+func (m *Bookmark) PrettyPrint(db *Database) string {
+	fields := []string{"Title", "Snippet", "Slot", "PublicationLocationID"}
+	result := prettyPrint(m, fields)
+
+	if location := db.FetchFromTable("Location", m.LocationID); location != nil {
+		result += "\n\n\nRelated Location:\n"
+		result += location.PrettyPrint(db)
+	}
+
+	return result
+}
+
 func (m *Bookmark) tableName() string {
 	return "Bookmark"
 }

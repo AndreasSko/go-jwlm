@@ -1,8 +1,11 @@
 package model
 
 import (
+	"bytes"
 	"database/sql"
+	"fmt"
 	"testing"
+	"text/tabwriter"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -64,4 +67,21 @@ func TestTag_Equals(t *testing.T) {
 	assert.False(t, m1.Equals(m2))
 	assert.True(t, m2.Equals(m2_1))
 
+}
+
+func TestTag_PrettyPrint(t *testing.T) {
+	m1 := &Tag{
+		TagID:         1,
+		TagType:       1,
+		Name:          "First  Tag",
+		ImageFilename: sql.NullString{},
+	}
+
+	buf := new(bytes.Buffer)
+	w := tabwriter.NewWriter(buf, 0, 0, 1, ' ', 0)
+	fmt.Fprint(w, "\nName:\tFirst  Tag")
+	w.Flush()
+	expectedResult := buf.String()
+
+	assert.Equal(t, expectedResult, m1.PrettyPrint(nil))
 }

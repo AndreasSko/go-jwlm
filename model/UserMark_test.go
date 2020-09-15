@@ -45,3 +45,16 @@ func TestUserMark_Equals(t *testing.T) {
 	assert.True(t, m1.Equals(m1_1))
 	assert.False(t, m1.Equals(m2))
 }
+
+func TestUserMark_PrettyPrint(t *testing.T) {
+	m1 := &UserMark{
+		UserMarkID:   1,
+		ColorIndex:   1,
+		LocationID:   1,
+		StyleIndex:   1,
+		UserMarkGUID: "FIRST",
+		Version:      1,
+	}
+
+	assert.Equal(t, "\nColorIndex: 1", m1.PrettyPrint(nil))
+}

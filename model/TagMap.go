@@ -44,6 +44,12 @@ func (m *TagMap) Equals(m2 Model) bool {
 	return false
 }
 
+// PrettyPrint prints TagMap in a human readable format and
+// adds information about related entries if helpful.
+func (m *TagMap) PrettyPrint(db *Database) string {
+	panic("Not supported")
+}
+
 func (m *TagMap) tableName() string {
 	return "TagMap"
 }
