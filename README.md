@@ -17,7 +17,7 @@ If a conflict occurs while merging, the tool will ask for directions: should it 
 ## Installation 
 You can find the compiled binaries for Windows, Linux, and Mac under the [Release](https://github.com/AndreasSko/go-jwlm/releases) section. In the future, I‘m planning to offer those releases via Homebrew (Mac) and Spew (Windows).
 
-A word of caution 
+## A word of caution 
 It took me a while to trust my own program, but I still keep backups of my Libraries - and so should you. Go-jwlm is still in alpha-phase, so there is a possibility that something might get lost because of a yet-to-find bug. So please keep that in mind and - again - if you found a bug, feel free to open an issue. 
 
 ## Need help?
