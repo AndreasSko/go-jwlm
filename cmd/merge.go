@@ -34,14 +34,14 @@ be included in the merged backup.`,
 }
 
 func merge(leftFilename string, rightFilename string, mergedFilename string) {
-	log.Info("Importing left backup")
+	fmt.Println("Importing left backup")
 	left := model.Database{}
 	err := left.ImportJWLBackup(leftFilename)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	log.Info("Importing right backup")
+	fmt.Println("Importing right backup")
 	right := model.Database{}
 	err = right.ImportJWLBackup(rightFilename)
 	if err != nil {
@@ -50,7 +50,7 @@ func merge(leftFilename string, rightFilename string, mergedFilename string) {
 
 	merged := model.Database{}
 
-	log.Info("Merging Locations")
+	fmt.Println("🧭 Merging Locations")
 	mergedLocations, locationIDChanges, err := merger.MergeLocations(left.Location, right.Location)
 	merged.Location = mergedLocations
 	merger.UpdateIDs(left.Bookmark, right.Bookmark, "LocationID", locationIDChanges)
@@ -58,8 +58,9 @@ func merge(leftFilename string, rightFilename string, mergedFilename string) {
 	merger.UpdateIDs(left.Note, right.Note, "LocationID", locationIDChanges)
 	merger.UpdateIDs(left.TagMap, right.TagMap, "LocationID", locationIDChanges)
 	merger.UpdateIDs(left.UserMark, right.UserMark, "LocationID", locationIDChanges)
+	fmt.Println("Done.")
 
-	log.Info("Merging Bookmarks")
+	fmt.Println("📑 Merging Bookmarks")
 	var bookmarksConflictSolution map[string]merger.MergeSolution
 	for {
 		mergedBookmarks, _, err := merger.MergeBookmarks(left.Bookmark, right.Bookmark, bookmarksConflictSolution)
@@ -74,8 +75,9 @@ func merge(leftFilename string, rightFilename string, mergedFilename string) {
 			log.Fatal(err)
 		}
 	}
+	fmt.Println("Done.")
 
-	log.Info("Merging Tags")
+	fmt.Println("🏷  Merging Tags")
 	var tagsConflictSolution map[string]merger.MergeSolution
 	for {
 		mergedTags, tagIDChanges, err := merger.MergeTags(left.Tag, right.Tag, tagsConflictSolution)
@@ -91,8 +93,9 @@ func merge(leftFilename string, rightFilename string, mergedFilename string) {
 			log.Fatal(err)
 		}
 	}
+	fmt.Println("Done.")
 
-	log.Info("Merging UserMarks & BlockRanges")
+	fmt.Println("🖍  Merging Markings")
 	var UMBRConflictSolution map[string]merger.MergeSolution
 	for {
 		mergedUserMarks, mergedBlockRanges, userMarkIDChanges, err := merger.MergeUserMarkAndBlockRange(left.UserMark, left.BlockRange, right.UserMark, right.BlockRange, UMBRConflictSolution)
@@ -109,8 +112,9 @@ func merge(leftFilename string, rightFilename string, mergedFilename string) {
 			log.Fatal(err)
 		}
 	}
+	fmt.Println("Done.")
 
-	log.Info("Merging Notes")
+	fmt.Println("📝 Merging Notes")
 	var notesConflictSolution map[string]merger.MergeSolution
 	for {
 		mergedNotes, notesIDChanges, err := merger.MergeNotes(left.Note, right.Note, notesConflictSolution)
@@ -126,8 +130,9 @@ func merge(leftFilename string, rightFilename string, mergedFilename string) {
 			log.Fatal(err)
 		}
 	}
+	fmt.Println("Done.")
 
-	log.Info("Merging TagMaps")
+	fmt.Println("🏷  Merging TagMaps")
 	var tagMapsConflictSolution map[string]merger.MergeSolution
 	for {
 		mergedTagMaps, _, err := merger.MergeTagMaps(left.TagMap, right.TagMap, tagMapsConflictSolution)
@@ -142,8 +147,11 @@ func merge(leftFilename string, rightFilename string, mergedFilename string) {
 			log.Fatal(err)
 		}
 	}
+	fmt.Println("Done.")
 
-	log.Info("Exporting merged database")
+	fmt.Println("🎉 Finished merging!")
+
+	fmt.Println("Exporting merged database")
 	if err = merged.ExportJWLBackup(mergedFilename); err != nil {
 		log.Fatal(err)
 	}
