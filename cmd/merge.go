@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"reflect"
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/AlecAivazis/survey/v2/terminal"
@@ -159,9 +160,16 @@ func merge(leftFilename string, rightFilename string, mergedFilename string) {
 }
 
 func handleMergeConflict(conflicts map[string]merger.MergeConflict, mergedDB *model.Database) map[string]merger.MergeSolution {
+	helpText := ""
+	for _, val := range conflicts {
+		helpText = mergeConflictHelp(reflect.TypeOf(val.Left).String())
+		break
+	}
+
 	prompt := &survey.Select{
 		Message: "Select which side should be chosen:",
 		Options: []string{"Left", "Right"},
+		Help:    helpText,
 	}
 
 	result := make(map[string]merger.MergeSolution, len(conflicts))
