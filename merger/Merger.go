@@ -40,9 +40,6 @@ type MergeConflictError struct {
 	Conflicts map[string]MergeConflict
 }
 
-// mergeConflictSolver describes a function that is able to handle mergeConflicts semi-automatic
-type mergeConflictSolver func(map[string]MergeConflict) (map[string]MergeSolution, error)
-
 func (e MergeConflictError) Error() string {
 	return fmt.Sprintf("There were conflicts while trying to merge: %s", e.Conflicts)
 }
@@ -115,7 +112,7 @@ func merge(left interface{}, right interface{}, conflictSolution map[string]Merg
 // slice of structs implementing the Model interface. It tries to solve possible
 // conflicts using the given mergeConflictSolver and will return a mergeConflictError
 // if it wasn't able to solve all conflicts on its own.
-func tryMergeWithConflictSolver(left interface{}, right interface{}, conflictSolution map[string]MergeSolution, conflictSolver mergeConflictSolver) ([]model.Model, IDChanges, error) {
+func tryMergeWithConflictSolver(left interface{}, right interface{}, conflictSolution map[string]MergeSolution, conflictSolver MergeConflictSolver) ([]model.Model, IDChanges, error) {
 	var solutionMap map[string]MergeSolution
 	var err error
 
@@ -208,28 +205,6 @@ func prepareMergeSolution(solutionMap *map[string]MergeSolution) ([]model.Model,
 	}
 
 	return result, changes
-}
-
-// solveEqualityMergeConflict solves conflicts that arise, if the same Model entry exists
-// on both sides. For other conflicts it returns a mergeConflictError asking the caller
-// to handle it.
-func solveEqualityMergeConflict(conflicts map[string]MergeConflict) (map[string]MergeSolution, error) {
-	solution := make(map[string]MergeSolution, len(conflicts))
-	unsolvableConflicts := map[string]MergeConflict{}
-
-	for key, value := range conflicts {
-		if value.Left.Equals(value.Right) {
-			solution[key] = MergeSolution{Side: LeftSide, Solution: value.Left, Discarded: value.Right}
-		} else {
-			unsolvableConflicts[key] = value
-		}
-	}
-
-	if len(unsolvableConflicts) != 0 {
-		return solution, MergeConflictError{Err: "Could not solve all conflicts", Conflicts: unsolvableConflicts}
-	}
-
-	return solution, nil
 }
 
 // sortMergeSolution sorts a slice of mergeSolution according to the ID of the model.
