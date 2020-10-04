@@ -3,6 +3,8 @@ on:
   push:
     tags:
       - '*'
+    paths:
+      - ".github/workflows/release.yml"
 jobs:
   goreleaser:
     runs-on: ubuntu-latest
@@ -12,4 +14,4 @@ jobs:
         with:
           fetch-depth: 0
       - name: Run GoReleaser
-        run: docker run -e GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} --rm --privileged -v $GITHUB_WORKSPACE:/go/src/github.com/AndreasSko/go-jwlm -v /var/run/docker.sock:/var/run/docker.sock -w /go/src/github.com/AndreasSko/go-jwlm mailchain/goreleaser-xcgo --rm-dist
+        run: docker run -e GITHUB_TOKEN=${{ secrets.GORELEASER_GITHUB_TOKEN }} --rm --privileged -v $GITHUB_WORKSPACE:/go/src/github.com/AndreasSko/go-jwlm -v /var/run/docker.sock:/var/run/docker.sock -w /go/src/github.com/AndreasSko/go-jwlm mailchain/goreleaser-xcgo --rm-dist

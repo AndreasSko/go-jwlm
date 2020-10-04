@@ -46,3 +46,9 @@ changelog:
     exclude:
       - '^docs:'
       - '^test:'
+brews:
+  - name: go-jwlm
+    tap:
+      owner: andreassko
+      name: homebrew-go-jwlm
+    homepage: https://github.com/AndreasSko/go-jwlm
