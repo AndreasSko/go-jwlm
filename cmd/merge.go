@@ -23,8 +23,11 @@ var mergeCmd = &cobra.Command{
 	Long: `merge imports the left and right .jwlibrary backup file, merges them and 
 exports it to the destination file. If a collision between the left and 
 the right backup is detected, the user is asked to choose which side should
-be included in the merged backup.`,
-	Example: "go-jwlm left.jwlibrary right.jwlibrary merged.jwlibrary",
+be included in the merged backup. You are able to let the merger 
+automatically solve conflicts using the 'chooseLeft', 'chooseRight', and 
+'chooseNewest' resolvers (see Flags).`,
+	Example: `go-jwlm merge left.jwlibrary right.jwlibrary merged.jwlibrary
+go-jwlm merge left.jwlibrary right.jwlibrary merged.jwlibrary --bookmarks chooseLeft --markings chooseRight --notes chooseNewest`,
 	Run: func(cmd *cobra.Command, args []string) {
 		leftFilename := args[0]
 		rightFilename := args[1]
@@ -33,6 +36,15 @@ be included in the merged backup.`,
 	},
 	Args: cobra.ExactArgs(3),
 }
+
+// BookmarkResolver represents a resolver that should be used for conflicting Bookmarks
+var BookmarkResolver string
+
+// MarkingResolver represents a resolver that should be used for conflicting UserMarkBlockRanges
+var MarkingResolver string
+
+// NoteResolver represents a resolver that should be used for conflicting Notes
+var NoteResolver string
 
 func merge(leftFilename string, rightFilename string, mergedFilename string, stdio terminal.Stdio) {
 	fmt.Println("Importing left backup")
@@ -71,7 +83,15 @@ func merge(leftFilename string, rightFilename string, mergedFilename string, std
 		}
 		switch err := err.(type) {
 		case merger.MergeConflictError:
-			bookmarksConflictSolution = handleMergeConflict(err.Conflicts, &merged, stdio)
+			if BookmarkResolver != "" {
+				var resErr error
+				bookmarksConflictSolution, resErr = autoResolveConflicts(err.Conflicts, BookmarkResolver)
+				if resErr != nil {
+					log.Fatal(resErr)
+				}
+			} else {
+				bookmarksConflictSolution = handleMergeConflict(err.Conflicts, &merged, stdio)
+			}
 		default:
 			log.Fatal(err)
 		}
@@ -108,7 +128,15 @@ func merge(leftFilename string, rightFilename string, mergedFilename string, std
 		}
 		switch err := err.(type) {
 		case merger.MergeConflictError:
-			UMBRConflictSolution = handleMergeConflict(err.Conflicts, &merged, stdio)
+			if MarkingResolver != "" {
+				var resErr error
+				UMBRConflictSolution, resErr = autoResolveConflicts(err.Conflicts, MarkingResolver)
+				if resErr != nil {
+					log.Fatal(resErr)
+				}
+			} else {
+				UMBRConflictSolution = handleMergeConflict(err.Conflicts, &merged, stdio)
+			}
 		default:
 			log.Fatal(err)
 		}
@@ -126,7 +154,15 @@ func merge(leftFilename string, rightFilename string, mergedFilename string, std
 		}
 		switch err := err.(type) {
 		case merger.MergeConflictError:
-			notesConflictSolution = handleMergeConflict(err.Conflicts, &merged, stdio)
+			if NoteResolver != "" {
+				var resErr error
+				notesConflictSolution, resErr = autoResolveConflicts(err.Conflicts, NoteResolver)
+				if resErr != nil {
+					log.Fatal(resErr)
+				}
+			} else {
+				notesConflictSolution = handleMergeConflict(err.Conflicts, &merged, stdio)
+			}
 		default:
 			log.Fatal(err)
 		}
@@ -223,6 +259,41 @@ func handleMergeConflict(conflicts map[string]merger.MergeConflict, mergedDB *mo
 	return result
 }
 
+// autoResolveConflicts resolves mergeConflicts using the resolver
+// indicated by resolverName.
+func autoResolveConflicts(conflicts map[string]merger.MergeConflict, resolverName string) (map[string]merger.MergeSolution, error) {
+	resolver, err := getResolver(resolverName)
+	if err != nil {
+		return nil, err
+	}
+	if resolver == nil {
+		return nil, nil
+	}
+	return resolver(conflicts)
+}
+
+// getResolver parses the name of the resolver and returns its function.
+// If the name is empty, it returns nil.
+func getResolver(name string) (merger.MergeConflictSolver, error) {
+	if name == "" {
+		return nil, nil
+	}
+
+	switch name {
+	case "chooseLeft":
+		return merger.SolveConflictByChoosingLeft, nil
+	case "chooseRight":
+		return merger.SolveConflictByChoosingRight, nil
+	case "chooseNewest":
+		return merger.SolveConflictByChoosingNewest, nil
+	}
+
+	return nil, fmt.Errorf("%s is not a valid conflict resolver. Can be 'chooseNewest', 'chooseLeft', or 'chooseRight'", name)
+}
+
 func init() {
 	rootCmd.AddCommand(mergeCmd)
+	mergeCmd.Flags().StringVar(&BookmarkResolver, "bookmarks", "", "Resolve conflicting bookmarks with resolver (can be 'chooseLeft' or 'chooseRight')")
+	mergeCmd.Flags().StringVar(&MarkingResolver, "markings", "", "Resolve conflicting markings with resolver (can be 'chooseLeft' or 'chooseRight')")
+	mergeCmd.Flags().StringVar(&NoteResolver, "notes", "", "Resolve conflicting notes with resolver (can be 'chooseNewest', 'chooseLeft', or 'chooseRight')")
 }
