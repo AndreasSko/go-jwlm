@@ -246,3 +246,25 @@ func TestDatabase_saveToNewSQLite(t *testing.T) {
 	assert.Equal(t, db.TagMap[0], db2.TagMap[2])
 	assert.Equal(t, db.UserMark[0], db2.UserMark[2])
 }
+
+func TestDatabase_Equals(t *testing.T) {
+	db1 := &Database{}
+	db2 := &Database{}
+
+	path := filepath.Join("testdata", "backup.jwlibrary")
+	assert.NoError(t, db1.ImportJWLBackup(path))
+	assert.False(t, db1.Equals(db2))
+	assert.NoError(t, db2.ImportJWLBackup(path))
+	assert.True(t, db1.Equals(db2))
+
+	db1.Location = append(db1.Location, &Location{
+		MepsLanguage: 100,
+	})
+
+	assert.False(t, db1.Equals(db2))
+
+	db3 := &Database{}
+	path = filepath.Join("testdata", "backup_shuffled.jwlibrary")
+	assert.NoError(t, db3.ImportJWLBackup(path))
+	assert.True(t, db2.Equals(db3))
+}

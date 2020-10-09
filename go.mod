@@ -6,9 +6,12 @@ require (
 	github.com/AlecAivazis/survey/v2 v2.1.1
 	github.com/DATA-DOG/go-sqlmock v1.5.0
 	github.com/MakeNowJust/heredoc v1.0.0
+	github.com/Netflix/go-expect v0.0.0-20180615182759-c93bf25de8e8
 	github.com/buger/goterm v0.0.0-20200322175922-2f3e71b85129
 	github.com/go-openapi/strfmt v0.19.5 // indirect
+	github.com/hinshun/vt10x v0.0.0-20180616224451-1954e6464174
 	github.com/jedib0t/go-pretty v4.3.0+incompatible
+	github.com/jinzhu/copier v0.0.0-20190924061706-b57f9002281a
 	github.com/kr/pretty v0.2.0 // indirect
 	github.com/mattn/go-colorable v0.1.6 // indirect
 	github.com/mattn/go-runewidth v0.0.9 // indirect

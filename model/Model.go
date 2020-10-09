@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"reflect"
+	"sort"
 	"strings"
 	"text/tabwriter"
 
@@ -73,6 +74,66 @@ Loop:
 	}
 	w.Flush()
 	return buf.String()
+}
+
+// sortByUniqueKey sorts the given pointer to a slice of Model by UniqueKey,
+// removes unnecessary nil-entries (except at position 0),
+// and also updates the IDs accordingly. It tracks these changes
+// by a map, for which the key represents the old ID,
+// and value represents the new ID.
+func sortByUniqueKey(slice interface{}) map[int]int {
+	changes := map[int]int{}
+
+	if reflect.TypeOf(slice).Kind() != reflect.Ptr || reflect.TypeOf(slice).Elem().Kind() != reflect.Slice {
+		panic("Only pointer to slice is supported")
+	}
+
+	s := reflect.ValueOf(slice).Elem()
+
+	// Sort by UniqueKey
+	sort.Slice(s.Interface(), func(i, j int) bool {
+		// Nil is always smaller than every other value
+		jVal := s.Index(j)
+		if jVal.IsNil() {
+			return false
+		}
+		iVal := s.Index(i)
+		if iVal.IsNil() {
+			return true
+		}
+
+		iUQ := s.Index(i).MethodByName("UniqueKey").Call(nil)
+		jUQ := s.Index(j).MethodByName("UniqueKey").Call(nil)
+		return iUQ[0].String() < jUQ[0].String()
+	})
+
+	// If there are more than one nil values, remove all except one
+	// (all nil values are located at the beginning)
+	nilCount := 0
+	for i := 0; i < s.Len(); i++ {
+		if !s.Index(i).IsNil() {
+			continue
+		}
+		nilCount++
+	}
+	if nilCount > 1 {
+		s.Set(s.Slice(nilCount-1, s.Len()))
+	}
+
+	// Update IDs to their index
+	for i := 0; i < s.Len(); i++ {
+		elem := s.Index(i)
+		if elem.IsNil() {
+			continue
+		}
+		oldID := int(elem.MethodByName("ID").Call(nil)[0].Int())
+		if oldID != i {
+			changes[oldID] = i
+			elem.MethodByName("SetID").Call([]reflect.Value{reflect.ValueOf(i)})
+		}
+	}
+
+	return changes
 }
 
 // UpdateIDs updates a given ID (named by IDName) on the slice of *model.Model
