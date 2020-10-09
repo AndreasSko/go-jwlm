@@ -36,11 +36,24 @@ func (m *TagMap) UniqueKey() string {
 	sb.WriteString(strconv.FormatInt(int64(m.LocationID.Int32), 10))
 	sb.WriteString("_")
 	sb.WriteString(strconv.FormatInt(int64(m.NoteID.Int32), 10))
+	sb.WriteString("_")
+	sb.WriteString(strconv.FormatInt(int64(m.TagID), 10))
+	sb.WriteString("_")
+	sb.WriteString(strconv.FormatInt(int64(m.Position), 10))
+	// TODO: Should TagID & Position be included??
 	return sb.String()
 }
 
 // Equals checks if the TagMap is equal to the given one.
 func (m *TagMap) Equals(m2 Model) bool {
+	if m2, ok := m2.(*TagMap); ok {
+		return m.PlaylistItemID.Int32 == m2.PlaylistItemID.Int32 &&
+			m.LocationID.Int32 == m2.LocationID.Int32 &&
+			m.NoteID.Int32 == m2.NoteID.Int32 &&
+			m.TagID == m2.TagID &&
+			m.Position == m2.Position
+	}
+
 	return false
 }
 

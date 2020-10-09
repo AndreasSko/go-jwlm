@@ -55,6 +55,16 @@ func (m *Location) UniqueKey() string {
 
 // Equals checks if the Location is equal to the given one.
 func (m *Location) Equals(m2 Model) bool {
+	if m2, ok := m2.(*Location); ok {
+		return m.BookNumber.Int32 == m2.BookNumber.Int32 &&
+			m.ChapterNumber.Int32 == m2.ChapterNumber.Int32 &&
+			m.DocumentID.Int32 == m2.DocumentID.Int32 &&
+			m.Track.Int32 == m2.Track.Int32 &&
+			m.IssueTagNumber == m2.IssueTagNumber &&
+			m.KeySymbol.String == m2.KeySymbol.String &&
+			m.MepsLanguage == m2.MepsLanguage &&
+			m.LocationType == m2.LocationType
+	}
 	return false
 }
 

@@ -29,7 +29,7 @@ func TestBlockRange_UniqueKey(t *testing.T) {
 		EndToken:     sql.NullInt32{Int32: 2, Valid: true},
 		UserMarkID:   1,
 	}
-	assert.Equal(t, "1_1_1_2", m1.UniqueKey())
+	assert.Equal(t, "1_1_1_2_1", m1.UniqueKey())
 
 	m2 := &BlockRange{
 		BlockRangeID: 2,
@@ -39,7 +39,7 @@ func TestBlockRange_UniqueKey(t *testing.T) {
 		EndToken:     sql.NullInt32{Int32: 25, Valid: true},
 		UserMarkID:   3334,
 	}
-	assert.Equal(t, "1_20_15_25", m2.UniqueKey())
+	assert.Equal(t, "1_20_15_25_3334", m2.UniqueKey())
 }
 
 func TestBlockRange_PrettyPrint(t *testing.T) {
@@ -71,4 +71,35 @@ func TestBlockRange_PrettyPrint(t *testing.T) {
 	expectedResult = buf.String()
 
 	assert.Equal(t, expectedResult, m1.PrettyPrint(nil))
+}
+
+func TestBlockRange_Equals(t *testing.T) {
+	m1 := &BlockRange{
+		BlockRangeID: 1,
+		BlockType:    1,
+		Identifier:   1,
+		StartToken:   sql.NullInt32{Int32: 1, Valid: true},
+		EndToken:     sql.NullInt32{Int32: 2, Valid: true},
+		UserMarkID:   1,
+	}
+	m1_1 := &BlockRange{
+		BlockRangeID: 10000,
+		BlockType:    1,
+		Identifier:   1,
+		StartToken:   sql.NullInt32{Int32: 1, Valid: true},
+		EndToken:     sql.NullInt32{Int32: 2, Valid: true},
+		UserMarkID:   1,
+	}
+
+	m2 := &BlockRange{
+		BlockRangeID: 2,
+		BlockType:    1,
+		Identifier:   20,
+		StartToken:   sql.NullInt32{Int32: 15, Valid: true},
+		EndToken:     sql.NullInt32{Int32: 25, Valid: true},
+		UserMarkID:   3334,
+	}
+
+	assert.True(t, m1.Equals(m1_1))
+	assert.False(t, m1.Equals(m2))
 }

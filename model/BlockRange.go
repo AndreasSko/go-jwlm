@@ -38,11 +38,20 @@ func (m *BlockRange) UniqueKey() string {
 	sb.WriteString(strconv.FormatInt(int64(m.StartToken.Int32), 10))
 	sb.WriteString("_")
 	sb.WriteString(strconv.FormatInt(int64(m.EndToken.Int32), 10))
+	sb.WriteString("_")
+	sb.WriteString(strconv.FormatInt(int64(m.UserMarkID), 10))
 	return sb.String()
 }
 
 // Equals checks if the BlockRange is equal to the given one.
 func (m *BlockRange) Equals(m2 Model) bool {
+	if m2, ok := m2.(*BlockRange); ok {
+		return m.BlockType == m2.BlockType &&
+			m.Identifier == m2.Identifier &&
+			m.StartToken.Int32 == m2.StartToken.Int32 &&
+			m.EndToken.Int32 == m2.EndToken.Int32 &&
+			m.UserMarkID == m2.UserMarkID
+	}
 	return false
 }
 
