@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestUpdateIDs_Notes(t *testing.T) {
+func TestUpdateLRIDs_Notes(t *testing.T) {
 	left := []*model.Note{
 		nil,
 		{
@@ -79,12 +79,12 @@ func TestUpdateIDs_Notes(t *testing.T) {
 		},
 	}
 
-	UpdateIDs(left, right, "LocationID", changes)
+	UpdateLRIDs(left, right, "LocationID", changes)
 	assert.Equal(t, expectedLeft, left)
 	assert.Equal(t, expectedRight, right)
 }
 
-func TestUpdateIDs_Bookmarks(t *testing.T) {
+func TestUpdateLRIDs_Bookmarks(t *testing.T) {
 	left := []*model.Bookmark{
 		nil,
 		{
@@ -139,22 +139,22 @@ func TestUpdateIDs_Bookmarks(t *testing.T) {
 		},
 	}
 
-	UpdateIDs(left, right, "LocationID", changes)
+	UpdateLRIDs(left, right, "LocationID", changes)
 	assert.Equal(t, expectedLeft, left)
 	assert.Equal(t, expectedRight, right)
 
 	assert.NotPanics(t, func() {
-		UpdateIDs(left, nil, "LocationID", changes)
-		UpdateIDs(nil, right, "LocationID", changes)
-		UpdateIDs(nil, nil, "LocationID", changes)
+		UpdateLRIDs(left, nil, "LocationID", changes)
+		UpdateLRIDs(nil, right, "LocationID", changes)
+		UpdateLRIDs(nil, nil, "LocationID", changes)
 	})
 	assert.PanicsWithValue(t, "Given struct does not contain field WrongField", func() {
-		UpdateIDs(left, right, "WrongField", changes)
+		UpdateLRIDs(left, right, "WrongField", changes)
 	})
 	assert.PanicsWithValue(t, "Type string of field Title is not supported!", func() {
-		UpdateIDs(left, right, "Title", changes)
+		UpdateLRIDs(left, right, "Title", changes)
 	})
 	assert.PanicsWithValue(t, "Only slices are supported!", func() {
-		UpdateIDs(model.Bookmark{}, model.Bookmark{}, "LocationID", changes)
+		UpdateLRIDs(model.Bookmark{}, model.Bookmark{}, "LocationID", changes)
 	})
 }

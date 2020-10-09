@@ -74,3 +74,40 @@ Loop:
 	w.Flush()
 	return buf.String()
 }
+
+// UpdateIDs updates a given ID (named by IDName) on the slice of *model.Model
+// according to the given map, for which the key represents the old ID,
+// and value represents the new ID.
+func UpdateIDs(mdl interface{}, IDName string, changes map[int]int) {
+	switch reflect.TypeOf(mdl).Kind() {
+	case reflect.Slice:
+		s := reflect.ValueOf(mdl)
+		for i := 0; i < s.Len(); i++ {
+			elem := s.Index(i)
+			if elem.IsNil() {
+				continue
+			}
+
+			field := elem.Elem().FieldByName(IDName)
+			if !field.IsValid() {
+				panic(fmt.Sprintf("Given struct does not contain field %s", IDName))
+			}
+
+			switch t := field.Interface().(type) {
+			case int:
+				if new, ok := changes[int(field.Int())]; ok {
+					field.SetInt(int64(new))
+				}
+			case sql.NullInt32:
+				val := field.Field(0)
+				if new, ok := changes[int(val.Int())]; ok {
+					val.SetInt(int64(new))
+				}
+			default:
+				panic(fmt.Sprintf("Type %T of field %s is not supported!", t, IDName))
+			}
+		}
+	default:
+		panic("Only slices are supported!")
+	}
+}

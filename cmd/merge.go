@@ -54,11 +54,11 @@ func merge(leftFilename string, rightFilename string, mergedFilename string, std
 	fmt.Fprintln(stdio.Out, "🧭 Merging Locations")
 	mergedLocations, locationIDChanges, err := merger.MergeLocations(left.Location, right.Location)
 	merged.Location = mergedLocations
-	merger.UpdateIDs(left.Bookmark, right.Bookmark, "LocationID", locationIDChanges)
-	merger.UpdateIDs(left.Bookmark, right.Bookmark, "PublicationLocationID", locationIDChanges)
-	merger.UpdateIDs(left.Note, right.Note, "LocationID", locationIDChanges)
-	merger.UpdateIDs(left.TagMap, right.TagMap, "LocationID", locationIDChanges)
-	merger.UpdateIDs(left.UserMark, right.UserMark, "LocationID", locationIDChanges)
+	merger.UpdateLRIDs(left.Bookmark, right.Bookmark, "LocationID", locationIDChanges)
+	merger.UpdateLRIDs(left.Bookmark, right.Bookmark, "PublicationLocationID", locationIDChanges)
+	merger.UpdateLRIDs(left.Note, right.Note, "LocationID", locationIDChanges)
+	merger.UpdateLRIDs(left.TagMap, right.TagMap, "LocationID", locationIDChanges)
+	merger.UpdateLRIDs(left.UserMark, right.UserMark, "LocationID", locationIDChanges)
 	fmt.Fprintln(stdio.Out, "Done.")
 
 	fmt.Fprintln(stdio.Out, "📑 Merging Bookmarks")
@@ -84,7 +84,7 @@ func merge(leftFilename string, rightFilename string, mergedFilename string, std
 		mergedTags, tagIDChanges, err := merger.MergeTags(left.Tag, right.Tag, tagsConflictSolution)
 		if err == nil {
 			merged.Tag = mergedTags
-			merger.UpdateIDs(left.TagMap, right.TagMap, "TagID", tagIDChanges)
+			merger.UpdateLRIDs(left.TagMap, right.TagMap, "TagID", tagIDChanges)
 			break
 		}
 		switch err := err.(type) {
@@ -103,7 +103,7 @@ func merge(leftFilename string, rightFilename string, mergedFilename string, std
 		if err == nil {
 			merged.UserMark = mergedUserMarks
 			merged.BlockRange = mergedBlockRanges
-			merger.UpdateIDs(left.Note, right.Note, "UserMarkID", userMarkIDChanges)
+			merger.UpdateLRIDs(left.Note, right.Note, "UserMarkID", userMarkIDChanges)
 			break
 		}
 		switch err := err.(type) {
@@ -121,7 +121,7 @@ func merge(leftFilename string, rightFilename string, mergedFilename string, std
 		mergedNotes, notesIDChanges, err := merger.MergeNotes(left.Note, right.Note, notesConflictSolution)
 		if err == nil {
 			merged.Note = mergedNotes
-			merger.UpdateIDs(left.TagMap, right.TagMap, "NoteID", notesIDChanges)
+			merger.UpdateLRIDs(left.TagMap, right.TagMap, "NoteID", notesIDChanges)
 			break
 		}
 		switch err := err.(type) {
