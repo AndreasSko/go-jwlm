@@ -19,8 +19,6 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-// Destination to temporarily unzip backups
-const tmpFolder = ".jwlm-tmp"
 const manifestFilename = "manifest.json"
 
 // Database represents the JW Library database as a struct
@@ -137,13 +135,12 @@ func (db *Database) Equals(other *Database) bool {
 // ImportJWLBackup unzips a given JW Library Backup file and imports the
 // included SQLite DB to the Database struct
 func (db *Database) ImportJWLBackup(filename string) error {
-	// Create tmp folder and unzip backup content there
-	if _, err := os.Stat(tmpFolder); os.IsNotExist(err) {
-		if err := os.Mkdir(tmpFolder, 0755); err != nil {
-			return errors.Wrap(err, fmt.Sprintf("Could not create temporary directory %s", tmpFolder))
-		}
+	// Create tmp folder and place all files there
+	tmp, err := ioutil.TempDir("", "go-jwlm")
+	if err != nil {
+		return errors.Wrap(err, "Error while creating temporary directory")
 	}
-	defer os.RemoveAll(tmpFolder)
+	defer os.RemoveAll(tmp)
 
 	r, err := zip.OpenReader(filename)
 	if err != nil {
@@ -158,7 +155,7 @@ func (db *Database) ImportJWLBackup(filename string) error {
 		}
 		defer fileReader.Close()
 
-		path := filepath.Join(tmpFolder, file.Name)
+		path := filepath.Join(tmp, file.Name)
 		targetFile, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, file.Mode())
 		if err != nil {
 			return err
@@ -171,7 +168,7 @@ func (db *Database) ImportJWLBackup(filename string) error {
 	}
 
 	// Import manifest
-	path := filepath.Join(tmpFolder, manifestFilename)
+	path := filepath.Join(tmp, manifestFilename)
 	manifest := manifest{}
 	if err := manifest.importManifest(path); err != nil {
 		return errors.Wrap(err, "Error while importing manifest")
@@ -183,7 +180,7 @@ func (db *Database) ImportJWLBackup(filename string) error {
 	}
 
 	// Fill the Database with actual data
-	path = filepath.Join(tmpFolder, manifest.UserDataBackup.DatabaseName)
+	path = filepath.Join(tmp, manifest.UserDataBackup.DatabaseName)
 	return db.importSQLite(path)
 }
 
@@ -321,21 +318,20 @@ func getSliceCapacity(sqlite *sql.DB, modelType Model) (int, error) {
 // ExportJWLBackup creates a .jwlibrary backup file out of a Database{} struct
 func (db *Database) ExportJWLBackup(filename string) error {
 	// Create tmp folder and place all files there
-	if _, err := os.Stat(tmpFolder); os.IsNotExist(err) {
-		if err := os.Mkdir(tmpFolder, 0755); err != nil {
-			return errors.Wrap(err, fmt.Sprintf("Could not create temporary directory %s", tmpFolder))
-		}
+	tmp, err := ioutil.TempDir("", "go-jwlm")
+	if err != nil {
+		return errors.Wrap(err, "Error while creating temporary directory")
 	}
-	defer os.RemoveAll(tmpFolder)
+	defer os.RemoveAll(tmp)
 
 	// Create user_data.db
-	dbPath := filepath.Join(tmpFolder, "user_data.db")
+	dbPath := filepath.Join(tmp, "user_data.db")
 	if err := db.saveToNewSQLite(dbPath); err != nil {
 		return errors.Wrap(err, "Could not create SQLite database for exporting")
 	}
 
 	// Create manifest.json
-	manifestPath := filepath.Join(tmpFolder, manifestFilename)
+	manifestPath := filepath.Join(tmp, manifestFilename)
 	mfst, err := generateManifest("go-jwlm", dbPath)
 	if err != nil {
 		return errors.Wrap(err, "Error while generating manifest")

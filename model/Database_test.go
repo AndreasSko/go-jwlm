@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -193,11 +194,11 @@ func TestDatabase_ExportJWLBackup(t *testing.T) {
 
 func Test_createEmptySQLiteDB(t *testing.T) {
 	// Create tmp folder and place all files there
-	err := os.Mkdir(tmpFolder, 0755)
+	tmp, err := ioutil.TempDir("", "go-jwlm")
 	assert.NoError(t, err)
-	defer os.RemoveAll(tmpFolder)
+	defer os.RemoveAll(tmp)
 
-	path := filepath.Join(tmpFolder, "user_data.db")
+	path := filepath.Join(tmp, "user_data.db")
 	err = createEmptySQLiteDB(path)
 	assert.NoError(t, err)
 
@@ -218,9 +219,9 @@ func Test_createEmptySQLiteDB(t *testing.T) {
 
 func TestDatabase_saveToNewSQLite(t *testing.T) {
 	// Create tmp folder and place all files there
-	err := os.Mkdir(tmpFolder, 0755)
+	tmp, err := ioutil.TempDir("", "go-jwlm")
 	assert.NoError(t, err)
-	defer os.RemoveAll(tmpFolder)
+	defer os.RemoveAll(tmp)
 
 	db := Database{
 		BlockRange: []*BlockRange{{3, 2, 13, sql.NullInt32{Int32: 0, Valid: true}, sql.NullInt32{Int32: 14, Valid: true}, 3}},
@@ -231,7 +232,7 @@ func TestDatabase_saveToNewSQLite(t *testing.T) {
 		TagMap:     []*TagMap{{2, sql.NullInt32{Int32: 0, Valid: false}, sql.NullInt32{Int32: 0, Valid: false}, sql.NullInt32{Int32: 2, Valid: true}, 2, 1}},
 		UserMark:   []*UserMark{{2, 1, 2, 0, "2C5E7B4A-4997-4EDA-9CFF-38A7599C487B", 1}},
 	}
-	path := filepath.Join(tmpFolder, "user_data.db")
+	path := filepath.Join(tmp, "user_data.db")
 	err = db.saveToNewSQLite(path)
 	assert.NoError(t, err)
 
