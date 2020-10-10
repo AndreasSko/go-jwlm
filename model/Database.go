@@ -10,8 +10,10 @@ import (
 	"path/filepath"
 	"reflect"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/jinzhu/copier"
 	"github.com/pkg/errors"
+	"github.com/sergi/go-diff/diffmatchpatch"
 
 	// Register SQLite driver
 	_ "github.com/mattn/go-sqlite3"
@@ -100,6 +102,7 @@ func (db *Database) Equals(other *Database) bool {
 		}
 
 		if dbSlice.Len() != otherSlice.Len() {
+			fmt.Printf("Length of slices at index %d are not equal: %d vs %d\n", i, dbSlice.Len(), otherSlice.Len())
 			return false
 		}
 
@@ -116,6 +119,14 @@ func (db *Database) Equals(other *Database) bool {
 			}
 
 			if !dElem.MethodByName("Equals").Call([]reflect.Value{oElem})[0].Bool() {
+				fmt.Println("Found different entries: ")
+				left := spew.Sdump(dElem.Interface())
+				right := spew.Sdump(oElem.Interface())
+				fmt.Printf("%s \nvs\n %s", left, right)
+				dmp := diffmatchpatch.New()
+				diffs := dmp.DiffMain(left, right, true)
+				fmt.Println("Diff:")
+				fmt.Println(dmp.DiffPrettyText(diffs))
 				return false
 			}
 		}
