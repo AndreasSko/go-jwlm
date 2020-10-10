@@ -95,3 +95,45 @@ func TestLocation_PrettyPrint(t *testing.T) {
 
 	assert.Equal(t, expectedResult, m1.PrettyPrint(nil))
 }
+
+func TestLocation_Equals(t *testing.T) {
+	m1 := &Location{
+		LocationID:     1,
+		BookNumber:     sql.NullInt32{Int32: 2, Valid: true},
+		ChapterNumber:  sql.NullInt32{Int32: 3, Valid: true},
+		DocumentID:     sql.NullInt32{Int32: 4, Valid: true},
+		Track:          sql.NullInt32{Int32: 5, Valid: true},
+		IssueTagNumber: 6,
+		KeySymbol:      sql.NullString{String: "nwtsty", Valid: true},
+		MepsLanguage:   7,
+		LocationType:   8,
+		Title:          sql.NullString{String: "ThisTitleShouldNotBeInUniqueKey", Valid: true},
+	}
+	m1_1 := &Location{
+		LocationID:     1,
+		BookNumber:     sql.NullInt32{Int32: 2, Valid: true},
+		ChapterNumber:  sql.NullInt32{Int32: 3, Valid: true},
+		DocumentID:     sql.NullInt32{Int32: 4, Valid: true},
+		Track:          sql.NullInt32{Int32: 5, Valid: true},
+		IssueTagNumber: 6,
+		KeySymbol:      sql.NullString{String: "nwtsty", Valid: true},
+		MepsLanguage:   7,
+		LocationType:   8,
+	}
+
+	m2 := &Location{
+		LocationID:     1,
+		BookNumber:     sql.NullInt32{},
+		ChapterNumber:  sql.NullInt32{},
+		DocumentID:     sql.NullInt32{},
+		Track:          sql.NullInt32{},
+		IssueTagNumber: 6,
+		KeySymbol:      sql.NullString{},
+		MepsLanguage:   7,
+		LocationType:   8,
+		Title:          sql.NullString{String: "ThisOTitleShouldNotBeInUniqueKeyEither", Valid: true},
+	}
+
+	assert.True(t, m1.Equals(m1_1))
+	assert.False(t, m1.Equals(m2))
+}

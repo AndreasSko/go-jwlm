@@ -93,7 +93,7 @@ func TestUserMarkBlockRange_UniqueKey(t *testing.T) {
 		},
 	}
 
-	assert.Equal(t, "VERYUNIQUEID_1_1_1_2_1_20_15_25", m1.UniqueKey())
+	assert.Equal(t, "VERYUNIQUEID_1_1_1_2_1_1_20_15_25_1", m1.UniqueKey())
 }
 
 func TestUserMarkBlockRange_Equals(t *testing.T) {

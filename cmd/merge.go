@@ -29,12 +29,12 @@ be included in the merged backup.`,
 		leftFilename := args[0]
 		rightFilename := args[1]
 		mergedFilename := args[2]
-		merge(leftFilename, rightFilename, mergedFilename)
+		merge(leftFilename, rightFilename, mergedFilename, terminal.Stdio{In: os.Stdin, Out: os.Stdout, Err: os.Stderr})
 	},
 	Args: cobra.ExactArgs(3),
 }
 
-func merge(leftFilename string, rightFilename string, mergedFilename string) {
+func merge(leftFilename string, rightFilename string, mergedFilename string, stdio terminal.Stdio) {
 	fmt.Println("Importing left backup")
 	left := model.Database{}
 	err := left.ImportJWLBackup(leftFilename)
@@ -42,7 +42,7 @@ func merge(leftFilename string, rightFilename string, mergedFilename string) {
 		log.Fatal(err)
 	}
 
-	fmt.Println("Importing right backup")
+	fmt.Fprintln(stdio.Out, "Importing right backup")
 	right := model.Database{}
 	err = right.ImportJWLBackup(rightFilename)
 	if err != nil {
@@ -51,17 +51,17 @@ func merge(leftFilename string, rightFilename string, mergedFilename string) {
 
 	merged := model.Database{}
 
-	fmt.Println("🧭 Merging Locations")
+	fmt.Fprintln(stdio.Out, "🧭 Merging Locations")
 	mergedLocations, locationIDChanges, err := merger.MergeLocations(left.Location, right.Location)
 	merged.Location = mergedLocations
-	merger.UpdateIDs(left.Bookmark, right.Bookmark, "LocationID", locationIDChanges)
-	merger.UpdateIDs(left.Bookmark, right.Bookmark, "PublicationLocationID", locationIDChanges)
-	merger.UpdateIDs(left.Note, right.Note, "LocationID", locationIDChanges)
-	merger.UpdateIDs(left.TagMap, right.TagMap, "LocationID", locationIDChanges)
-	merger.UpdateIDs(left.UserMark, right.UserMark, "LocationID", locationIDChanges)
-	fmt.Println("Done.")
+	merger.UpdateLRIDs(left.Bookmark, right.Bookmark, "LocationID", locationIDChanges)
+	merger.UpdateLRIDs(left.Bookmark, right.Bookmark, "PublicationLocationID", locationIDChanges)
+	merger.UpdateLRIDs(left.Note, right.Note, "LocationID", locationIDChanges)
+	merger.UpdateLRIDs(left.TagMap, right.TagMap, "LocationID", locationIDChanges)
+	merger.UpdateLRIDs(left.UserMark, right.UserMark, "LocationID", locationIDChanges)
+	fmt.Fprintln(stdio.Out, "Done.")
 
-	fmt.Println("📑 Merging Bookmarks")
+	fmt.Fprintln(stdio.Out, "📑 Merging Bookmarks")
 	var bookmarksConflictSolution map[string]merger.MergeSolution
 	for {
 		mergedBookmarks, _, err := merger.MergeBookmarks(left.Bookmark, right.Bookmark, bookmarksConflictSolution)
@@ -71,69 +71,69 @@ func merge(leftFilename string, rightFilename string, mergedFilename string) {
 		}
 		switch err := err.(type) {
 		case merger.MergeConflictError:
-			bookmarksConflictSolution = handleMergeConflict(err.Conflicts, &merged)
+			bookmarksConflictSolution = handleMergeConflict(err.Conflicts, &merged, stdio)
 		default:
 			log.Fatal(err)
 		}
 	}
-	fmt.Println("Done.")
+	fmt.Fprintln(stdio.Out, "Done.")
 
-	fmt.Println("🏷  Merging Tags")
+	fmt.Fprintln(stdio.Out, "🏷  Merging Tags")
 	var tagsConflictSolution map[string]merger.MergeSolution
 	for {
 		mergedTags, tagIDChanges, err := merger.MergeTags(left.Tag, right.Tag, tagsConflictSolution)
 		if err == nil {
 			merged.Tag = mergedTags
-			merger.UpdateIDs(left.TagMap, right.TagMap, "TagID", tagIDChanges)
+			merger.UpdateLRIDs(left.TagMap, right.TagMap, "TagID", tagIDChanges)
 			break
 		}
 		switch err := err.(type) {
 		case merger.MergeConflictError:
-			tagsConflictSolution = handleMergeConflict(err.Conflicts, nil) // TODO
+			tagsConflictSolution = handleMergeConflict(err.Conflicts, nil, stdio) // TODO
 		default:
 			log.Fatal(err)
 		}
 	}
-	fmt.Println("Done.")
+	fmt.Fprintln(stdio.Out, "Done.")
 
-	fmt.Println("🖍  Merging Markings")
+	fmt.Fprintln(stdio.Out, "🖍  Merging Markings")
 	var UMBRConflictSolution map[string]merger.MergeSolution
 	for {
 		mergedUserMarks, mergedBlockRanges, userMarkIDChanges, err := merger.MergeUserMarkAndBlockRange(left.UserMark, left.BlockRange, right.UserMark, right.BlockRange, UMBRConflictSolution)
 		if err == nil {
 			merged.UserMark = mergedUserMarks
 			merged.BlockRange = mergedBlockRanges
-			merger.UpdateIDs(left.Note, right.Note, "UserMarkID", userMarkIDChanges)
+			merger.UpdateLRIDs(left.Note, right.Note, "UserMarkID", userMarkIDChanges)
 			break
 		}
 		switch err := err.(type) {
 		case merger.MergeConflictError:
-			UMBRConflictSolution = handleMergeConflict(err.Conflicts, &merged)
+			UMBRConflictSolution = handleMergeConflict(err.Conflicts, &merged, stdio)
 		default:
 			log.Fatal(err)
 		}
 	}
-	fmt.Println("Done.")
+	fmt.Fprintln(stdio.Out, "Done.")
 
-	fmt.Println("📝 Merging Notes")
+	fmt.Fprintln(stdio.Out, "📝 Merging Notes")
 	var notesConflictSolution map[string]merger.MergeSolution
 	for {
 		mergedNotes, notesIDChanges, err := merger.MergeNotes(left.Note, right.Note, notesConflictSolution)
 		if err == nil {
 			merged.Note = mergedNotes
-			merger.UpdateIDs(left.TagMap, right.TagMap, "NoteID", notesIDChanges)
+			merger.UpdateLRIDs(left.TagMap, right.TagMap, "NoteID", notesIDChanges)
 			break
 		}
 		switch err := err.(type) {
 		case merger.MergeConflictError:
-			notesConflictSolution = handleMergeConflict(err.Conflicts, &merged)
+			notesConflictSolution = handleMergeConflict(err.Conflicts, &merged, stdio)
 		default:
 			log.Fatal(err)
 		}
 	}
-	fmt.Println("Done.")
+	fmt.Fprintln(stdio.Out, "Done.")
 
-	fmt.Println("🏷  Merging TagMaps")
+	fmt.Fprintln(stdio.Out, "🏷  Merging TagMaps")
 	var tagMapsConflictSolution map[string]merger.MergeSolution
 	for {
 		mergedTagMaps, _, err := merger.MergeTagMaps(left.TagMap, right.TagMap, tagMapsConflictSolution)
@@ -143,23 +143,23 @@ func merge(leftFilename string, rightFilename string, mergedFilename string) {
 		}
 		switch err := err.(type) {
 		case merger.MergeConflictError:
-			tagMapsConflictSolution = handleMergeConflict(err.Conflicts, nil)
+			tagMapsConflictSolution = handleMergeConflict(err.Conflicts, nil, stdio)
 		default:
 			log.Fatal(err)
 		}
 	}
-	fmt.Println("Done.")
+	fmt.Fprintln(stdio.Out, "Done.")
 
-	fmt.Println("🎉 Finished merging!")
+	fmt.Fprintln(stdio.Out, "🎉 Finished merging!")
 
-	fmt.Println("Exporting merged database")
+	fmt.Fprintln(stdio.Out, "Exporting merged database")
 	if err = merged.ExportJWLBackup(mergedFilename); err != nil {
 		log.Fatal(err)
 	}
 
 }
 
-func handleMergeConflict(conflicts map[string]merger.MergeConflict, mergedDB *model.Database) map[string]merger.MergeSolution {
+func handleMergeConflict(conflicts map[string]merger.MergeConflict, mergedDB *model.Database, stdio terminal.Stdio) map[string]merger.MergeSolution {
 	helpText := ""
 	for _, val := range conflicts {
 		helpText = mergeConflictHelp(reflect.TypeOf(val.Left).String())
@@ -194,12 +194,12 @@ func handleMergeConflict(conflicts map[string]merger.MergeConflict, mergedDB *mo
 
 		t.Render()
 
-		fmt.Print("\n\n")
+		fmt.Fprint(stdio.Out, "\n\n")
 
 		var selected string
-		err := survey.AskOne(prompt, &selected)
+		err := survey.AskOne(prompt, &selected, survey.WithStdio(stdio.In, stdio.Out, stdio.Err))
 		if err == terminal.InterruptErr {
-			fmt.Println("interrupted")
+			fmt.Fprintln(stdio.Out, "interrupted")
 			os.Exit(0)
 		} else if err != nil {
 			panic(err)

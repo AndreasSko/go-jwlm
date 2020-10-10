@@ -10,7 +10,10 @@ import (
 	"path/filepath"
 	"reflect"
 
+	"github.com/davecgh/go-spew/spew"
+	"github.com/jinzhu/copier"
 	"github.com/pkg/errors"
+	"github.com/sergi/go-diff/diffmatchpatch"
 
 	// Register SQLite driver
 	_ "github.com/mattn/go-sqlite3"
@@ -52,6 +55,84 @@ func (db *Database) FetchFromTable(tableName string, id int) Model {
 	}
 
 	return table.Index(id).Interface().(Model)
+}
+
+// Equals checks if all entries of a Database are equal.
+func (db *Database) Equals(other *Database) bool {
+	// Make copy of DBs so we can safely transform them if necessary
+	dbCp := &Database{}
+	copier.Copy(dbCp, db)
+	otherCp := &Database{}
+	copier.Copy(otherCp, other)
+
+	// Sort all tables by UniqueKey and update IDs in other tables
+	for _, db := range []*Database{dbCp, otherCp} {
+		locIDChanges := sortByUniqueKey(&db.Location)
+		UpdateIDs(db.Bookmark, "LocationID", locIDChanges)
+		UpdateIDs(db.Bookmark, "PublicationLocationID", locIDChanges)
+		UpdateIDs(db.Note, "LocationID", locIDChanges)
+		UpdateIDs(db.TagMap, "LocationID", locIDChanges)
+		UpdateIDs(db.UserMark, "LocationID", locIDChanges)
+
+		sortByUniqueKey(&db.Bookmark)
+
+		tagIDChanges := sortByUniqueKey(&db.Tag)
+		UpdateIDs(db.TagMap, "TagID", tagIDChanges)
+
+		umIDChanges := sortByUniqueKey(&db.UserMark)
+		UpdateIDs(db.BlockRange, "UserMarkID", umIDChanges)
+		UpdateIDs(db.Note, "UserMarkID", umIDChanges)
+
+		sortByUniqueKey(&db.BlockRange)
+
+		noteIDChanges := sortByUniqueKey(&db.Note)
+		UpdateIDs(db.TagMap, "NoteID", noteIDChanges)
+
+		sortByUniqueKey(&db.TagMap)
+	}
+
+	// Check if all entries are equal.
+	dbFields := reflect.ValueOf(dbCp).Elem()
+	otherFields := reflect.ValueOf(otherCp).Elem()
+	for i := 0; i < dbFields.NumField(); i++ {
+		dbSlice := dbFields.Field(i)
+		otherSlice := otherFields.Field(i)
+		if !dbSlice.CanInterface() || !otherSlice.CanInterface() {
+			continue
+		}
+
+		if dbSlice.Len() != otherSlice.Len() {
+			fmt.Printf("Length of slices at index %d are not equal: %d vs %d\n", i, dbSlice.Len(), otherSlice.Len())
+			return false
+		}
+
+		for j := 0; j < dbSlice.Len(); j++ {
+			dElem := dbSlice.Index(j)
+			oElem := otherSlice.Index(j)
+
+			if dElem.IsNil() {
+				if oElem.IsNil() {
+					continue
+				} else {
+					return false
+				}
+			}
+
+			if !dElem.MethodByName("Equals").Call([]reflect.Value{oElem})[0].Bool() {
+				fmt.Println("Found different entries: ")
+				left := spew.Sdump(dElem.Interface())
+				right := spew.Sdump(oElem.Interface())
+				fmt.Printf("%s \nvs\n %s", left, right)
+				dmp := diffmatchpatch.New()
+				diffs := dmp.DiffMain(left, right, true)
+				fmt.Println("Diff:")
+				fmt.Println(dmp.DiffPrettyText(diffs))
+				return false
+			}
+		}
+	}
+
+	return true
 }
 
 // ImportJWLBackup unzips a given JW Library Backup file and imports the
