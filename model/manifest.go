@@ -29,11 +29,8 @@ type userDataBackup struct {
 	DeviceName       string `json:"deviceName"`
 }
 
-// validateManifest checks if the backup file is compatible by validating its manifest.json
-func validateManifest(path string) error {
-	const version = 1
-	const schemaVersion = 8
-
+// importManifest imports a manifest.json at path
+func (mfst *manifest) importManifest(path string) error {
 	file, err := os.Open(path)
 	if err != nil {
 		return err
@@ -42,29 +39,37 @@ func validateManifest(path string) error {
 
 	blob, _ := ioutil.ReadAll(file)
 
-	var manifest manifest
-	err = json.Unmarshal([]byte(blob), &manifest)
+	err = json.Unmarshal([]byte(blob), &mfst)
 	if err != nil {
 		return errors.Wrap(err, "Could not unmarshall backup manifest file")
-	}
-
-	if manifest.Version != version {
-		return fmt.Errorf("Manifest version is incompatible. Should be %d is %d", version, manifest.Version)
-	}
-
-	if manifest.UserDataBackup.SchemaVersion != schemaVersion {
-		return fmt.Errorf("Schema version is incompatible. Should be %d is %d", schemaVersion, manifest.UserDataBackup.SchemaVersion)
 	}
 
 	return nil
 }
 
-// createManifest creates a manifest for a given SQLite database and saves it at path
-func createManifest(backupName string, dbFile string, path string) error {
+// validateManifest checks if the backup file is compatible by validating the manifest
+func (mfst *manifest) validateManifest() error {
+	const version = 1
+	const schemaVersion = 8
+
+	if mfst.Version != version {
+		return fmt.Errorf("Manifest version is incompatible. Should be %d is %d", version, mfst.Version)
+	}
+
+	if mfst.UserDataBackup.SchemaVersion != schemaVersion {
+		return fmt.Errorf("Schema version is incompatible. Should be %d is %d", schemaVersion, mfst.UserDataBackup.SchemaVersion)
+	}
+
+	return nil
+}
+
+// generateManifest generates a manifest from the given information, which can
+// later be exported
+func generateManifest(backupName string, dbFile string) (*manifest, error) {
 	// Get SHA256 of SQLite file
 	f, err := os.Open(dbFile)
 	if err != nil {
-		errors.Wrap(err, "Error while opening SQLite file to calculate hash")
+		return nil, errors.Wrapf(err, "Error while opening SQLite file %s to calculate hash", dbFile)
 	}
 	defer f.Close()
 	hasher := sha256.New()
@@ -73,25 +78,32 @@ func createManifest(backupName string, dbFile string, path string) error {
 	}
 	hash := fmt.Sprintf("%x", hasher.Sum(nil))
 
-	udb := userDataBackup{
-		LastModifiedDate: time.Now().Format("2006-01-02T15:04:05-07:00"),
-		Hash:             hash,
-		DatabaseName:     filepath.Base(dbFile),
-		SchemaVersion:    8,
-		DeviceName:       "go-jwlm",
+	mfst := &manifest{
+		CreationDate: time.Now().Format("2006-01-02"),
+		UserDataBackup: userDataBackup{
+			LastModifiedDate: time.Now().Format("2006-01-02T15:04:05-07:00"),
+			Hash:             hash,
+			DatabaseName:     filepath.Base(dbFile),
+			SchemaVersion:    8,
+			DeviceName:       "go-jwlm",
+		},
+		Name:    backupName,
+		Type:    0,
+		Version: 1,
 	}
 
-	manifest := manifest{
-		CreationDate:   time.Now().Format("2006-01-02"),
-		UserDataBackup: udb,
-		Name:           backupName,
-		Type:           0,
-		Version:        1,
+	return mfst, nil
+}
+
+// exportManifest exports a manifest at path
+func (mfst *manifest) exportManifest(path string) error {
+	bytes, err := json.Marshal(mfst)
+	if err != nil {
+		return errors.Wrap(err, "Error while marshalling manifest")
 	}
 
-	bytes, err := json.Marshal(manifest)
 	if err := ioutil.WriteFile(path, bytes, 0644); err != nil {
-		return errors.Wrap(err, fmt.Sprintf("Error while saving manifest file to %v", path))
+		return errors.Wrap(err, fmt.Sprintf("Error while saving manifest file at %v", path))
 	}
 
 	return nil

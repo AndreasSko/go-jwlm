@@ -21,7 +21,6 @@ import (
 
 // Destination to temporarily unzip backups
 const tmpFolder = ".jwlm-tmp"
-const dbFilename = "user_data.db"
 const manifestFilename = "manifest.json"
 
 // Database represents the JW Library database as a struct
@@ -171,14 +170,20 @@ func (db *Database) ImportJWLBackup(filename string) error {
 		}
 	}
 
-	// Make sure that we support this backup version
+	// Import manifest
 	path := filepath.Join(tmpFolder, manifestFilename)
-	if err := validateManifest(path); err != nil {
+	manifest := manifest{}
+	if err := manifest.importManifest(path); err != nil {
+		return errors.Wrap(err, "Error while importing manifest")
+	}
+
+	// Make sure that we support this backup version
+	if err := manifest.validateManifest(); err != nil {
 		return err
 	}
 
 	// Fill the Database with actual data
-	path = filepath.Join(tmpFolder, dbFilename)
+	path = filepath.Join(tmpFolder, manifest.UserDataBackup.DatabaseName)
 	return db.importSQLite(path)
 }
 
@@ -324,14 +329,18 @@ func (db *Database) ExportJWLBackup(filename string) error {
 	defer os.RemoveAll(tmpFolder)
 
 	// Create user_data.db
-	dbPath := filepath.Join(tmpFolder, dbFilename)
+	dbPath := filepath.Join(tmpFolder, "user_data.db")
 	if err := db.saveToNewSQLite(dbPath); err != nil {
 		return errors.Wrap(err, "Could not create SQLite database for exporting")
 	}
 
 	// Create manifest.json
 	manifestPath := filepath.Join(tmpFolder, manifestFilename)
-	if err := createManifest("Bla", dbPath, manifestPath); err != nil {
+	mfst, err := generateManifest("go-jwlm", dbPath)
+	if err != nil {
+		return errors.Wrap(err, "Error while generating manifest")
+	}
+	if err := mfst.exportManifest(manifestPath); err != nil {
 		return errors.Wrap(err, "Error while creating manifest.json")
 	}
 
