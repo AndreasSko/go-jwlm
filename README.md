@@ -59,7 +59,7 @@ You can find the compiled binaries for Windows, Linux, and Mac under the
 [Release](https://github.com/AndreasSko/go-jwlm/releases) section. 
 
 ### Installation using Homebrew (Mac and Linux)
-go-jwlm can easily installed using Hombrew:
+go-jwlm can be easily installed using Hombrew:
 ```shell
 brew install andreassko/homebrew-go-jwlm/go-jwlm
 ```
