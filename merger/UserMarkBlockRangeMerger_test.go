@@ -1336,6 +1336,15 @@ func Test_replaceUMBRConflictsWithSolution(t *testing.T) {
 				},
 			},
 		},
+		"UNRELATEDSOLUTION": {
+			Side: RightSide,
+			Solution: &model.Note{
+				GUID: "BLA",
+			},
+			Discarded: &model.Note{
+				GUID: "BLABLA",
+			},
+		},
 	}
 
 	expectedLeft := []*model.UserMarkBlockRange{
