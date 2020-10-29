@@ -9,6 +9,7 @@ import (
 	"strings"
 	"text/tabwriter"
 
+	"github.com/jinzhu/copier"
 	"github.com/mitchellh/go-wordwrap"
 )
 
@@ -39,6 +40,34 @@ func MakeModelSlice(arg interface{}) ([]Model, error) {
 		result[i] = slice.Index(i).Interface().(Model)
 	}
 	return result, nil
+}
+
+// MakeModelCopy copies the content of the given Model (pointer to a
+// model-implementing struct) to a new Model
+func MakeModelCopy(mdl Model) Model {
+	var mdlCopy Model
+	switch mdl.(type) {
+	case *BlockRange:
+		mdlCopy = &BlockRange{}
+	case *Bookmark:
+		mdlCopy = &Bookmark{}
+	case *Location:
+		mdlCopy = &Location{}
+	case *Note:
+		mdlCopy = &Note{}
+	case *Tag:
+		mdlCopy = &Tag{}
+	case *TagMap:
+		mdlCopy = &TagMap{}
+	case *UserMark:
+		mdlCopy = &UserMark{}
+	default:
+		panic(fmt.Sprintf("Type %T is not supported for copying", mdl))
+	}
+
+	copier.Copy(mdlCopy, mdl)
+
+	return mdlCopy
 }
 
 // prettyPrint prints the given fields of a Model as a table. If the field
