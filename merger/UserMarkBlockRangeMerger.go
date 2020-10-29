@@ -220,14 +220,14 @@ func joinToUserMarkBlockRange(um []*model.UserMark, br []*model.BlockRange) []*m
 		if entry == nil || *entry == (model.UserMark{}) {
 			continue
 		}
-		result[i] = &model.UserMarkBlockRange{UserMark: entry, BlockRanges: []*model.BlockRange{}}
+		result[i] = &model.UserMarkBlockRange{UserMark: model.MakeModelCopy(entry).(*model.UserMark), BlockRanges: []*model.BlockRange{}}
 	}
 
 	for _, entry := range br {
 		if entry == nil || entry.UserMarkID >= len(result) || result[entry.UserMarkID] == nil {
 			continue
 		}
-		result[entry.UserMarkID].BlockRanges = append(result[entry.UserMarkID].BlockRanges, entry)
+		result[entry.UserMarkID].BlockRanges = append(result[entry.UserMarkID].BlockRanges, model.MakeModelCopy(entry).(*model.BlockRange))
 	}
 
 	return result

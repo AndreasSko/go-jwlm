@@ -304,6 +304,9 @@ func Test_MergeLocations(t *testing.T) {
 	assert.Equal(t, expectedResult, result)
 	assert.Equal(t, expectedChanges, changes)
 	assert.NoError(t, err)
+	// Check if original has not been tweaked
+	assert.Equal(t, 6, left[6].LocationID)
+	assert.Equal(t, 7, right[7].LocationID)
 }
 
 func Benchmark_MergeLocations(b *testing.B) {

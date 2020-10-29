@@ -134,6 +134,9 @@ func TestMergeNotes(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, expectedResult, result)
 	assert.Equal(t, expectedChanges, changes)
+	// Check if original has not been tweaked
+	assert.Equal(t, 2, left[1].NoteID)
+	assert.Equal(t, 3, right[2].NoteID)
 
 	// Call Merge while some entries have been updated => conflict
 	left = []*model.Note{

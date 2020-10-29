@@ -253,4 +253,7 @@ func TestMergeTagMaps(t *testing.T) {
 	result, _, err := MergeTagMaps(left, right, nil)
 	assert.NoError(t, err)
 	assert.Equal(t, expectedResult, result)
+	// Check if original has not been tweaked
+	assert.Equal(t, 12, left[11].TagMapID)
+	assert.Equal(t, 8, right[7].TagMapID)
 }

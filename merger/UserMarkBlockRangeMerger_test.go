@@ -222,6 +222,9 @@ func TestMergeUserMarkAndBlockRange_without_conflict(t *testing.T) {
 	assert.Equal(t, expectedUM, um)
 	assert.Equal(t, expectedBR, br)
 	assert.Equal(t, expectedChanges, changes)
+	// Check if original has not been tweaked
+	assert.Equal(t, 4, leftUM[4].UserMarkID)
+	assert.Equal(t, 4, leftBR[4].BlockRangeID)
 }
 
 func TestMergeUserMarkAndBlockRange_with_conflict(t *testing.T) {
