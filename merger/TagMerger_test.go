@@ -123,4 +123,7 @@ func TestMergeTags(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, expectedResult, result)
 	assert.Equal(t, expectedChanges, changes)
+	// Check if original has not been tweaked
+	assert.Equal(t, 1, left[0].TagID)
+	assert.Equal(t, 1, right[0].TagID)
 }

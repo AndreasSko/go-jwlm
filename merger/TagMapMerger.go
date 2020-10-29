@@ -61,7 +61,7 @@ func MergeTagMaps(left []*model.TagMap, right []*model.TagMap, conflictSolution 
 
 		j = 0
 		for j, tm := range sortedTagMap {
-			result[i] = tm
+			result[i] = model.MakeModelCopy(tm).(*model.TagMap)
 			result[i].SetID(i)
 			// Position is defined per Tag(!), not PlaylistItemID/LocationID/NoteID
 			result[i].Position = j

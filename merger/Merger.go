@@ -181,7 +181,7 @@ func prepareMergeSolution(solutionMap *map[string]MergeSolution) ([]model.Model,
 
 	i = 1
 	for _, sol := range solutionSlice {
-		result[i] = sol.Solution
+		result[i] = model.MakeModelCopy(sol.Solution)
 		// Update ID if needed
 		if sol.Solution.ID() != i {
 			if sol.Side == LeftSide {
