@@ -11,7 +11,6 @@ import (
 	"reflect"
 
 	"github.com/davecgh/go-spew/spew"
-	"github.com/jinzhu/copier"
 	"github.com/pkg/errors"
 	"github.com/sergi/go-diff/diffmatchpatch"
 
@@ -98,10 +97,10 @@ func MakeDatabaseCopy(db *Database) *Database {
 // Equals checks if all entries of a Database are equal.
 func (db *Database) Equals(other *Database) bool {
 	// Make copy of DBs so we can safely transform them if necessary
-	dbCp := &Database{}
-	copier.Copy(dbCp, db)
-	otherCp := &Database{}
-	copier.Copy(otherCp, other)
+	dbCp := MakeDatabaseCopy(db)
+	otherCp := MakeDatabaseCopy(other)
+	fmt.Println(other.BlockRange)
+	fmt.Println(otherCp.BlockRange)
 
 	// Sort all tables by UniqueKey and update IDs in other tables
 	for _, db := range []*Database{dbCp, otherCp} {
