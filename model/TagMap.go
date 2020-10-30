@@ -38,9 +38,6 @@ func (m *TagMap) UniqueKey() string {
 	sb.WriteString(strconv.FormatInt(int64(m.NoteID.Int32), 10))
 	sb.WriteString("_")
 	sb.WriteString(strconv.FormatInt(int64(m.TagID), 10))
-	sb.WriteString("_")
-	sb.WriteString(strconv.FormatInt(int64(m.Position), 10))
-	// TODO: Should TagID & Position be included??
 	return sb.String()
 }
 
