@@ -408,7 +408,10 @@ var rightDB = &model.Database{
 			TagMapID: 2,
 			NoteID:   sql.NullInt32{2, true},
 			TagID:    3,
-			Position: 0,
+			// Should normally be 0, but changed it to 1 to detect
+			// if merger recognizes that its still the same entry,
+			// just with a different position
+			Position: 1,
 		},
 	},
 	UserMark: []*model.UserMark{

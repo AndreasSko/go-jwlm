@@ -41,9 +41,9 @@ func TestTagMap_UniqueKey(t *testing.T) {
 		TagID:      1,
 		Position:   1,
 	}
-	assert.Equal(t, "1_1_1_1_1", m1.UniqueKey())
+	assert.Equal(t, "1_1_1_1", m1.UniqueKey())
 	assert.Equal(t, m1.UniqueKey(), m1_1.UniqueKey())
-	assert.Equal(t, "0_1_1_1_1", m2.UniqueKey())
+	assert.Equal(t, "0_1_1_1", m2.UniqueKey())
 }
 
 func TestTagMap_Equals(t *testing.T) {

@@ -85,6 +85,14 @@ func TestMergeTagMaps(t *testing.T) {
 			TagID:          101,
 			Position:       0,
 		},
+		{
+			TagMapID:       13,
+			PlaylistItemID: sql.NullInt32{},
+			LocationID:     sql.NullInt32{},
+			NoteID:         sql.NullInt32{Int32: 999, Valid: true},
+			TagID:          3,
+			Position:       3,
+		},
 	}
 
 	right := []*model.TagMap{
@@ -139,6 +147,14 @@ func TestMergeTagMaps(t *testing.T) {
 			NoteID:         sql.NullInt32{Int32: 222, Valid: true},
 			TagID:          3,
 			Position:       0,
+		},
+		{
+			TagMapID:       9,
+			PlaylistItemID: sql.NullInt32{},
+			LocationID:     sql.NullInt32{},
+			NoteID:         sql.NullInt32{Int32: 999, Valid: true},
+			TagID:          3,
+			Position:       1,
 		},
 	}
 
@@ -202,14 +218,22 @@ func TestMergeTagMaps(t *testing.T) {
 		},
 		{
 			TagMapID:       8,
-			PlaylistItemID: sql.NullInt32{Int32: 1, Valid: true},
+			PlaylistItemID: sql.NullInt32{},
 			LocationID:     sql.NullInt32{},
-			NoteID:         sql.NullInt32{},
+			NoteID:         sql.NullInt32{Int32: 999, Valid: true},
 			TagID:          3,
 			Position:       3,
 		},
 		{
 			TagMapID:       9,
+			PlaylistItemID: sql.NullInt32{Int32: 1, Valid: true},
+			LocationID:     sql.NullInt32{},
+			NoteID:         sql.NullInt32{},
+			TagID:          3,
+			Position:       4,
+		},
+		{
+			TagMapID:       10,
 			PlaylistItemID: sql.NullInt32{},
 			LocationID:     sql.NullInt32{},
 			NoteID:         sql.NullInt32{Int32: 1, Valid: true},
@@ -217,7 +241,7 @@ func TestMergeTagMaps(t *testing.T) {
 			Position:       0,
 		},
 		{
-			TagMapID:       10,
+			TagMapID:       11,
 			PlaylistItemID: sql.NullInt32{Int32: 1, Valid: true},
 			LocationID:     sql.NullInt32{},
 			NoteID:         sql.NullInt32{},
@@ -225,7 +249,7 @@ func TestMergeTagMaps(t *testing.T) {
 			Position:       0,
 		},
 		{
-			TagMapID:       11,
+			TagMapID:       12,
 			PlaylistItemID: sql.NullInt32{},
 			LocationID:     sql.NullInt32{},
 			NoteID:         sql.NullInt32{Int32: 2, Valid: true},
@@ -233,7 +257,7 @@ func TestMergeTagMaps(t *testing.T) {
 			Position:       0,
 		},
 		{
-			TagMapID:       12,
+			TagMapID:       13,
 			PlaylistItemID: sql.NullInt32{},
 			LocationID:     sql.NullInt32{},
 			NoteID:         sql.NullInt32{Int32: 1, Valid: true},
@@ -241,7 +265,7 @@ func TestMergeTagMaps(t *testing.T) {
 			Position:       0,
 		},
 		{
-			TagMapID:       13,
+			TagMapID:       14,
 			PlaylistItemID: sql.NullInt32{},
 			LocationID:     sql.NullInt32{},
 			NoteID:         sql.NullInt32{Int32: 1, Valid: true},
