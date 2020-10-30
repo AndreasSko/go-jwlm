@@ -11,7 +11,6 @@ import (
 	"reflect"
 
 	"github.com/davecgh/go-spew/spew"
-	"github.com/jinzhu/copier"
 	"github.com/pkg/errors"
 	"github.com/sergi/go-diff/diffmatchpatch"
 
@@ -54,13 +53,54 @@ func (db *Database) FetchFromTable(tableName string, id int) Model {
 	return table.Index(id).Interface().(Model)
 }
 
+// MakeDatabaseCopy creates a deep copy of the given Database, so elements of
+// the copy can be safely updated without affecting the original one.
+func MakeDatabaseCopy(db *Database) *Database {
+	newDB := &Database{}
+
+	dbFields := reflect.ValueOf(db).Elem()
+	for i := 0; i < dbFields.NumField(); i++ {
+		field := dbFields.Field(i)
+		if !field.CanInterface() {
+			continue
+		}
+
+		tp := field.Kind()
+		switch tp {
+		case reflect.Slice:
+			cpSlice := reflect.MakeSlice(field.Type(), field.Len(), field.Len())
+
+			for j := 0; j < field.Len(); j++ {
+				elem := field.Index(j)
+
+				if elem.IsNil() {
+					continue
+				}
+
+				switch t := elem.Interface().(type) {
+				case Model:
+					cpSlice.Index(j).Set(reflect.ValueOf(MakeModelCopy(elem.Interface().(Model))))
+				default:
+					panic(fmt.Sprintf("Element type %T is not supported for copying", t))
+				}
+			}
+			cpField := reflect.ValueOf(newDB).Elem().Field(i)
+			cpField.Set(cpSlice)
+		default:
+			panic(fmt.Sprintf("Field type %T is not supported for copying", tp))
+		}
+	}
+
+	return newDB
+}
+
 // Equals checks if all entries of a Database are equal.
 func (db *Database) Equals(other *Database) bool {
 	// Make copy of DBs so we can safely transform them if necessary
-	dbCp := &Database{}
-	copier.Copy(dbCp, db)
-	otherCp := &Database{}
-	copier.Copy(otherCp, other)
+	dbCp := MakeDatabaseCopy(db)
+	otherCp := MakeDatabaseCopy(other)
+	fmt.Println(other.BlockRange)
+	fmt.Println(otherCp.BlockRange)
 
 	// Sort all tables by UniqueKey and update IDs in other tables
 	for _, db := range []*Database{dbCp, otherCp} {
