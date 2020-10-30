@@ -47,7 +47,7 @@ var MarkingResolver string
 var NoteResolver string
 
 func merge(leftFilename string, rightFilename string, mergedFilename string, stdio terminal.Stdio) {
-	fmt.Println("Importing left backup")
+	fmt.Fprintln(stdio.Out, "Importing left backup")
 	left := model.Database{}
 	err := left.ImportJWLBackup(leftFilename)
 	if err != nil {
