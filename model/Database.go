@@ -414,6 +414,12 @@ func (db *Database) saveToNewSQLite(filename string) error {
 		}
 	}
 
+	// Vacuum to clean up SQLite DB
+	_, err = sqlite.Exec("VACUUM")
+	if err != nil {
+		return errors.Wrap(err, "Error while vacuuming SQLite DB")
+	}
+
 	return nil
 }
 
