@@ -99,8 +99,6 @@ func (db *Database) Equals(other *Database) bool {
 	// Make copy of DBs so we can safely transform them if necessary
 	dbCp := MakeDatabaseCopy(db)
 	otherCp := MakeDatabaseCopy(other)
-	fmt.Println(other.BlockRange)
-	fmt.Println(otherCp.BlockRange)
 
 	// Sort all tables by UniqueKey and update IDs in other tables
 	for _, db := range []*Database{dbCp, otherCp} {
