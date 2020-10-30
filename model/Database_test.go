@@ -9,6 +9,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"reflect"
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
@@ -49,6 +50,40 @@ func TestDatabase_Fetch(t *testing.T) {
 	assert.PanicsWithValue(t, "Table notexists does not exist in Database", func() {
 		db.FetchFromTable("notexists", 2)
 	})
+}
+
+func TestMakeDatabaseCopy(t *testing.T) {
+	db := &Database{}
+
+	path := filepath.Join("testdata", "user_data.db")
+	assert.NoError(t, db.importSQLite(path))
+
+	dbCp := MakeDatabaseCopy(db)
+	assertEqualNotDeepSame(t, db.BlockRange, dbCp.BlockRange)
+	assertEqualNotDeepSame(t, db.Bookmark, dbCp.Bookmark)
+	assertEqualNotDeepSame(t, db.Location, dbCp.Location)
+	assertEqualNotDeepSame(t, db.Note, dbCp.Note)
+	assertEqualNotDeepSame(t, db.Tag, dbCp.Tag)
+	assertEqualNotDeepSame(t, db.TagMap, dbCp.TagMap)
+	assertEqualNotDeepSame(t, db.UserMark, dbCp.UserMark)
+}
+
+// assertEqualNotDeepSame asserts that the entries of two slices are equal
+// but point to different memory addresses (so not the same).
+func assertEqualNotDeepSame(t *testing.T, expected interface{}, actual interface{}) {
+	expectedRefl := reflect.ValueOf(expected)
+	actualRefl := reflect.ValueOf(actual)
+
+	assert.Equal(t, expectedRefl.Len(), actualRefl.Len())
+
+	for i := 0; i < expectedRefl.Len(); i++ {
+		if expectedRefl.Index(i).IsNil() || actualRefl.Index(i).IsNil() {
+			assert.Equal(t, expectedRefl.Index(i).IsNil(), actualRefl.Index(i).IsNil())
+			continue
+		}
+		assert.Equal(t, expectedRefl.Index(i).Elem().Interface(), actualRefl.Index(i).Elem().Interface())
+		assert.NotEqual(t, expectedRefl.Index(i).Pointer(), actualRefl.Index(i).Pointer())
+	}
 }
 
 func Test_getSliceCapacity(t *testing.T) {
