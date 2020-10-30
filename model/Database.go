@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"time"
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/pkg/errors"
@@ -412,6 +413,13 @@ func (db *Database) saveToNewSQLite(filename string) error {
 		if err := insertEntries(sqlite, mdl); err != nil {
 			return err
 		}
+	}
+
+	// Update LastModified
+	lastModified := time.Now().Format("2006-01-02T15:04:05-07:00")
+	_, err = sqlite.Exec(fmt.Sprintf("UPDATE LastModified SET LastModified = \"%s\" WHERE LastModified = (SELECT * FROM LastModified)", lastModified))
+	if err != nil {
+		return errors.Wrap(err, "Error while updating LastModified")
 	}
 
 	// Vacuum to clean up SQLite DB
