@@ -85,7 +85,7 @@ func merge(leftFilename string, rightFilename string, mergedFilename string, std
 		case merger.MergeConflictError:
 			if BookmarkResolver != "" {
 				var resErr error
-				bookmarksConflictSolution, resErr = autoResolveConflicts(err.Conflicts, BookmarkResolver)
+				bookmarksConflictSolution, resErr = merger.AutoResolveConflicts(err.Conflicts, BookmarkResolver)
 				if resErr != nil {
 					log.Fatal(resErr)
 				}
@@ -130,7 +130,7 @@ func merge(leftFilename string, rightFilename string, mergedFilename string, std
 		case merger.MergeConflictError:
 			if MarkingResolver != "" {
 				var resErr error
-				UMBRConflictSolution, resErr = autoResolveConflicts(err.Conflicts, MarkingResolver)
+				UMBRConflictSolution, resErr = merger.AutoResolveConflicts(err.Conflicts, MarkingResolver)
 				if resErr != nil {
 					log.Fatal(resErr)
 				}
@@ -156,7 +156,7 @@ func merge(leftFilename string, rightFilename string, mergedFilename string, std
 		case merger.MergeConflictError:
 			if NoteResolver != "" {
 				var resErr error
-				notesConflictSolution, resErr = autoResolveConflicts(err.Conflicts, NoteResolver)
+				notesConflictSolution, resErr = merger.AutoResolveConflicts(err.Conflicts, NoteResolver)
 				if resErr != nil {
 					log.Fatal(resErr)
 				}
@@ -257,38 +257,6 @@ func handleMergeConflict(conflicts map[string]merger.MergeConflict, mergedDB *mo
 	}
 
 	return result
-}
-
-// autoResolveConflicts resolves mergeConflicts using the resolver
-// indicated by resolverName.
-func autoResolveConflicts(conflicts map[string]merger.MergeConflict, resolverName string) (map[string]merger.MergeSolution, error) {
-	resolver, err := getResolver(resolverName)
-	if err != nil {
-		return nil, err
-	}
-	if resolver == nil {
-		return nil, nil
-	}
-	return resolver(conflicts)
-}
-
-// getResolver parses the name of the resolver and returns its function.
-// If the name is empty, it returns nil.
-func getResolver(name string) (merger.MergeConflictSolver, error) {
-	if name == "" {
-		return nil, nil
-	}
-
-	switch name {
-	case "chooseLeft":
-		return merger.SolveConflictByChoosingLeft, nil
-	case "chooseRight":
-		return merger.SolveConflictByChoosingRight, nil
-	case "chooseNewest":
-		return merger.SolveConflictByChoosingNewest, nil
-	}
-
-	return nil, fmt.Errorf("%s is not a valid conflict resolver. Can be 'chooseNewest', 'chooseLeft', or 'chooseRight'", name)
 }
 
 func init() {

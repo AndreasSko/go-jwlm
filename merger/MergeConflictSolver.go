@@ -9,6 +9,19 @@ import (
 // MergeConflictSolver describes a function that is able to handle mergeConflicts semi-automatic
 type MergeConflictSolver func(map[string]MergeConflict) (map[string]MergeSolution, error)
 
+// AutoResolveConflicts resolves mergeConflicts using the resolver
+// indicated by resolverName.
+func AutoResolveConflicts(conflicts map[string]MergeConflict, resolverName string) (map[string]MergeSolution, error) {
+	resolver, err := parseResolver(resolverName)
+	if err != nil {
+		return nil, err
+	}
+	if resolver == nil {
+		return nil, nil
+	}
+	return resolver(conflicts)
+}
+
 // SolveConflictByChoosingLeft solves a MergeConflict by always choosing the left side
 func SolveConflictByChoosingLeft(conflicts map[string]MergeConflict) (map[string]MergeSolution, error) {
 	return solveConflictByChoosingSide(conflicts, LeftSide)
@@ -17,6 +30,25 @@ func SolveConflictByChoosingLeft(conflicts map[string]MergeConflict) (map[string
 // SolveConflictByChoosingRight solves a MergeConflict by always choosing the right side
 func SolveConflictByChoosingRight(conflicts map[string]MergeConflict) (map[string]MergeSolution, error) {
 	return solveConflictByChoosingSide(conflicts, RightSide)
+}
+
+// parseResolver parses the name of the resolver and returns its function.
+// If the name is empty, it returns nil.
+func parseResolver(name string) (MergeConflictSolver, error) {
+	if name == "" {
+		return nil, nil
+	}
+
+	switch name {
+	case "chooseLeft":
+		return SolveConflictByChoosingLeft, nil
+	case "chooseRight":
+		return SolveConflictByChoosingRight, nil
+	case "chooseNewest":
+		return SolveConflictByChoosingNewest, nil
+	}
+
+	return nil, fmt.Errorf("%s is not a valid conflict resolver. Can be 'chooseNewest', 'chooseLeft', or 'chooseRight'", name)
 }
 
 // SolveConflictByChoosingNewest solves a MergeConflict by always choosing the newest entry,

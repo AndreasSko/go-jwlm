@@ -8,8 +8,6 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"reflect"
-	"runtime"
 	"testing"
 
 	"github.com/AlecAivazis/survey/v2/terminal"
@@ -138,35 +136,6 @@ func RunCmdTest(t *testing.T, procedure func(*testing.T, *expect.Console), test 
 
 	// Dump the terminal's screen.
 	t.Logf("\n%s", expect.StripTrailingEmptyLines(state.String()))
-}
-
-func Test_getResolver(t *testing.T) {
-	resolver, err := getResolver("")
-	assert.NoError(t, err)
-	assert.Nil(t, resolver)
-
-	// https://github.com/stretchr/testify/issues/182#issuecomment-495359313
-	resolver, err = getResolver("chooseLeft")
-	assert.NoError(t, err)
-	assert.Equal(t,
-		"github.com/AndreasSko/go-jwlm/merger.SolveConflictByChoosingLeft",
-		runtime.FuncForPC(reflect.ValueOf(resolver).Pointer()).Name())
-
-	resolver, err = getResolver("chooseRight")
-	assert.NoError(t, err)
-	assert.Equal(t,
-		"github.com/AndreasSko/go-jwlm/merger.SolveConflictByChoosingRight",
-		runtime.FuncForPC(reflect.ValueOf(resolver).Pointer()).Name())
-
-	resolver, err = getResolver("chooseNewest")
-	assert.NoError(t, err)
-	assert.Equal(t,
-		"github.com/AndreasSko/go-jwlm/merger.SolveConflictByChoosingNewest",
-		runtime.FuncForPC(reflect.ValueOf(resolver).Pointer()).Name())
-
-	resolver, err = getResolver("nonexistent")
-	assert.EqualError(t, err, "nonexistent is not a valid conflict resolver. Can be 'chooseNewest', 'chooseLeft', or 'chooseRight'")
-	assert.Nil(t, resolver)
 }
 
 var emptyDB = &model.Database{}
