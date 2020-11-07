@@ -168,6 +168,15 @@ func replaceUMBRConflictsWithSolution(left *[]*model.UserMarkBlockRange, right *
 
 	for _, sol := range conflictSolution {
 		var side, other *[]*model.UserMarkBlockRange
+
+		// Ignore non UserMarkBlockRange solutions
+		if _, ok := sol.Solution.(*model.UserMarkBlockRange); !ok {
+			continue
+		}
+		if _, ok := sol.Discarded.(*model.UserMarkBlockRange); !ok {
+			continue
+		}
+
 		if sol.Side == LeftSide {
 			side = left
 			other = right
