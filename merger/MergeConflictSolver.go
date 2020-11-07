@@ -9,8 +9,7 @@ import (
 // MergeConflictSolver describes a function that is able to handle mergeConflicts semi-automatic
 type MergeConflictSolver func(map[string]MergeConflict) (map[string]MergeSolution, error)
 
-// AutoResolveConflicts resolves mergeConflicts using the resolver
-// indicated by resolverName.
+// AutoResolveConflicts resolves mergeConflicts using the resolver indicated by resolverName.
 func AutoResolveConflicts(conflicts map[string]MergeConflict, resolverName string) (map[string]MergeSolution, error) {
 	resolver, err := parseResolver(resolverName)
 	if err != nil {

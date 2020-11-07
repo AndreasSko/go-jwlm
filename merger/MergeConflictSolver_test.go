@@ -208,7 +208,7 @@ func TestSolveConflictByChoosingNewest(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func Test_GetResolver(t *testing.T) {
+func Test_parseResolver(t *testing.T) {
 	resolver, err := parseResolver("")
 	assert.NoError(t, err)
 	assert.Nil(t, resolver)

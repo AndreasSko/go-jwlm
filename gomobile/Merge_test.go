@@ -1,0 +1,764 @@
+package gomobile
+
+import (
+	"database/sql"
+	"testing"
+
+	"github.com/AndreasSko/go-jwlm/model"
+	"github.com/tj/assert"
+)
+
+// These tests are more ore less copied from cmd/merge_test.go
+
+// Merge against empty DB and see if result is still the same
+func Test_MergeWithEmpty(t *testing.T) {
+	dbw := DatabaseWrapper{
+		left:  model.MakeDatabaseCopy(leftDB),
+		right: model.MakeDatabaseCopy(emptyDB),
+	}
+	dbw.Init()
+
+	mcw := &MergeConflictsWrapper{}
+
+	assert.NoError(t, dbw.MergeLocations())
+	assert.NoError(t, dbw.MergeBookmarks("", mcw))
+	assert.NoError(t, dbw.MergeTags())
+	assert.NoError(t, dbw.MergeUserMarkAndBlockRange("", mcw))
+	assert.NoError(t, dbw.MergeNotes("", mcw))
+	assert.NoError(t, dbw.MergeTagMaps())
+
+	assert.True(t, dbw.left.Equals(dbw.merged))
+}
+
+// Merge while selecting all right
+func Test_MergeAllRight(t *testing.T) {
+	dbw := DatabaseWrapper{
+		left:  model.MakeDatabaseCopy(leftDB),
+		right: model.MakeDatabaseCopy(rightDB),
+	}
+	dbw.Init()
+
+	mcw := &MergeConflictsWrapper{}
+
+	assert.NoError(t, dbw.MergeLocations())
+	assert.Error(t, dbw.MergeBookmarks("", mcw))
+	selectSameSide(mcw, "rightSide")
+
+	dbw.Init()
+	assert.NoError(t, dbw.MergeLocations())
+	assert.NoError(t, dbw.MergeBookmarks("", mcw))
+	assert.NoError(t, dbw.MergeTags())
+	assert.Error(t, dbw.MergeUserMarkAndBlockRange("", mcw))
+	selectSameSide(mcw, "rightSide")
+
+	dbw.Init()
+	assert.NoError(t, dbw.MergeLocations())
+	assert.NoError(t, dbw.MergeBookmarks("", mcw))
+	assert.NoError(t, dbw.MergeTags())
+	assert.NoError(t, dbw.MergeUserMarkAndBlockRange("", mcw))
+	assert.Error(t, dbw.MergeNotes("", mcw))
+	selectSameSide(mcw, "rightSide")
+
+	dbw.Init()
+	assert.NoError(t, dbw.MergeLocations())
+	assert.NoError(t, dbw.MergeBookmarks("", mcw))
+	assert.NoError(t, dbw.MergeTags())
+	assert.NoError(t, dbw.MergeUserMarkAndBlockRange("", mcw))
+	assert.NoError(t, dbw.MergeNotes("", mcw))
+	assert.NoError(t, dbw.MergeTagMaps())
+
+	assert.True(t, mergedAllRightDB.Equals(dbw.merged))
+}
+
+// Merge while selecting all right
+func Test_MergeAllLeft(t *testing.T) {
+	dbw := DatabaseWrapper{
+		left:  model.MakeDatabaseCopy(leftDB),
+		right: model.MakeDatabaseCopy(rightDB),
+	}
+	dbw.Init()
+
+	mcw := &MergeConflictsWrapper{}
+
+	assert.NoError(t, dbw.MergeLocations())
+	assert.Error(t, dbw.MergeBookmarks("", mcw))
+	selectSameSide(mcw, "leftSide")
+
+	dbw.Init()
+	assert.NoError(t, dbw.MergeLocations())
+	assert.NoError(t, dbw.MergeBookmarks("", mcw))
+	assert.NoError(t, dbw.MergeTags())
+	assert.Error(t, dbw.MergeUserMarkAndBlockRange("", mcw))
+	selectSameSide(mcw, "leftSide")
+
+	dbw.Init()
+	assert.NoError(t, dbw.MergeLocations())
+	assert.NoError(t, dbw.MergeBookmarks("", mcw))
+	assert.NoError(t, dbw.MergeTags())
+	assert.NoError(t, dbw.MergeUserMarkAndBlockRange("", mcw))
+	assert.Error(t, dbw.MergeNotes("", mcw))
+	selectSameSide(mcw, "leftSide")
+
+	dbw.Init()
+	assert.NoError(t, dbw.MergeLocations())
+	assert.NoError(t, dbw.MergeBookmarks("", mcw))
+	assert.NoError(t, dbw.MergeTags())
+	assert.NoError(t, dbw.MergeUserMarkAndBlockRange("", mcw))
+	assert.NoError(t, dbw.MergeNotes("", mcw))
+	assert.NoError(t, dbw.MergeTagMaps())
+
+	assert.True(t, mergedAllLeftDB.Equals(dbw.merged))
+}
+
+// Merge with auto resolution: chooseRight for Bookmarks & Markings,
+// chooseNewest for Notes
+func Test_MergeWithAutoresolution(t *testing.T) {
+	dbw := DatabaseWrapper{
+		left:  model.MakeDatabaseCopy(leftDB),
+		right: model.MakeDatabaseCopy(rightDB),
+	}
+	dbw.Init()
+
+	mcw := &MergeConflictsWrapper{}
+
+	assert.NoError(t, dbw.MergeLocations())
+	assert.NoError(t, dbw.MergeBookmarks("chooseRight", mcw))
+	assert.NoError(t, dbw.MergeTags())
+	assert.NoError(t, dbw.MergeUserMarkAndBlockRange("chooseRight", mcw))
+	assert.NoError(t, dbw.MergeNotes("chooseNewest", mcw))
+	assert.NoError(t, dbw.MergeTagMaps())
+
+	assert.True(t, mergedAllRightDB.Equals(dbw.merged))
+}
+
+func selectSameSide(mcw *MergeConflictsWrapper, side string) {
+	for i := mcw.GetNextConflictIndex(); i != -1; i = mcw.GetNextConflictIndex() {
+		mcw.SolveConflict(i, side)
+	}
+}
+
+var emptyDB = &model.Database{}
+
+var leftDB = &model.Database{
+	BlockRange: []*model.BlockRange{
+		nil,
+		{
+			BlockRangeID: 1,
+			BlockType:    2,
+			Identifier:   1,
+			StartToken:   sql.NullInt32{0, true},
+			EndToken:     sql.NullInt32{7, true},
+			UserMarkID:   1,
+		},
+	},
+	Bookmark: []*model.Bookmark{
+		nil,
+		{
+			BookmarkID:            1,
+			LocationID:            1,
+			PublicationLocationID: 2,
+			Title:                 "1. Mose 1:1",
+			Snippet:               sql.NullString{"1 Am Anfang erschuf Gott Himmel und Erde.", true},
+			BlockType:             2,
+			BlockIdentifier:       sql.NullInt32{1, true},
+		},
+	},
+	Location: []*model.Location{
+		nil,
+		{
+			LocationID:    1,
+			BookNumber:    sql.NullInt32{1, true},
+			ChapterNumber: sql.NullInt32{1, true},
+			KeySymbol:     sql.NullString{"nwtsty", true},
+			MepsLanguage:  2,
+			LocationType:  0,
+			Title:         sql.NullString{"1. Mose 1", true},
+		},
+		{
+			LocationID:   2,
+			KeySymbol:    sql.NullString{"nwtsty", true},
+			MepsLanguage: 2,
+			LocationType: 1,
+		},
+	},
+	Note: []*model.Note{
+		nil,
+		{
+			NoteID:          1,
+			GUID:            "92B192B4-B0B9-49B2-949F-7A8BA6406AF4",
+			UserMarkID:      sql.NullInt32{1, true},
+			LocationID:      sql.NullInt32{1, true},
+			Title:           sql.NullString{"Am Anfang erschuf Gott Himmel und Erde.", true},
+			Content:         sql.NullString{"📝 for left version", true},
+			LastModified:    "2020-09-15T13:45:38+00:00",
+			BlockType:       2,
+			BlockIdentifier: sql.NullInt32{1, true},
+		},
+		{
+			NoteID:       2,
+			GUID:         "E36B34A0-B70F-4590-9D69-5887AB65A6D5",
+			Title:        sql.NullString{"Same Note", true},
+			Content:      sql.NullString{"This note is also available on the other side", true},
+			LastModified: "2020-09-15T13:52:25+00:00",
+			BlockType:    0,
+		},
+	},
+	Tag: []*model.Tag{
+		nil,
+		{
+			TagID:   1,
+			TagType: 0,
+			Name:    "Favorite",
+		},
+		{
+			TagID:   2,
+			TagType: 1,
+			Name:    "Left",
+		},
+		{
+			TagID:   3,
+			TagType: 1,
+			Name:    "Same",
+		},
+	},
+	TagMap: []*model.TagMap{
+		nil,
+		{
+			TagMapID: 1,
+			NoteID:   sql.NullInt32{1, true},
+			TagID:    2,
+			Position: 0,
+		},
+		{
+			TagMapID: 2,
+			NoteID:   sql.NullInt32{2, true},
+			TagID:    3,
+			Position: 0,
+		},
+	},
+	UserMark: []*model.UserMark{
+		nil,
+		{
+			UserMarkID:   1,
+			ColorIndex:   1,
+			LocationID:   1,
+			StyleIndex:   0,
+			UserMarkGUID: "0D5523D9-F784-4B08-A86D-D517F4EB17DE",
+			Version:      1,
+		},
+	},
+}
+
+var rightDB = &model.Database{
+	BlockRange: []*model.BlockRange{
+		nil,
+		{
+			BlockRangeID: 1,
+			BlockType:    2,
+			Identifier:   1,
+			StartToken:   sql.NullInt32{0, true},
+			EndToken:     sql.NullInt32{15, true},
+			UserMarkID:   1,
+		},
+		{
+			BlockRangeID: 2,
+			BlockType:    2,
+			Identifier:   1,
+			StartToken:   sql.NullInt32{0, true},
+			EndToken:     sql.NullInt32{7, true},
+			UserMarkID:   2,
+		},
+		{
+			BlockRangeID: 3,
+			BlockType:    2,
+			Identifier:   2,
+			StartToken:   sql.NullInt32{0, true},
+			EndToken:     sql.NullInt32{12, true},
+			UserMarkID:   2,
+		},
+		{
+			BlockRangeID: 4,
+			BlockType:    2,
+			Identifier:   2,
+			StartToken:   sql.NullInt32{13, true},
+			EndToken:     sql.NullInt32{26, true},
+			UserMarkID:   3,
+		},
+	},
+	Bookmark: []*model.Bookmark{
+		nil,
+		{
+			BookmarkID:            1,
+			LocationID:            1,
+			PublicationLocationID: 2,
+			Title:                 "1. Mose 2:1",
+			Snippet:               sql.NullString{"2 So wurde die Erschaffung von Himmel und Erde und allem, was dazugehört, beendet. ", true},
+			BlockType:             2,
+			BlockIdentifier:       sql.NullInt32{1, true},
+		},
+	},
+	Location: []*model.Location{
+		nil,
+		{
+			LocationID:    1,
+			BookNumber:    sql.NullInt32{1, true},
+			ChapterNumber: sql.NullInt32{2, true},
+			KeySymbol:     sql.NullString{"nwtsty", true},
+			MepsLanguage:  2,
+			LocationType:  0,
+			Title:         sql.NullString{"1. Mose 2", true},
+		},
+		{
+			LocationID:   2,
+			KeySymbol:    sql.NullString{"nwtsty", true},
+			MepsLanguage: 2,
+			LocationType: 1,
+		},
+		{
+			LocationID:    3,
+			BookNumber:    sql.NullInt32{1, true},
+			ChapterNumber: sql.NullInt32{1, true},
+			KeySymbol:     sql.NullString{"nwtsty", true},
+			MepsLanguage:  2,
+			LocationType:  0,
+			Title:         sql.NullString{"1. Mose 1", true},
+		},
+	},
+	Note: []*model.Note{
+		nil,
+		{
+			NoteID:          1,
+			GUID:            "DE4A2CDA-9892-4A94-AF4B-22EBE05A05CA",
+			UserMarkID:      sql.NullInt32{1, true},
+			LocationID:      sql.NullInt32{1, true},
+			Title:           sql.NullString{"So wurde die Erschaffung von Himmel und Erde und allem, was dazugehört, beendet.", true},
+			Content:         sql.NullString{"📝 on the right side", true},
+			LastModified:    "2020-09-15T13:47:56+00:00",
+			BlockType:       2,
+			BlockIdentifier: sql.NullInt32{1, true},
+		},
+		{
+			NoteID:       2,
+			GUID:         "E36B34A0-B70F-4590-9D69-5887AB65A6D5",
+			Title:        sql.NullString{"Same Note", true},
+			Content:      sql.NullString{"This note is also available on the other side. Though this one is newer 😏", true},
+			LastModified: "2020-09-20T13:52:25+00:00",
+			BlockType:    0,
+		},
+	},
+	Tag: []*model.Tag{
+		nil,
+		{
+			TagID:   1,
+			TagType: 0,
+			Name:    "Favorite",
+		},
+		{
+			TagID:   2,
+			TagType: 1,
+			Name:    "Right",
+		},
+		{
+			TagID:   3,
+			TagType: 1,
+			Name:    "Same",
+		},
+	},
+	TagMap: []*model.TagMap{
+		nil,
+		{
+			TagMapID: 1,
+			NoteID:   sql.NullInt32{1, true},
+			TagID:    2,
+			Position: 0,
+		},
+		{
+			TagMapID: 2,
+			NoteID:   sql.NullInt32{2, true},
+			TagID:    3,
+			// Should normally be 0, but changed it to 1 to detect
+			// if merger recognizes that its still the same entry,
+			// just with a different position
+			Position: 1,
+		},
+	},
+	UserMark: []*model.UserMark{
+		nil,
+		{
+			UserMarkID:   1,
+			ColorIndex:   1,
+			LocationID:   1,
+			StyleIndex:   0,
+			UserMarkGUID: "54C23825-AC1E-4890-8041-92B39C5E4B17",
+			Version:      1,
+		},
+		{
+			UserMarkID:   2,
+			ColorIndex:   1,
+			LocationID:   3,
+			StyleIndex:   0,
+			UserMarkGUID: "A098D2B0-7613-4676-9E96-442755105D9A",
+		},
+		{
+			UserMarkID:   3,
+			ColorIndex:   1,
+			LocationID:   3,
+			StyleIndex:   0,
+			UserMarkGUID: "A86DECC8-69B1-4A43-A3A1-F1CA7B8E8388",
+			Version:      1,
+		},
+	},
+}
+
+var mergedAllLeftDB = model.Database{
+	BlockRange: []*model.BlockRange{
+		nil,
+		{
+			BlockRangeID: 1,
+			BlockType:    2,
+			Identifier:   1,
+			StartToken:   sql.NullInt32{0, true},
+			EndToken:     sql.NullInt32{7, true},
+			UserMarkID:   1,
+		},
+		{
+			BlockRangeID: 2,
+			BlockType:    2,
+			Identifier:   1,
+			StartToken:   sql.NullInt32{0, true},
+			EndToken:     sql.NullInt32{15, true},
+			UserMarkID:   2,
+		},
+		{
+			BlockRangeID: 3,
+			BlockType:    2,
+			Identifier:   2,
+			StartToken:   sql.NullInt32{13, true},
+			EndToken:     sql.NullInt32{26, true},
+			UserMarkID:   3,
+		},
+	},
+	Bookmark: []*model.Bookmark{
+		nil,
+		{
+			BookmarkID:            1,
+			LocationID:            1,
+			PublicationLocationID: 2,
+			Title:                 "1. Mose 1:1",
+			Snippet:               sql.NullString{"1 Am Anfang erschuf Gott Himmel und Erde.", true},
+			BlockType:             2,
+			BlockIdentifier:       sql.NullInt32{1, true},
+		},
+	},
+	Location: []*model.Location{
+		nil,
+		{
+			LocationID:    1,
+			BookNumber:    sql.NullInt32{1, true},
+			ChapterNumber: sql.NullInt32{1, true},
+			KeySymbol:     sql.NullString{"nwtsty", true},
+			MepsLanguage:  2,
+			LocationType:  0,
+			Title:         sql.NullString{"1. Mose 1", true},
+		},
+		{
+			LocationID:   2,
+			KeySymbol:    sql.NullString{"nwtsty", true},
+			MepsLanguage: 2,
+			LocationType: 1,
+		},
+		{
+			LocationID:    3,
+			BookNumber:    sql.NullInt32{1, true},
+			ChapterNumber: sql.NullInt32{2, true},
+			KeySymbol:     sql.NullString{"nwtsty", true},
+			MepsLanguage:  2,
+			LocationType:  0,
+			Title:         sql.NullString{"1. Mose 2", true},
+		},
+	},
+	Note: []*model.Note{
+		nil,
+		{
+			NoteID:          1,
+			GUID:            "92B192B4-B0B9-49B2-949F-7A8BA6406AF4",
+			UserMarkID:      sql.NullInt32{1, true},
+			LocationID:      sql.NullInt32{1, true},
+			Title:           sql.NullString{"Am Anfang erschuf Gott Himmel und Erde.", true},
+			Content:         sql.NullString{"📝 for left version", true},
+			LastModified:    "2020-09-15T13:45:38+00:00",
+			BlockType:       2,
+			BlockIdentifier: sql.NullInt32{1, true},
+		},
+		{
+			NoteID:       2,
+			GUID:         "E36B34A0-B70F-4590-9D69-5887AB65A6D5",
+			Title:        sql.NullString{"Same Note", true},
+			Content:      sql.NullString{"This note is also available on the other side", true},
+			LastModified: "2020-09-15T13:52:25+00:00",
+			BlockType:    0,
+		},
+		{
+			NoteID:          3,
+			GUID:            "DE4A2CDA-9892-4A94-AF4B-22EBE05A05CA",
+			UserMarkID:      sql.NullInt32{1, true},
+			LocationID:      sql.NullInt32{1, true},
+			Title:           sql.NullString{"So wurde die Erschaffung von Himmel und Erde und allem, was dazugehört, beendet.", true},
+			Content:         sql.NullString{"📝 on the right side", true},
+			LastModified:    "2020-09-15T13:47:56+00:00",
+			BlockType:       2,
+			BlockIdentifier: sql.NullInt32{1, true},
+		},
+	},
+	Tag: []*model.Tag{
+		nil,
+		{
+			TagID:   1,
+			TagType: 0,
+			Name:    "Favorite",
+		},
+		{
+			TagID:   2,
+			TagType: 1,
+			Name:    "Left",
+		},
+		{
+			TagID:   3,
+			TagType: 1,
+			Name:    "Same",
+		},
+		{
+			TagID:   4,
+			TagType: 1,
+			Name:    "Right",
+		},
+	},
+	TagMap: []*model.TagMap{
+		nil,
+		{
+			TagMapID: 1,
+			NoteID:   sql.NullInt32{1, true},
+			TagID:    2,
+			Position: 0,
+		},
+		{
+			TagMapID: 2,
+			NoteID:   sql.NullInt32{2, true},
+			TagID:    3,
+			Position: 0,
+		},
+		{
+			TagMapID: 2,
+			NoteID:   sql.NullInt32{3, true},
+			TagID:    4,
+			Position: 0,
+		},
+	},
+	UserMark: []*model.UserMark{
+		nil,
+		{
+			UserMarkID:   1,
+			ColorIndex:   1,
+			LocationID:   1,
+			StyleIndex:   0,
+			UserMarkGUID: "0D5523D9-F784-4B08-A86D-D517F4EB17DE",
+			Version:      1,
+		},
+		{
+			UserMarkID:   2,
+			ColorIndex:   1,
+			LocationID:   3,
+			StyleIndex:   0,
+			UserMarkGUID: "54C23825-AC1E-4890-8041-92B39C5E4B17",
+			Version:      1,
+		},
+		{
+			UserMarkID:   3,
+			ColorIndex:   1,
+			LocationID:   1,
+			StyleIndex:   0,
+			UserMarkGUID: "A86DECC-69B1-4A43-A3A1-F1CA7B8E8388",
+			Version:      1,
+		},
+	},
+}
+
+var mergedAllRightDB = model.Database{
+	BlockRange: []*model.BlockRange{
+		nil,
+		{
+			BlockRangeID: 1,
+			BlockType:    2,
+			Identifier:   1,
+			StartToken:   sql.NullInt32{0, true},
+			EndToken:     sql.NullInt32{15, true},
+			UserMarkID:   1,
+		},
+		{
+			BlockRangeID: 2,
+			BlockType:    2,
+			Identifier:   1,
+			StartToken:   sql.NullInt32{0, true},
+			EndToken:     sql.NullInt32{7, true},
+			UserMarkID:   2,
+		},
+		{
+			BlockRangeID: 3,
+			BlockType:    2,
+			Identifier:   2,
+			StartToken:   sql.NullInt32{0, true},
+			EndToken:     sql.NullInt32{12, true},
+			UserMarkID:   2,
+		},
+		{
+			BlockRangeID: 4,
+			BlockType:    2,
+			Identifier:   2,
+			StartToken:   sql.NullInt32{13, true},
+			EndToken:     sql.NullInt32{26, true},
+			UserMarkID:   3,
+		},
+	},
+	Bookmark: []*model.Bookmark{
+		nil,
+		{
+			BookmarkID:            1,
+			LocationID:            3,
+			PublicationLocationID: 2,
+			Title:                 "1. Mose 2:1",
+			Snippet:               sql.NullString{"2 So wurde die Erschaffung von Himmel und Erde und allem, was dazugehört, beendet. ", true},
+			BlockType:             2,
+			BlockIdentifier:       sql.NullInt32{1, true},
+		},
+	},
+	Location: []*model.Location{
+		nil,
+		{
+			LocationID:    1,
+			BookNumber:    sql.NullInt32{1, true},
+			ChapterNumber: sql.NullInt32{1, true},
+			KeySymbol:     sql.NullString{"nwtsty", true},
+			MepsLanguage:  2,
+			LocationType:  0,
+			Title:         sql.NullString{"1. Mose 1", true},
+		},
+		{
+			LocationID:   2,
+			KeySymbol:    sql.NullString{"nwtsty", true},
+			MepsLanguage: 2,
+			LocationType: 1,
+		},
+		{
+			LocationID:    3,
+			BookNumber:    sql.NullInt32{1, true},
+			ChapterNumber: sql.NullInt32{2, true},
+			KeySymbol:     sql.NullString{"nwtsty", true},
+			MepsLanguage:  2,
+			LocationType:  0,
+			Title:         sql.NullString{"1. Mose 2", true},
+		},
+	},
+	Note: []*model.Note{
+		nil,
+		{
+			NoteID:          1,
+			GUID:            "92B192B4-B0B9-49B2-949F-7A8BA6406AF4",
+			UserMarkID:      sql.NullInt32{1, true},
+			LocationID:      sql.NullInt32{1, true},
+			Title:           sql.NullString{"Am Anfang erschuf Gott Himmel und Erde.", true},
+			Content:         sql.NullString{"📝 for left version", true},
+			LastModified:    "2020-09-15T13:45:38+00:00",
+			BlockType:       2,
+			BlockIdentifier: sql.NullInt32{1, true},
+		},
+		{
+			NoteID:       2,
+			GUID:         "E36B34A0-B70F-4590-9D69-5887AB65A6D5",
+			Title:        sql.NullString{"Same Note", true},
+			Content:      sql.NullString{"This note is also available on the other side. Though this one is newer 😏", true},
+			LastModified: "2020-09-20T13:52:25+00:00",
+			BlockType:    0,
+		},
+		{
+			NoteID:          3,
+			GUID:            "DE4A2CDA-9892-4A94-AF4B-22EBE05A05CA",
+			UserMarkID:      sql.NullInt32{1, true},
+			LocationID:      sql.NullInt32{1, true},
+			Title:           sql.NullString{"So wurde die Erschaffung von Himmel und Erde und allem, was dazugehört, beendet.", true},
+			Content:         sql.NullString{"📝 on the right side", true},
+			LastModified:    "2020-09-15T13:47:56+00:00",
+			BlockType:       2,
+			BlockIdentifier: sql.NullInt32{1, true},
+		},
+	},
+	Tag: []*model.Tag{
+		nil,
+		{
+			TagID:   1,
+			TagType: 0,
+			Name:    "Favorite",
+		},
+		{
+			TagID:   2,
+			TagType: 1,
+			Name:    "Left",
+		},
+		{
+			TagID:   3,
+			TagType: 1,
+			Name:    "Same",
+		},
+		{
+			TagID:   4,
+			TagType: 1,
+			Name:    "Right",
+		},
+	},
+	TagMap: []*model.TagMap{
+		nil,
+		{
+			TagMapID: 1,
+			NoteID:   sql.NullInt32{1, true},
+			TagID:    2,
+			Position: 0,
+		},
+		{
+			TagMapID: 2,
+			NoteID:   sql.NullInt32{2, true},
+			TagID:    3,
+			Position: 0,
+		},
+		{
+			TagMapID: 1,
+			NoteID:   sql.NullInt32{3, true},
+			TagID:    4,
+			Position: 0,
+		},
+	},
+	UserMark: []*model.UserMark{
+		nil,
+		{
+			UserMarkID:   1,
+			ColorIndex:   1,
+			LocationID:   3, // 1. Mose 2
+			StyleIndex:   0,
+			UserMarkGUID: "54C23825-AC1E-4890-8041-92B39C5E4B17",
+			Version:      1,
+		},
+		{
+			UserMarkID:   2,
+			ColorIndex:   1,
+			LocationID:   1, // 1. Mose 1
+			StyleIndex:   0,
+			UserMarkGUID: "A098D2B0-7613-4676-9E96-442755105D9A",
+		},
+		{
+			UserMarkID:   3,
+			ColorIndex:   1,
+			LocationID:   1, // 1. Mose 1
+			StyleIndex:   0,
+			UserMarkGUID: "A86DECC8-69B1-4A43-A3A1-F1CA7B8E8388",
+			Version:      1,
+		},
+	},
+}
