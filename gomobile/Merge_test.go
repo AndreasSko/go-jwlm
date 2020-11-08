@@ -1,141 +1,140 @@
-// +build !windows
-
-package cmd
+package gomobile
 
 import (
-	"bytes"
 	"database/sql"
-	"io/ioutil"
-	"os"
-	"path/filepath"
 	"testing"
 
-	"github.com/AlecAivazis/survey/v2/terminal"
 	"github.com/AndreasSko/go-jwlm/model"
-	expect "github.com/Netflix/go-expect"
-	"github.com/hinshun/vt10x"
-	"github.com/stretchr/testify/require"
 	"github.com/tj/assert"
 )
 
-func Test_merge(t *testing.T) {
-	t.Parallel()
+// These tests are more ore less copied from cmd/merge_test.go
 
-	tmp, err := ioutil.TempDir("", "go-jwlm")
-	assert.NoError(t, err)
-	defer os.RemoveAll(tmp)
+// Merge against empty DB and see if result is still the same
+func Test_MergeWithEmpty(t *testing.T) {
+	dbw := DatabaseWrapper{
+		left:  model.MakeDatabaseCopy(leftDB),
+		right: model.MakeDatabaseCopy(emptyDB),
+	}
+	dbw.Init()
 
-	emptyFilename := filepath.Join(tmp, "empty.jwlibrary")
-	leftFilename := filepath.Join(tmp, "left.jwlibrary")
-	rightFilename := filepath.Join(tmp, "right.jwlibrary")
-	mergedFilename := filepath.Join(tmp, "merged.jwlibrary")
-	assert.NoError(t, emptyDB.ExportJWLBackup(emptyFilename))
-	assert.NoError(t, leftDB.ExportJWLBackup(leftFilename))
-	assert.NoError(t, rightDB.ExportJWLBackup(rightFilename))
+	mcw := &MergeConflictsWrapper{}
 
-	// Merge against empty DB and see if result is still the same
-	RunCmdTest(t,
-		func(t *testing.T, c *expect.Console) {
-			_, err := c.ExpectString("🎉 Finished merging!")
-			assert.NoError(t, err)
-			_, err = c.ExpectEOF()
-			assert.NoError(t, err)
-		},
-		func(t *testing.T, c *expect.Console) {
-			merge(leftFilename, emptyFilename, mergedFilename,
-				terminal.Stdio{In: c.Tty(), Out: c.Tty(), Err: c.Tty()})
-			merged := &model.Database{}
-			merged.ImportJWLBackup(mergedFilename)
-			assert.True(t, leftDB.Equals(merged))
-		})
+	assert.NoError(t, dbw.MergeLocations())
+	assert.NoError(t, dbw.MergeBookmarks("", mcw))
+	assert.NoError(t, dbw.MergeTags())
+	assert.NoError(t, dbw.MergeUserMarkAndBlockRange("", mcw))
+	assert.NoError(t, dbw.MergeNotes("", mcw))
+	assert.NoError(t, dbw.MergeTagMaps())
 
-	// Merge while selecting all right
-	RunCmdTest(t,
-		func(t *testing.T, c *expect.Console) {
-			c.ExpectString("📑 Merging Bookmarks")
-			c.SendLine(string(terminal.KeyArrowDown))
-
-			c.ExpectString("🖍  Merging Markings")
-			c.SendLine(string(terminal.KeyArrowDown))
-
-			c.ExpectString("📝 Merging Notes")
-			c.SendLine(string(terminal.KeyArrowDown))
-
-			c.ExpectEOF()
-		},
-		func(t *testing.T, c *expect.Console) {
-			merge(leftFilename, rightFilename, mergedFilename,
-				terminal.Stdio{In: c.Tty(), Out: c.Tty(), Err: c.Tty()})
-			merged := &model.Database{}
-			merged.ImportJWLBackup(mergedFilename)
-			assert.True(t, mergedAllRightDB.Equals(merged))
-		})
-
-	// Merge while selecting all left
-	RunCmdTest(t,
-		func(t *testing.T, c *expect.Console) {
-			c.ExpectString("📑 Merging Bookmarks")
-			c.SendLine("")
-
-			c.ExpectString("🖍  Merging Markings")
-			c.SendLine("")
-
-			c.ExpectString("📝 Merging Notes")
-			c.SendLine("")
-
-			c.ExpectEOF()
-		},
-		func(t *testing.T, c *expect.Console) {
-			merge(leftFilename, rightFilename, mergedFilename,
-				terminal.Stdio{In: c.Tty(), Out: c.Tty(), Err: c.Tty()})
-			merged := &model.Database{}
-			merged.ImportJWLBackup(mergedFilename)
-			assert.True(t, mergedAllLeftDB.Equals(merged))
-		})
-
-	// Merge with auto resolution: chooseRight for Bookmarks & Markings,
-	// chooseNewest for Notes
-	RunCmdTest(t,
-		func(t *testing.T, c *expect.Console) {
-			c.ExpectString("🎉 Finished merging!")
-			c.ExpectEOF()
-		},
-		func(t *testing.T, c *expect.Console) {
-			BookmarkResolver = "chooseRight"
-			MarkingResolver = "chooseRight"
-			NoteResolver = "chooseNewest"
-			merge(leftFilename, rightFilename, mergedFilename,
-				terminal.Stdio{In: c.Tty(), Out: c.Tty(), Err: c.Tty()})
-			merged := &model.Database{}
-			merged.ImportJWLBackup(mergedFilename)
-			assert.True(t, mergedAllRightDB.Equals(merged))
-		})
+	assert.True(t, dbw.left.Equals(dbw.merged))
 }
 
-// https://github.com/AlecAivazis/survey/blob/master/survey_posix_test.go
-func RunCmdTest(t *testing.T, procedure func(*testing.T, *expect.Console), test func(*testing.T, *expect.Console)) {
-	// Multiplex output to a buffer as well for the raw bytes.
-	buf := new(bytes.Buffer)
-	c, state, err := vt10x.NewVT10XConsole(expect.WithStdout(buf))
-	require.Nil(t, err)
-	defer c.Close()
+// Merge while selecting all right
+func Test_MergeAllRight(t *testing.T) {
+	dbw := DatabaseWrapper{
+		left:  model.MakeDatabaseCopy(leftDB),
+		right: model.MakeDatabaseCopy(rightDB),
+	}
+	dbw.Init()
 
-	donec := make(chan struct{})
-	go func() {
-		defer close(donec)
-		procedure(t, c)
-	}()
+	mcw := &MergeConflictsWrapper{}
 
-	test(t, c)
+	assert.NoError(t, dbw.MergeLocations())
+	assert.Error(t, dbw.MergeBookmarks("", mcw))
+	selectSameSide(mcw, "rightSide")
 
-	// Close the slave end of the pty, and read the remaining bytes from the master end.
-	c.Tty().Close()
-	<-donec
+	dbw.Init()
+	assert.NoError(t, dbw.MergeLocations())
+	assert.NoError(t, dbw.MergeBookmarks("", mcw))
+	assert.NoError(t, dbw.MergeTags())
+	assert.Error(t, dbw.MergeUserMarkAndBlockRange("", mcw))
+	selectSameSide(mcw, "rightSide")
 
-	t.Logf("Raw output: %q", buf.String())
+	dbw.Init()
+	assert.NoError(t, dbw.MergeLocations())
+	assert.NoError(t, dbw.MergeBookmarks("", mcw))
+	assert.NoError(t, dbw.MergeTags())
+	assert.NoError(t, dbw.MergeUserMarkAndBlockRange("", mcw))
+	assert.Error(t, dbw.MergeNotes("", mcw))
+	selectSameSide(mcw, "rightSide")
 
-	// Dump the terminal's screen.
-	t.Logf("\n%s", expect.StripTrailingEmptyLines(state.String()))
+	dbw.Init()
+	assert.NoError(t, dbw.MergeLocations())
+	assert.NoError(t, dbw.MergeBookmarks("", mcw))
+	assert.NoError(t, dbw.MergeTags())
+	assert.NoError(t, dbw.MergeUserMarkAndBlockRange("", mcw))
+	assert.NoError(t, dbw.MergeNotes("", mcw))
+	assert.NoError(t, dbw.MergeTagMaps())
+
+	assert.True(t, mergedAllRightDB.Equals(dbw.merged))
+}
+
+// Merge while selecting all right
+func Test_MergeAllLeft(t *testing.T) {
+	dbw := DatabaseWrapper{
+		left:  model.MakeDatabaseCopy(leftDB),
+		right: model.MakeDatabaseCopy(rightDB),
+	}
+	dbw.Init()
+
+	mcw := &MergeConflictsWrapper{}
+
+	assert.NoError(t, dbw.MergeLocations())
+	assert.Error(t, dbw.MergeBookmarks("", mcw))
+	selectSameSide(mcw, "leftSide")
+
+	dbw.Init()
+	assert.NoError(t, dbw.MergeLocations())
+	assert.NoError(t, dbw.MergeBookmarks("", mcw))
+	assert.NoError(t, dbw.MergeTags())
+	assert.Error(t, dbw.MergeUserMarkAndBlockRange("", mcw))
+	selectSameSide(mcw, "leftSide")
+
+	dbw.Init()
+	assert.NoError(t, dbw.MergeLocations())
+	assert.NoError(t, dbw.MergeBookmarks("", mcw))
+	assert.NoError(t, dbw.MergeTags())
+	assert.NoError(t, dbw.MergeUserMarkAndBlockRange("", mcw))
+	assert.Error(t, dbw.MergeNotes("", mcw))
+	selectSameSide(mcw, "leftSide")
+
+	dbw.Init()
+	assert.NoError(t, dbw.MergeLocations())
+	assert.NoError(t, dbw.MergeBookmarks("", mcw))
+	assert.NoError(t, dbw.MergeTags())
+	assert.NoError(t, dbw.MergeUserMarkAndBlockRange("", mcw))
+	assert.NoError(t, dbw.MergeNotes("", mcw))
+	assert.NoError(t, dbw.MergeTagMaps())
+
+	assert.True(t, mergedAllLeftDB.Equals(dbw.merged))
+}
+
+// Merge with auto resolution: chooseRight for Bookmarks & Markings,
+// chooseNewest for Notes
+func Test_MergeWithAutoresolution(t *testing.T) {
+	dbw := DatabaseWrapper{
+		left:  model.MakeDatabaseCopy(leftDB),
+		right: model.MakeDatabaseCopy(rightDB),
+	}
+	dbw.Init()
+
+	mcw := &MergeConflictsWrapper{}
+
+	assert.NoError(t, dbw.MergeLocations())
+	assert.NoError(t, dbw.MergeBookmarks("chooseRight", mcw))
+	assert.NoError(t, dbw.MergeTags())
+	assert.NoError(t, dbw.MergeUserMarkAndBlockRange("chooseRight", mcw))
+	assert.NoError(t, dbw.MergeNotes("chooseNewest", mcw))
+	assert.NoError(t, dbw.MergeTagMaps())
+
+	assert.True(t, mergedAllRightDB.Equals(dbw.merged))
+}
+
+func selectSameSide(mcw *MergeConflictsWrapper, side string) {
+	for i := mcw.GetNextConflictIndex(); i != -1; i = mcw.GetNextConflictIndex() {
+		mcw.SolveConflict(i, side)
+	}
 }
 
 var emptyDB = &model.Database{}
