@@ -1,6 +1,8 @@
 package gomobile
 
 import (
+	"database/sql"
+	"encoding/json"
 	"sort"
 	"testing"
 
@@ -109,14 +111,29 @@ func TestMergeConflictsWrapper_GetNextConflictIndex(t *testing.T) {
 }
 
 func TestMergeConflictsWrapper_GetConflict(t *testing.T) {
+	db := &model.Database{
+		Location: []*model.Location{
+			nil,
+			{
+				LocationID: 1,
+				Title:      sql.NullString{"Location-Title", true},
+			},
+		},
+	}
+
 	mcw := MergeConflictsWrapper{
+		DBWrapper: &DatabaseWrapper{
+			merged: db,
+		},
 		conflicts: map[string]merger.MergeConflict{
 			"1": {
 				Left: &model.Bookmark{
-					Title: "1Left",
+					LocationID: 1,
+					Title:      "1Left",
 				},
 				Right: &model.Bookmark{
-					Title: "1Right",
+					LocationID: 1,
+					Title:      "1Right",
 				},
 			},
 			"2": {
@@ -133,13 +150,41 @@ func TestMergeConflictsWrapper_GetConflict(t *testing.T) {
 
 	conflict, err := mcw.GetConflict(0)
 	assert.NoError(t, err)
-	assert.Equal(t, mcw.conflicts["1"].Left.PrettyPrint(nil), conflict.Left)
-	assert.Equal(t, mcw.conflicts["1"].Right.PrettyPrint(nil), conflict.Right)
+	assert.Equal(t,
+		jsonMarhshalIgnoreErr(modelRelatedTuple{
+			Model:   mcw.conflicts["1"].Left,
+			Related: []model.Model{db.Location[1]},
+		}),
+		conflict.Left)
+	assert.Equal(t,
+		jsonMarhshalIgnoreErr(modelRelatedTuple{
+			Model:   mcw.conflicts["1"].Right,
+			Related: []model.Model{db.Location[1]},
+		}),
+		conflict.Right)
 
 	conflict, err = mcw.GetConflict(1)
 	assert.NoError(t, err)
-	assert.Equal(t, mcw.conflicts["2"].Left.PrettyPrint(nil), conflict.Left)
-	assert.Equal(t, mcw.conflicts["2"].Right.PrettyPrint(nil), conflict.Right)
+	assert.Equal(t,
+		jsonMarhshalIgnoreErr(modelRelatedTuple{
+			Model:   mcw.conflicts["2"].Left,
+			Related: []model.Model{},
+		}),
+		conflict.Left)
+	assert.Equal(t,
+		jsonMarhshalIgnoreErr(modelRelatedTuple{
+			Model:   mcw.conflicts["2"].Right,
+			Related: []model.Model{},
+		}),
+		conflict.Right)
+
+	mcw.DBWrapper = nil
+	assert.Equal(t,
+		jsonMarhshalIgnoreErr(modelRelatedTuple{
+			Model:   mcw.conflicts["2"].Right,
+			Related: []model.Model{},
+		}),
+		conflict.Right)
 
 	_, err = mcw.GetConflict(3)
 	assert.Error(t, err)
@@ -147,6 +192,11 @@ func TestMergeConflictsWrapper_GetConflict(t *testing.T) {
 	mcw.conflicts = nil
 	_, err = mcw.GetConflict(1)
 	assert.Error(t, err)
+}
+
+func jsonMarhshalIgnoreErr(m interface{}) string {
+	result, _ := json.Marshal(m)
+	return string(result)
 }
 
 func TestMergeConflictsWrapper_SolveConflict(t *testing.T) {

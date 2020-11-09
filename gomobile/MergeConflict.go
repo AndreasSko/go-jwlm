@@ -1,10 +1,13 @@
 package gomobile
 
 import (
-	"errors"
+	"encoding/json"
 	"fmt"
 
+	"github.com/pkg/errors"
+
 	"github.com/AndreasSko/go-jwlm/merger"
+	"github.com/AndreasSko/go-jwlm/model"
 )
 
 // MergeConflictError indicates that a conflict happened while merging. It
@@ -33,6 +36,12 @@ type MergeConflictsWrapper struct {
 type MergeConflict struct {
 	Left  string
 	Right string
+}
+
+// modelRelatedTuple contains a model and its related entries
+type modelRelatedTuple struct {
+	Model   model.Model
+	Related []model.Model
 }
 
 // InitDBWrapper initializes the DatabaseWrapper for the MergeConflictsWrapper
@@ -106,10 +115,27 @@ func (mcw *MergeConflictsWrapper) GetConflict(index int) (*MergeConflict, error)
 		mcw.DBWrapper = &DatabaseWrapper{merged: nil}
 	}
 
-	return &MergeConflict{
-		Left:  mcw.conflicts[key].Left.PrettyPrint(mcw.DBWrapper.merged),
-		Right: mcw.conflicts[key].Right.PrettyPrint(mcw.DBWrapper.merged),
-	}, nil
+	result := &MergeConflict{}
+
+	jsn, err := json.Marshal(modelRelatedTuple{
+		Model:   mcw.conflicts[key].Left,
+		Related: mcw.conflicts[key].Left.RelatedEntries(mcw.DBWrapper.merged),
+	})
+	if err != nil {
+		return nil, errors.Wrap(err, "Error while marshalling to JSON")
+	}
+	result.Left = string(jsn)
+
+	jsn, err = json.Marshal(modelRelatedTuple{
+		Model:   mcw.conflicts[key].Right,
+		Related: mcw.conflicts[key].Right.RelatedEntries(mcw.DBWrapper.merged),
+	})
+	if err != nil {
+		return nil, errors.Wrap(err, "Error while marshalling to JSON")
+	}
+	result.Right = string(jsn)
+
+	return result, nil
 }
 
 // SolveConflict solves a mergeConflict by choosing the given side at index.
