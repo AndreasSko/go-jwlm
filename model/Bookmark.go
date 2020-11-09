@@ -2,6 +2,7 @@ package model
 
 import (
 	"database/sql"
+	"encoding/json"
 	"strconv"
 	"strings"
 )
@@ -67,6 +68,31 @@ func (m *Bookmark) PrettyPrint(db *Database) string {
 	}
 
 	return result
+}
+
+// MarshalJSON returns the JSON encoding of the entry
+func (m Bookmark) MarshalJSON() ([]byte, error) {
+	return json.Marshal(&struct {
+		Type                  string
+		BookmarkID            int
+		LocationID            int
+		PublicationLocationID int
+		Slot                  int
+		Title                 string
+		Snippet               sql.NullString
+		BlockType             int
+		BlockIdentifier       sql.NullInt32
+	}{
+		Type:                  "Bookmark",
+		BookmarkID:            m.BookmarkID,
+		LocationID:            m.LocationID,
+		PublicationLocationID: m.PublicationLocationID,
+		Slot:                  m.Slot,
+		Title:                 m.Title,
+		Snippet:               m.Snippet,
+		BlockType:             m.BlockType,
+		BlockIdentifier:       m.BlockIdentifier,
+	})
 }
 
 func (m *Bookmark) tableName() string {

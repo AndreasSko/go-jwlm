@@ -2,6 +2,7 @@ package model
 
 import (
 	"database/sql"
+	"encoding/json"
 	"strconv"
 	"strings"
 )
@@ -74,6 +75,35 @@ func (m *Location) PrettyPrint(db *Database) string {
 	fields := []string{"Title", "BookNumber", "ChapterNumber", "DocumentID", "Track",
 		"IssueTagNumber", "KeySymbol", "MepsLanguage"}
 	return prettyPrint(m, fields)
+}
+
+// MarshalJSON returns the JSON encoding of the entry
+func (m Location) MarshalJSON() ([]byte, error) {
+	return json.Marshal(&struct {
+		Type           string
+		LocationID     int
+		BookNumber     sql.NullInt32
+		ChapterNumber  sql.NullInt32
+		DocumentID     sql.NullInt32
+		Track          sql.NullInt32
+		IssueTagNumber int
+		KeySymbol      sql.NullString
+		MepsLanguage   int
+		LocationType   int
+		Title          sql.NullString
+	}{
+		Type:           "Location",
+		LocationID:     m.LocationID,
+		BookNumber:     m.BookNumber,
+		ChapterNumber:  m.ChapterNumber,
+		DocumentID:     m.DocumentID,
+		Track:          m.Track,
+		IssueTagNumber: m.IssueTagNumber,
+		KeySymbol:      m.KeySymbol,
+		MepsLanguage:   m.MepsLanguage,
+		LocationType:   m.LocationType,
+		Title:          m.Title,
+	})
 }
 
 func (m *Location) tableName() string {

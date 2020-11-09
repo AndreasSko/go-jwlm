@@ -2,6 +2,7 @@ package model
 
 import (
 	"database/sql"
+	"encoding/json"
 	"strconv"
 	"strings"
 )
@@ -52,6 +53,23 @@ func (m *Tag) Equals(m2 Model) bool {
 func (m *Tag) PrettyPrint(db *Database) string {
 	fields := []string{"Name"}
 	return prettyPrint(m, fields)
+}
+
+// MarshalJSON returns the JSON encoding of the entry
+func (m Tag) MarshalJSON() ([]byte, error) {
+	return json.Marshal(&struct {
+		Type          string
+		TagID         int
+		TagType       int
+		Name          string
+		ImageFilename sql.NullString
+	}{
+		Type:          "Tag",
+		TagID:         m.TagID,
+		TagType:       m.TagType,
+		Name:          m.Name,
+		ImageFilename: m.ImageFilename,
+	})
 }
 
 func (m *Tag) tableName() string {

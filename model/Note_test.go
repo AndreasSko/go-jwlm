@@ -3,6 +3,7 @@ package model
 import (
 	"bytes"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"testing"
 	"text/tabwriter"
@@ -125,4 +126,24 @@ func TestNote_PrettyPrint(t *testing.T) {
 	expectedResult = buf.String()
 
 	assert.Equal(t, expectedResult, m1.PrettyPrint(db))
+}
+
+func TestNote_MarshalJSON(t *testing.T) {
+	m1 := &Note{
+		NoteID:          1,
+		GUID:            "GUIDFOR1",
+		UserMarkID:      sql.NullInt32{Int32: 2, Valid: true},
+		LocationID:      sql.NullInt32{Int32: 3, Valid: true},
+		Title:           sql.NullString{String: "A Title", Valid: true},
+		Content:         sql.NullString{String: "The content", Valid: true},
+		LastModified:    "2017-06-01T19:36:28+0200",
+		BlockType:       4,
+		BlockIdentifier: sql.NullInt32{},
+	}
+
+	result, err := json.Marshal(m1)
+	assert.NoError(t, err)
+	assert.Equal(t,
+		`{"Type":"Note","NoteID":1,"GUID":"GUIDFOR1","UserMarkID":{"Int32":2,"Valid":true},"LocationID":{"Int32":3,"Valid":true},"Title":{"String":"A Title","Valid":true},"Content":{"String":"The content","Valid":true},"LastModified":"2017-06-01T19:36:28+0200","BlockType":4,"BlockIdentifier":{"Int32":0,"Valid":false}}`,
+		string(result))
 }

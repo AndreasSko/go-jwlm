@@ -2,6 +2,7 @@ package model
 
 import (
 	"database/sql"
+	"encoding/json"
 )
 
 // Note represents the Note table inside the JW Library database
@@ -60,6 +61,33 @@ func (m *Note) PrettyPrint(db *Database) string {
 	}
 
 	return result
+}
+
+// MarshalJSON returns the JSON encoding of the entry
+func (m Note) MarshalJSON() ([]byte, error) {
+	return json.Marshal(&struct {
+		Type            string
+		NoteID          int
+		GUID            string
+		UserMarkID      sql.NullInt32
+		LocationID      sql.NullInt32
+		Title           sql.NullString
+		Content         sql.NullString
+		LastModified    string
+		BlockType       int
+		BlockIdentifier sql.NullInt32
+	}{
+		Type:            "Note",
+		NoteID:          m.NoteID,
+		GUID:            m.GUID,
+		UserMarkID:      m.UserMarkID,
+		LocationID:      m.LocationID,
+		Title:           m.Title,
+		Content:         m.Content,
+		LastModified:    m.LastModified,
+		BlockType:       m.BlockType,
+		BlockIdentifier: m.BlockIdentifier,
+	})
 }
 
 func (m *Note) tableName() string {

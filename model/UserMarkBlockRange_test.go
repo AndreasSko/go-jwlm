@@ -3,6 +3,7 @@ package model
 import (
 	"bytes"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"testing"
 	"text/tabwriter"
@@ -291,4 +292,37 @@ func TestUserMarkBlockRange_PrettyPrint(t *testing.T) {
 	w.Flush()
 	expectedResult = buf.String()
 	assert.Equal(t, expectedResult, m1.PrettyPrint(db))
+}
+
+func TestUserMarkBlockRange_MarshalJSON(t *testing.T) {
+	m1 := &UserMarkBlockRange{
+		UserMark: &UserMark{
+			UserMarkID:   12345,
+			UserMarkGUID: "VERYUNIQUEID",
+		},
+		BlockRanges: []*BlockRange{
+			{
+				BlockRangeID: 1,
+				BlockType:    1,
+				Identifier:   1,
+				StartToken:   sql.NullInt32{Int32: 1, Valid: true},
+				EndToken:     sql.NullInt32{Int32: 2, Valid: true},
+				UserMarkID:   1,
+			},
+			{
+				BlockRangeID: 2,
+				BlockType:    1,
+				Identifier:   20,
+				StartToken:   sql.NullInt32{Int32: 15, Valid: true},
+				EndToken:     sql.NullInt32{Int32: 25, Valid: true},
+				UserMarkID:   1,
+			},
+		},
+	}
+
+	result, err := json.Marshal(m1)
+	assert.NoError(t, err)
+	assert.Equal(t,
+		`{"Type":"UserMarkBlockRange","UserMark":{"Type":"UserMark","UserMarkID":12345,"ColorIndex":0,"LocationID":0,"StyleIndex":0,"UserMarkGUID":"VERYUNIQUEID","Version":0},"BlockRanges":[{"Type":"BlockRange","BlockRangeID":1,"BlockType":1,"Identifier":1,"StartToken":{"Int32":1,"Valid":true},"EndToken":{"Int32":2,"Valid":true},"UserMarkID":1},{"Type":"BlockRange","BlockRangeID":2,"BlockType":1,"Identifier":20,"StartToken":{"Int32":15,"Valid":true},"EndToken":{"Int32":25,"Valid":true},"UserMarkID":1}]}`,
+		string(result))
 }

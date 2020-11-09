@@ -2,6 +2,7 @@ package model
 
 import (
 	"database/sql"
+	"encoding/json"
 	"reflect"
 	"regexp"
 	"strings"
@@ -83,6 +84,19 @@ func (m *UserMarkBlockRange) PrettyPrint(db *Database) string {
 	}
 
 	return result
+}
+
+// MarshalJSON returns the JSON encoding of the entry
+func (m UserMarkBlockRange) MarshalJSON() ([]byte, error) {
+	return json.Marshal(&struct {
+		Type        string
+		UserMark    *UserMark
+		BlockRanges []*BlockRange
+	}{
+		Type:        "UserMarkBlockRange",
+		UserMark:    m.UserMark,
+		BlockRanges: m.BlockRanges,
+	})
 }
 
 func (m *UserMarkBlockRange) tableName() string {

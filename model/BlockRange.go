@@ -2,6 +2,7 @@ package model
 
 import (
 	"database/sql"
+	"encoding/json"
 	"strconv"
 	"strings"
 )
@@ -60,6 +61,27 @@ func (m *BlockRange) Equals(m2 Model) bool {
 func (m *BlockRange) PrettyPrint(db *Database) string {
 	fields := []string{"Identifier", "StartToken", "EndToken"}
 	return prettyPrint(m, fields)
+}
+
+// MarshalJSON returns the JSON encoding of the entry
+func (m BlockRange) MarshalJSON() ([]byte, error) {
+	return json.Marshal(&struct {
+		Type         string
+		BlockRangeID int
+		BlockType    int
+		Identifier   int
+		StartToken   sql.NullInt32
+		EndToken     sql.NullInt32
+		UserMarkID   int
+	}{
+		Type:         "BlockRange",
+		BlockRangeID: m.BlockRangeID,
+		BlockType:    m.BlockType,
+		Identifier:   m.Identifier,
+		StartToken:   m.StartToken,
+		EndToken:     m.EndToken,
+		UserMarkID:   m.UserMarkID,
+	})
 }
 
 func (m *BlockRange) tableName() string {

@@ -3,6 +3,7 @@ package model
 import (
 	"bytes"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"testing"
 	"text/tabwriter"
@@ -115,4 +116,24 @@ func TestBookmark_PrettyPrint(t *testing.T) {
 	expectedResult = buf.String()
 
 	assert.Equal(t, expectedResult, m1.PrettyPrint(db))
+}
+
+
+func TestBookmark_MarshalJSON(t *testing.T) {
+	m1 := &Bookmark{
+		BookmarkID:            1,
+		LocationID:            2,
+		PublicationLocationID: 3,
+		Slot:                  4,
+		Title:                 "Test",
+		Snippet:               sql.NullString{"A snippet", true},
+		BlockType:             5,
+		BlockIdentifier:       sql.NullInt32{},
+	}
+
+	result, err := json.Marshal(m1)
+	assert.NoError(t, err)
+	assert.Equal(t,
+		`{"Type":"Bookmark","BookmarkID":1,"LocationID":2,"PublicationLocationID":3,"Slot":4,"Title":"Test","Snippet":{"String":"A snippet","Valid":true},"BlockType":5,"BlockIdentifier":{"Int32":0,"Valid":false}}`,
+		string(result))
 }
