@@ -2,6 +2,7 @@ package model
 
 import (
 	"database/sql"
+	"encoding/json"
 )
 
 // UserMark represents the UserMark table inside the JW Library database
@@ -41,6 +42,12 @@ func (m *UserMark) Equals(m2 Model) bool {
 	return false
 }
 
+// RelatedEntries returns entries that are related to this one
+func (m *UserMark) RelatedEntries(db *Database) []Model {
+	// We don't need it for now, so just return empty slice
+	return []Model{}
+}
+
 // PrettyPrint prints UserMark in a human readable format and
 // adds information about related entries if helpful.
 func (m *UserMark) PrettyPrint(db *Database) string {
@@ -48,6 +55,27 @@ func (m *UserMark) PrettyPrint(db *Database) string {
 	result := prettyPrint(m, fields)
 
 	return result
+}
+
+// MarshalJSON returns the JSON encoding of the entry
+func (m UserMark) MarshalJSON() ([]byte, error) {
+	return json.Marshal(&struct {
+		Type         string
+		UserMarkID   int
+		ColorIndex   int
+		LocationID   int
+		StyleIndex   int
+		UserMarkGUID string
+		Version      int
+	}{
+		Type:         "UserMark",
+		UserMarkID:   m.UserMarkID,
+		ColorIndex:   m.ColorIndex,
+		LocationID:   m.LocationID,
+		StyleIndex:   m.StyleIndex,
+		UserMarkGUID: m.UserMarkGUID,
+		Version:      m.Version,
+	})
 }
 
 func (m *UserMark) tableName() string {

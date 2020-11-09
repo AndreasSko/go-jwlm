@@ -20,6 +20,7 @@ type Model interface {
 	SetID(int)
 	UniqueKey() string
 	Equals(m2 Model) bool
+	RelatedEntries(db *Database) []Model
 	PrettyPrint(db *Database) string
 	tableName() string
 	idName() string

@@ -2,6 +2,7 @@ package model
 
 import (
 	"database/sql"
+	"encoding/json"
 	"reflect"
 	"regexp"
 	"strings"
@@ -64,6 +65,17 @@ func (m *UserMarkBlockRange) Equals(m2 Model) bool {
 		reflect.DeepEqual(mBRKeys, m2BRKeys)
 }
 
+// RelatedEntries returns entries that are related to this one
+func (m *UserMarkBlockRange) RelatedEntries(db *Database) []Model {
+	result := make([]Model, 0, 1)
+
+	if location := db.FetchFromTable("Location", m.UserMark.LocationID); location != nil {
+		result = append(result, location)
+	}
+
+	return result
+}
+
 // PrettyPrint prints UserMarkBlockRange in a human readable format and
 // adds information about related entries if helpful.
 func (m *UserMarkBlockRange) PrettyPrint(db *Database) string {
@@ -83,6 +95,19 @@ func (m *UserMarkBlockRange) PrettyPrint(db *Database) string {
 	}
 
 	return result
+}
+
+// MarshalJSON returns the JSON encoding of the entry
+func (m UserMarkBlockRange) MarshalJSON() ([]byte, error) {
+	return json.Marshal(&struct {
+		Type        string
+		UserMark    *UserMark
+		BlockRanges []*BlockRange
+	}{
+		Type:        "UserMarkBlockRange",
+		UserMark:    m.UserMark,
+		BlockRanges: m.BlockRanges,
+	})
 }
 
 func (m *UserMarkBlockRange) tableName() string {

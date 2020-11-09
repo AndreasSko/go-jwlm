@@ -2,6 +2,7 @@ package model
 
 import (
 	"database/sql"
+	"encoding/json"
 	"strconv"
 	"strings"
 )
@@ -54,10 +55,37 @@ func (m *TagMap) Equals(m2 Model) bool {
 	return false
 }
 
+// RelatedEntries returns entries that are related to this one
+func (m *TagMap) RelatedEntries(db *Database) []Model {
+	// We don't need it for now, so just return empty slice
+	return []Model{}
+}
+
 // PrettyPrint prints TagMap in a human readable format and
 // adds information about related entries if helpful.
 func (m *TagMap) PrettyPrint(db *Database) string {
 	panic("Not supported")
+}
+
+// MarshalJSON returns the JSON encoding of the entry
+func (m TagMap) MarshalJSON() ([]byte, error) {
+	return json.Marshal(&struct {
+		Type           string
+		TagMapID       int
+		PlaylistItemID sql.NullInt32
+		LocationID     sql.NullInt32
+		NoteID         sql.NullInt32
+		TagID          int
+		Position       int
+	}{
+		Type:           "TagMap",
+		TagMapID:       m.TagMapID,
+		PlaylistItemID: m.PlaylistItemID,
+		LocationID:     m.LocationID,
+		NoteID:         m.NoteID,
+		TagID:          m.TagID,
+		Position:       m.Position,
+	})
 }
 
 func (m *TagMap) tableName() string {

@@ -2,6 +2,7 @@ package model
 
 import (
 	"database/sql"
+	"encoding/json"
 	"strconv"
 	"strings"
 )
@@ -55,6 +56,17 @@ func (m *Bookmark) Equals(m2 Model) bool {
 	return false
 }
 
+// RelatedEntries returns entries that are related to this one
+func (m *Bookmark) RelatedEntries(db *Database) []Model {
+	result := make([]Model, 0, 1)
+
+	if location := db.FetchFromTable("Location", m.LocationID); location != nil {
+		result = append(result, location)
+	}
+
+	return result
+}
+
 // PrettyPrint prints Bookmark in a human readable format and
 // adds information about related entries if helpful.
 func (m *Bookmark) PrettyPrint(db *Database) string {
@@ -67,6 +79,31 @@ func (m *Bookmark) PrettyPrint(db *Database) string {
 	}
 
 	return result
+}
+
+// MarshalJSON returns the JSON encoding of the entry
+func (m Bookmark) MarshalJSON() ([]byte, error) {
+	return json.Marshal(&struct {
+		Type                  string
+		BookmarkID            int
+		LocationID            int
+		PublicationLocationID int
+		Slot                  int
+		Title                 string
+		Snippet               sql.NullString
+		BlockType             int
+		BlockIdentifier       sql.NullInt32
+	}{
+		Type:                  "Bookmark",
+		BookmarkID:            m.BookmarkID,
+		LocationID:            m.LocationID,
+		PublicationLocationID: m.PublicationLocationID,
+		Slot:                  m.Slot,
+		Title:                 m.Title,
+		Snippet:               m.Snippet,
+		BlockType:             m.BlockType,
+		BlockIdentifier:       m.BlockIdentifier,
+	})
 }
 
 func (m *Bookmark) tableName() string {

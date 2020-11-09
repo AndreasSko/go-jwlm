@@ -2,6 +2,7 @@ package model
 
 import (
 	"database/sql"
+	"encoding/json"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -73,4 +74,35 @@ func TestTagMap_Equals(t *testing.T) {
 
 	assert.True(t, m1.Equals(m1_1))
 	assert.False(t, m1.Equals(m2))
+}
+
+func TestTagMap_RelatedEntries(t *testing.T) {
+	m1 := &TagMap{
+		TagMapID:       1,
+		PlaylistItemID: sql.NullInt32{1, true},
+		LocationID:     sql.NullInt32{1, true},
+		NoteID:         sql.NullInt32{1, true},
+		TagID:          1,
+		Position:       1,
+	}
+
+	assert.Empty(t, m1.RelatedEntries(nil))
+	assert.Empty(t, m1.RelatedEntries(&Database{}))
+}
+
+func TestTagMap_MarshalJSON(t *testing.T) {
+	m1 := &TagMap{
+		TagMapID:       1,
+		PlaylistItemID: sql.NullInt32{2, true},
+		LocationID:     sql.NullInt32{3, true},
+		NoteID:         sql.NullInt32{4, true},
+		TagID:          5,
+		Position:       6,
+	}
+
+	result, err := json.Marshal(m1)
+	assert.NoError(t, err)
+	assert.Equal(t,
+		`{"Type":"TagMap","TagMapID":1,"PlaylistItemID":{"Int32":2,"Valid":true},"LocationID":{"Int32":3,"Valid":true},"NoteID":{"Int32":4,"Valid":true},"TagID":5,"Position":6}`,
+		string(result))
 }

@@ -3,6 +3,7 @@ package model
 import (
 	"bytes"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"testing"
 	"text/tabwriter"
@@ -115,4 +116,53 @@ func TestBookmark_PrettyPrint(t *testing.T) {
 	expectedResult = buf.String()
 
 	assert.Equal(t, expectedResult, m1.PrettyPrint(db))
+}
+
+func TestBookmark_RelatedEntries(t *testing.T) {
+	db := &Database{
+		Bookmark: []*Bookmark{
+			nil,
+			{
+				BookmarkID:            1,
+				LocationID:            1,
+				PublicationLocationID: 3,
+				Slot:                  4,
+				Title:                 "Test",
+				Snippet:               sql.NullString{},
+				BlockType:             0,
+				BlockIdentifier:       sql.NullInt32{},
+			},
+		},
+		Location: []*Location{
+			nil,
+			{
+				LocationID: 1,
+				Title:      sql.NullString{"Location-Title", true},
+			},
+		},
+	}
+
+	assert.Empty(t, db.Bookmark[1].RelatedEntries(nil))
+	assert.Equal(t,
+		db.Location[1],
+		db.Bookmark[1].RelatedEntries(db)[0])
+}
+
+func TestBookmark_MarshalJSON(t *testing.T) {
+	m1 := &Bookmark{
+		BookmarkID:            1,
+		LocationID:            2,
+		PublicationLocationID: 3,
+		Slot:                  4,
+		Title:                 "Test",
+		Snippet:               sql.NullString{"A snippet", true},
+		BlockType:             5,
+		BlockIdentifier:       sql.NullInt32{},
+	}
+
+	result, err := json.Marshal(m1)
+	assert.NoError(t, err)
+	assert.Equal(t,
+		`{"Type":"Bookmark","BookmarkID":1,"LocationID":2,"PublicationLocationID":3,"Slot":4,"Title":"Test","Snippet":{"String":"A snippet","Valid":true},"BlockType":5,"BlockIdentifier":{"Int32":0,"Valid":false}}`,
+		string(result))
 }
