@@ -76,6 +76,43 @@ func TestNote_Equals(t *testing.T) {
 	assert.True(t, m2.Equals(m2_1))
 }
 
+func TestNote_RelatedEntries(t *testing.T) {
+	db := &Database{
+		Location: []*Location{
+			nil,
+			{
+				LocationID: 1,
+				Title:      sql.NullString{"Location-Title", true},
+			},
+		},
+		Note: []*Note{
+			nil,
+			{
+				NoteID:          1,
+				GUID:            "GUIDFOR1",
+				UserMarkID:      sql.NullInt32{Int32: 1, Valid: true},
+				LocationID:      sql.NullInt32{Int32: 1, Valid: true},
+				Title:           sql.NullString{String: "A Title", Valid: true},
+				Content:         sql.NullString{String: "Content", Valid: true},
+				LastModified:    "2017-06-01T19:36:28+0200",
+				BlockType:       0,
+				BlockIdentifier: sql.NullInt32{},
+			},
+		},
+		UserMark: []*UserMark{
+			nil,
+			{
+				UserMarkID: 1,
+				ColorIndex: 5,
+			},
+		},
+	}
+
+	assert.Empty(t, db.Note[1].RelatedEntries(nil))
+	assert.Equal(t, db.Location[1], db.Note[1].RelatedEntries(db)[0])
+	assert.Equal(t, db.UserMark[1], db.Note[1].RelatedEntries(db)[1])
+}
+
 func TestNote_PrettyPrint(t *testing.T) {
 	m1 := &Note{
 		NoteID:          1,

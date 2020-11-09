@@ -76,6 +76,19 @@ func TestTagMap_Equals(t *testing.T) {
 	assert.False(t, m1.Equals(m2))
 }
 
+func TestTagMap_RelatedEntries(t *testing.T) {
+	m1 := &TagMap{
+		TagMapID:       1,
+		PlaylistItemID: sql.NullInt32{1, true},
+		LocationID:     sql.NullInt32{1, true},
+		NoteID:         sql.NullInt32{1, true},
+		TagID:          1,
+		Position:       1,
+	}
+
+	assert.Empty(t, m1.RelatedEntries(nil))
+	assert.Empty(t, m1.RelatedEntries(&Database{}))
+}
 
 func TestTagMap_MarshalJSON(t *testing.T) {
 	m1 := &TagMap{

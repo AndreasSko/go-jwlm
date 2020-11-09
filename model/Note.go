@@ -44,12 +44,29 @@ func (m *Note) Equals(m2 Model) bool {
 	return false
 }
 
+// RelatedEntries returns entries that are related to this one
+func (m *Note) RelatedEntries(db *Database) []Model {
+	result := make([]Model, 0, 2)
+
+	if location := db.FetchFromTable("Location", int(m.LocationID.Int32)); location != nil {
+		result = append(result, location)
+	}
+
+	// Todo: Maybe add BlockRange or rather use UserMarkBlockRange?
+	if userMark := db.FetchFromTable("UserMark", int(m.UserMarkID.Int32)); userMark != nil {
+		result = append(result, userMark)
+	}
+
+	return result
+}
+
 // PrettyPrint prints Note in a human readable format and
 // adds information about related entries if helpful.
 func (m *Note) PrettyPrint(db *Database) string {
 	fields := []string{"Title", "Content", "LastModified"}
 	result := prettyPrint(m, fields)
 
+	// TODO: Use RelatedEntries
 	if location := db.FetchFromTable("Location", int(m.LocationID.Int32)); location != nil {
 		result += "\n\n\nRelated Location:\n"
 		result += location.PrettyPrint(db)

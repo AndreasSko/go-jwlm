@@ -139,6 +139,24 @@ func TestLocation_Equals(t *testing.T) {
 	assert.False(t, m1.Equals(m2))
 }
 
+func TestLocation_RelatedEntries(t *testing.T) {
+	m1 := &Location{
+		LocationID:     1,
+		BookNumber:     sql.NullInt32{Int32: 2, Valid: true},
+		ChapterNumber:  sql.NullInt32{Int32: 3, Valid: true},
+		DocumentID:     sql.NullInt32{Int32: 4, Valid: true},
+		Track:          sql.NullInt32{Int32: 5, Valid: true},
+		IssueTagNumber: 6,
+		KeySymbol:      sql.NullString{String: "nwtsty", Valid: true},
+		MepsLanguage:   7,
+		LocationType:   8,
+		Title:          sql.NullString{String: "A title", Valid: true},
+	}
+
+	assert.Empty(t, m1.RelatedEntries(nil))
+	assert.Empty(t, m1.RelatedEntries(&Database{}))
+}
+
 func TestLocation_MarshalJSON(t *testing.T) {
 	m1 := &Location{
 		LocationID:     1,

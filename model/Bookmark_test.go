@@ -118,6 +118,35 @@ func TestBookmark_PrettyPrint(t *testing.T) {
 	assert.Equal(t, expectedResult, m1.PrettyPrint(db))
 }
 
+func TestBookmark_RelatedEntries(t *testing.T) {
+	db := &Database{
+		Bookmark: []*Bookmark{
+			nil,
+			{
+				BookmarkID:            1,
+				LocationID:            1,
+				PublicationLocationID: 3,
+				Slot:                  4,
+				Title:                 "Test",
+				Snippet:               sql.NullString{},
+				BlockType:             0,
+				BlockIdentifier:       sql.NullInt32{},
+			},
+		},
+		Location: []*Location{
+			nil,
+			{
+				LocationID: 1,
+				Title:      sql.NullString{"Location-Title", true},
+			},
+		},
+	}
+
+	assert.Empty(t, db.Bookmark[1].RelatedEntries(nil))
+	assert.Equal(t,
+		db.Location[1],
+		db.Bookmark[1].RelatedEntries(db)[0])
+}
 
 func TestBookmark_MarshalJSON(t *testing.T) {
 	m1 := &Bookmark{

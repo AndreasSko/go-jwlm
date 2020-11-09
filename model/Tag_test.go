@@ -87,6 +87,18 @@ func TestTag_PrettyPrint(t *testing.T) {
 	assert.Equal(t, expectedResult, m1.PrettyPrint(nil))
 }
 
+func TestTag_RelatedEntries(t *testing.T) {
+	m1 := &Tag{
+		TagID:         1,
+		TagType:       1,
+		Name:          "FirstTag",
+		ImageFilename: sql.NullString{},
+	}
+
+	assert.Empty(t, m1.RelatedEntries(nil))
+	assert.Empty(t, m1.RelatedEntries(&Database{}))
+}
+
 func TestTag_MarshalJSON(t *testing.T) {
 	m1 := &Tag{
 		TagID:         1,

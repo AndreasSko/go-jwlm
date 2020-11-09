@@ -55,6 +55,12 @@ func (m *TagMap) Equals(m2 Model) bool {
 	return false
 }
 
+// RelatedEntries returns entries that are related to this one
+func (m *TagMap) RelatedEntries(db *Database) []Model {
+	// We don't need it for now, so just return empty slice
+	return []Model{}
+}
+
 // PrettyPrint prints TagMap in a human readable format and
 // adds information about related entries if helpful.
 func (m *TagMap) PrettyPrint(db *Database) string {

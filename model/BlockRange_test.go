@@ -105,6 +105,20 @@ func TestBlockRange_Equals(t *testing.T) {
 	assert.False(t, m1.Equals(m2))
 }
 
+func TestBlockRange_RelatedEntries(t *testing.T) {
+	m1 := &BlockRange{
+		BlockRangeID: 1,
+		BlockType:    1,
+		Identifier:   1,
+		StartToken:   sql.NullInt32{Int32: 1, Valid: true},
+		EndToken:     sql.NullInt32{Int32: 2, Valid: true},
+		UserMarkID:   1,
+	}
+
+	assert.Empty(t, m1.RelatedEntries(nil))
+	assert.Empty(t, m1.RelatedEntries(&Database{}))
+}
+
 func TestBlockRange_MarshalJSON(t *testing.T) {
 	m1 := &BlockRange{
 		BlockRangeID: 1,

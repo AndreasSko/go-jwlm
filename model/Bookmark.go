@@ -56,6 +56,17 @@ func (m *Bookmark) Equals(m2 Model) bool {
 	return false
 }
 
+// RelatedEntries returns entries that are related to this one
+func (m *Bookmark) RelatedEntries(db *Database) []Model {
+	result := make([]Model, 0, 1)
+
+	if location := db.FetchFromTable("Location", m.LocationID); location != nil {
+		result = append(result, location)
+	}
+
+	return result
+}
+
 // PrettyPrint prints Bookmark in a human readable format and
 // adds information about related entries if helpful.
 func (m *Bookmark) PrettyPrint(db *Database) string {

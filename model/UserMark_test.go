@@ -60,6 +60,20 @@ func TestUserMark_PrettyPrint(t *testing.T) {
 	assert.Equal(t, "\nColorIndex: 1", m1.PrettyPrint(nil))
 }
 
+func TestUserMark_RelatedEntries(t *testing.T) {
+	m1 := &UserMark{
+		UserMarkID:   1,
+		ColorIndex:   1,
+		LocationID:   1,
+		StyleIndex:   1,
+		UserMarkGUID: "FIRST",
+		Version:      1,
+	}
+
+	assert.Empty(t, m1.RelatedEntries(nil))
+	assert.Empty(t, m1.RelatedEntries(&Database{}))
+}
+
 func TestUserMark_MarshalJSON(t *testing.T) {
 	m1 := &UserMark{
 		UserMarkID:   1,
