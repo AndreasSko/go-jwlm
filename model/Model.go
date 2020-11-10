@@ -29,15 +29,15 @@ type Model interface {
 
 // Related combines entries that are related to a given model
 type Related struct {
-	BlockRange          []*BlockRange
-	Bookmark            *Bookmark
-	Location            *Location
-	PublicationLocation *Location
-	Note                *Note
-	Tag                 *Tag
-	TagMap              *TagMap
-	UserMark            *UserMark
-	UserMarkBlockRange  *UserMarkBlockRange
+	BlockRange          []*BlockRange       `json:"blockRange"`
+	Bookmark            *Bookmark           `json:"bookmark"`
+	Location            *Location           `json:"location"`
+	PublicationLocation *Location           `json:"publicationLocation"`
+	Note                *Note               `json:"note"`
+	Tag                 *Tag                `json:"tag"`
+	TagMap              *TagMap             `json:"tagMap"`
+	UserMark            *UserMark           `json:"userMark"`
+	UserMarkBlockRange  *UserMarkBlockRange `json:"userMarkBlockRange"`
 }
 
 // MakeModelSlice converts a slice of pointers of model-implementing structs to []model

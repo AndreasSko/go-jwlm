@@ -87,15 +87,15 @@ func (m *Bookmark) PrettyPrint(db *Database) string {
 // MarshalJSON returns the JSON encoding of the entry
 func (m Bookmark) MarshalJSON() ([]byte, error) {
 	return json.Marshal(&struct {
-		Type                  string
-		BookmarkID            int
-		LocationID            int
-		PublicationLocationID int
-		Slot                  int
-		Title                 string
-		Snippet               sql.NullString
-		BlockType             int
-		BlockIdentifier       sql.NullInt32
+		Type                  string         `json:"type"`
+		BookmarkID            int            `json:"bookmarkId"`
+		LocationID            int            `json:"locationId"`
+		PublicationLocationID int            `json:"publicationLocationId"`
+		Slot                  int            `json:"slot"`
+		Title                 string         `json:"title"`
+		Snippet               sql.NullString `json:"snippet"`
+		BlockType             int            `json:"blockType"`
+		BlockIdentifier       sql.NullInt32  `json:"blockIdentifier"`
 	}{
 		Type:                  "Bookmark",
 		BookmarkID:            m.BookmarkID,

@@ -40,8 +40,8 @@ type MergeConflict struct {
 
 // modelRelatedTuple contains a model and its related entries
 type modelRelatedTuple struct {
-	Model   model.Model
-	Related model.Related
+	Model   model.Model   `json:"model"`
+	Related model.Related `json:"related"`
 }
 
 // InitDBWrapper initializes the DatabaseWrapper for the MergeConflictsWrapper

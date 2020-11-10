@@ -70,13 +70,13 @@ func (m *TagMap) PrettyPrint(db *Database) string {
 // MarshalJSON returns the JSON encoding of the entry
 func (m TagMap) MarshalJSON() ([]byte, error) {
 	return json.Marshal(&struct {
-		Type           string
-		TagMapID       int
-		PlaylistItemID sql.NullInt32
-		LocationID     sql.NullInt32
-		NoteID         sql.NullInt32
-		TagID          int
-		Position       int
+		Type           string        `json:"type"`
+		TagMapID       int           `json:"tagMapId"`
+		PlaylistItemID sql.NullInt32 `json:"playlistItemId"`
+		LocationID     sql.NullInt32 `json:"locationId"`
+		NoteID         sql.NullInt32 `json:"noteId"`
+		TagID          int           `json:"tagId"`
+		Position       int           `json:"position"`
 	}{
 		Type:           "TagMap",
 		TagMapID:       m.TagMapID,

@@ -103,6 +103,6 @@ func TestTagMap_MarshalJSON(t *testing.T) {
 	result, err := json.Marshal(m1)
 	assert.NoError(t, err)
 	assert.Equal(t,
-		`{"Type":"TagMap","TagMapID":1,"PlaylistItemID":{"Int32":2,"Valid":true},"LocationID":{"Int32":3,"Valid":true},"NoteID":{"Int32":4,"Valid":true},"TagID":5,"Position":6}`,
+		`{"type":"TagMap","tagMapId":1,"playlistItemId":{"Int32":2,"Valid":true},"locationId":{"Int32":3,"Valid":true},"noteId":{"Int32":4,"Valid":true},"tagId":5,"position":6}`,
 		string(result))
 }

@@ -163,6 +163,6 @@ func TestBookmark_MarshalJSON(t *testing.T) {
 	result, err := json.Marshal(m1)
 	assert.NoError(t, err)
 	assert.Equal(t,
-		`{"Type":"Bookmark","BookmarkID":1,"LocationID":2,"PublicationLocationID":3,"Slot":4,"Title":"Test","Snippet":{"String":"A snippet","Valid":true},"BlockType":5,"BlockIdentifier":{"Int32":0,"Valid":false}}`,
+		`{"type":"Bookmark","bookmarkId":1,"locationId":2,"publicationLocationId":3,"slot":4,"title":"Test","snippet":{"String":"A snippet","Valid":true},"blockType":5,"blockIdentifier":{"Int32":0,"Valid":false}}`,
 		string(result))
 }

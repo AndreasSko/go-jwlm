@@ -83,16 +83,16 @@ func (m *Note) PrettyPrint(db *Database) string {
 // MarshalJSON returns the JSON encoding of the entry
 func (m Note) MarshalJSON() ([]byte, error) {
 	return json.Marshal(&struct {
-		Type            string
-		NoteID          int
-		GUID            string
-		UserMarkID      sql.NullInt32
-		LocationID      sql.NullInt32
-		Title           sql.NullString
-		Content         sql.NullString
-		LastModified    string
-		BlockType       int
-		BlockIdentifier sql.NullInt32
+		Type            string         `json:"type"`
+		NoteID          int            `json:"noteId"`
+		GUID            string         `json:"guid"`
+		UserMarkID      sql.NullInt32  `json:"userMarkId"`
+		LocationID      sql.NullInt32  `json:"locationId"`
+		Title           sql.NullString `json:"title"`
+		Content         sql.NullString `json:"content"`
+		LastModified    string         `json:"lastModified"`
+		BlockType       int            `json:"blockType"`
+		BlockIdentifier sql.NullInt32  `json:"blockIdentifier"`
 	}{
 		Type:            "Note",
 		NoteID:          m.NoteID,

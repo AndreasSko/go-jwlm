@@ -100,9 +100,9 @@ func (m *UserMarkBlockRange) PrettyPrint(db *Database) string {
 // MarshalJSON returns the JSON encoding of the entry
 func (m UserMarkBlockRange) MarshalJSON() ([]byte, error) {
 	return json.Marshal(&struct {
-		Type        string
-		UserMark    *UserMark
-		BlockRanges []*BlockRange
+		Type        string        `json:"type"`
+		UserMark    *UserMark     `json:"userMark"`
+		BlockRanges []*BlockRange `json:"blockRanges"`
 	}{
 		Type:        "UserMarkBlockRange",
 		UserMark:    m.UserMark,

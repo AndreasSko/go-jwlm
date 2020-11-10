@@ -110,6 +110,6 @@ func TestTag_MarshalJSON(t *testing.T) {
 	result, err := json.Marshal(m1)
 	assert.NoError(t, err)
 	assert.Equal(t,
-		`{"Type":"Tag","TagID":1,"TagType":2,"Name":"FirstTag","ImageFilename":{"String":"","Valid":false}}`,
+		`{"type":"Tag","tagId":1,"tagType":2,"name":"FirstTag","imageFilename":{"String":"","Valid":false}}`,
 		string(result))
 }

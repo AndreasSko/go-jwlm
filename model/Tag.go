@@ -63,11 +63,11 @@ func (m *Tag) PrettyPrint(db *Database) string {
 // MarshalJSON returns the JSON encoding of the entry
 func (m Tag) MarshalJSON() ([]byte, error) {
 	return json.Marshal(&struct {
-		Type          string
-		TagID         int
-		TagType       int
-		Name          string
-		ImageFilename sql.NullString
+		Type          string         `json:"type"`
+		TagID         int            `json:"tagId"`
+		TagType       int            `json:"tagType"`
+		Name          string         `json:"name"`
+		ImageFilename sql.NullString `json:"imageFilename"`
 	}{
 		Type:          "Tag",
 		TagID:         m.TagID,

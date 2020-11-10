@@ -87,6 +87,6 @@ func TestUserMark_MarshalJSON(t *testing.T) {
 	result, err := json.Marshal(m1)
 	assert.NoError(t, err)
 	assert.Equal(t,
-		`{"Type":"UserMark","UserMarkID":1,"ColorIndex":2,"LocationID":3,"StyleIndex":4,"UserMarkGUID":"FIRST","Version":5}`,
+		`{"type":"UserMark","userMarkId":1,"colorIndex":2,"locationId":3,"styleIndex":4,"userMarkGuid":"FIRST","version":5}`,
 		string(result))
 }
