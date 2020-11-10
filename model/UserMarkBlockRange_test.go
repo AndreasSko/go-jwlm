@@ -341,8 +341,8 @@ func TestUserMarkBlockRange_RelatedEntries(t *testing.T) {
 		},
 	}
 
-	assert.Empty(t, m1.RelatedEntries(nil))
-	assert.Equal(t, db.Location[1], m1.RelatedEntries(db)[0])
+	assert.Equal(t, Related{}, m1.RelatedEntries(nil))
+	assert.Equal(t, Related{Location: db.Location[1]}, m1.RelatedEntries(db))
 }
 
 func TestUserMarkBlockRange_MarshalJSON(t *testing.T) {

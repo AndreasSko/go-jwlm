@@ -153,13 +153,13 @@ func TestMergeConflictsWrapper_GetConflict(t *testing.T) {
 	assert.Equal(t,
 		jsonMarhshalIgnoreErr(modelRelatedTuple{
 			Model:   mcw.conflicts["1"].Left,
-			Related: []model.Model{db.Location[1]},
+			Related: model.Related{Location: db.Location[1], PublicationLocation: db.Location[1]},
 		}),
 		conflict.Left)
 	assert.Equal(t,
 		jsonMarhshalIgnoreErr(modelRelatedTuple{
 			Model:   mcw.conflicts["1"].Right,
-			Related: []model.Model{db.Location[1]},
+			Related: model.Related{Location: db.Location[1], PublicationLocation: db.Location[1]},
 		}),
 		conflict.Right)
 
@@ -168,13 +168,13 @@ func TestMergeConflictsWrapper_GetConflict(t *testing.T) {
 	assert.Equal(t,
 		jsonMarhshalIgnoreErr(modelRelatedTuple{
 			Model:   mcw.conflicts["2"].Left,
-			Related: []model.Model{},
+			Related: model.Related{},
 		}),
 		conflict.Left)
 	assert.Equal(t,
 		jsonMarhshalIgnoreErr(modelRelatedTuple{
 			Model:   mcw.conflicts["2"].Right,
-			Related: []model.Model{},
+			Related: model.Related{},
 		}),
 		conflict.Right)
 
@@ -182,7 +182,7 @@ func TestMergeConflictsWrapper_GetConflict(t *testing.T) {
 	assert.Equal(t,
 		jsonMarhshalIgnoreErr(modelRelatedTuple{
 			Model:   mcw.conflicts["2"].Right,
-			Related: []model.Model{},
+			Related: model.Related{},
 		}),
 		conflict.Right)
 

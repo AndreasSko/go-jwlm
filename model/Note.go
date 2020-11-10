@@ -45,16 +45,16 @@ func (m *Note) Equals(m2 Model) bool {
 }
 
 // RelatedEntries returns entries that are related to this one
-func (m *Note) RelatedEntries(db *Database) []Model {
-	result := make([]Model, 0, 2)
+func (m *Note) RelatedEntries(db *Database) Related {
+	result := Related{}
 
 	if location := db.FetchFromTable("Location", int(m.LocationID.Int32)); location != nil {
-		result = append(result, location)
+		result.Location = location.(*Location)
 	}
 
 	// Todo: Maybe add BlockRange or rather use UserMarkBlockRange?
 	if userMark := db.FetchFromTable("UserMark", int(m.UserMarkID.Int32)); userMark != nil {
-		result = append(result, userMark)
+		result.UserMark = userMark.(*UserMark)
 	}
 
 	return result

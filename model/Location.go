@@ -70,9 +70,9 @@ func (m *Location) Equals(m2 Model) bool {
 }
 
 // RelatedEntries returns entries that are related to this one
-func (m *Location) RelatedEntries(db *Database) []Model {
-	// We don't need it for now, so just return empty slice
-	return []Model{}
+func (m *Location) RelatedEntries(db *Database) Related {
+	// We don't need it for now
+	return Related{}
 }
 
 // PrettyPrint prints Location in a human readable format and

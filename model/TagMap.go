@@ -56,9 +56,9 @@ func (m *TagMap) Equals(m2 Model) bool {
 }
 
 // RelatedEntries returns entries that are related to this one
-func (m *TagMap) RelatedEntries(db *Database) []Model {
+func (m *TagMap) RelatedEntries(db *Database) Related {
 	// We don't need it for now, so just return empty slice
-	return []Model{}
+	return Related{}
 }
 
 // PrettyPrint prints TagMap in a human readable format and

@@ -70,8 +70,8 @@ func TestUserMark_RelatedEntries(t *testing.T) {
 		Version:      1,
 	}
 
-	assert.Empty(t, m1.RelatedEntries(nil))
-	assert.Empty(t, m1.RelatedEntries(&Database{}))
+	assert.Equal(t, Related{}, m1.RelatedEntries(nil))
+	assert.Equal(t, Related{}, m1.RelatedEntries(&Database{}))
 }
 
 func TestUserMark_MarshalJSON(t *testing.T) {

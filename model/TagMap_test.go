@@ -86,8 +86,8 @@ func TestTagMap_RelatedEntries(t *testing.T) {
 		Position:       1,
 	}
 
-	assert.Empty(t, m1.RelatedEntries(nil))
-	assert.Empty(t, m1.RelatedEntries(&Database{}))
+	assert.Equal(t, Related{}, m1.RelatedEntries(nil))
+	assert.Equal(t, Related{}, m1.RelatedEntries(&Database{}))
 }
 
 func TestTagMap_MarshalJSON(t *testing.T) {

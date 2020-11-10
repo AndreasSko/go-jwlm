@@ -153,8 +153,8 @@ func TestLocation_RelatedEntries(t *testing.T) {
 		Title:          sql.NullString{String: "A title", Valid: true},
 	}
 
-	assert.Empty(t, m1.RelatedEntries(nil))
-	assert.Empty(t, m1.RelatedEntries(&Database{}))
+	assert.Equal(t, Related{}, m1.RelatedEntries(nil))
+	assert.Equal(t, Related{}, m1.RelatedEntries(&Database{}))
 }
 
 func TestLocation_MarshalJSON(t *testing.T) {

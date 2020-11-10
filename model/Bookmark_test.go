@@ -142,10 +142,10 @@ func TestBookmark_RelatedEntries(t *testing.T) {
 		},
 	}
 
-	assert.Empty(t, db.Bookmark[1].RelatedEntries(nil))
+	assert.Equal(t, Related{}, db.Bookmark[1].RelatedEntries(nil))
 	assert.Equal(t,
-		db.Location[1],
-		db.Bookmark[1].RelatedEntries(db)[0])
+		Related{Location: db.Location[1], PublicationLocation: db.Location[1]},
+		db.Bookmark[1].RelatedEntries(db))
 }
 
 func TestBookmark_MarshalJSON(t *testing.T) {

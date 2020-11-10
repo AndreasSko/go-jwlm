@@ -43,9 +43,9 @@ func (m *UserMark) Equals(m2 Model) bool {
 }
 
 // RelatedEntries returns entries that are related to this one
-func (m *UserMark) RelatedEntries(db *Database) []Model {
+func (m *UserMark) RelatedEntries(db *Database) Related {
 	// We don't need it for now, so just return empty slice
-	return []Model{}
+	return Related{}
 }
 
 // PrettyPrint prints UserMark in a human readable format and

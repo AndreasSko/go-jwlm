@@ -108,9 +108,8 @@ func TestNote_RelatedEntries(t *testing.T) {
 		},
 	}
 
-	assert.Empty(t, db.Note[1].RelatedEntries(nil))
-	assert.Equal(t, db.Location[1], db.Note[1].RelatedEntries(db)[0])
-	assert.Equal(t, db.UserMark[1], db.Note[1].RelatedEntries(db)[1])
+	assert.Equal(t, Related{}, db.Note[1].RelatedEntries(nil))
+	assert.Equal(t, Related{Location: db.Location[1], UserMark: db.UserMark[1]}, db.Note[1].RelatedEntries(db))
 }
 
 func TestNote_PrettyPrint(t *testing.T) {

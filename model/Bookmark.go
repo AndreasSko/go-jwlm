@@ -57,11 +57,14 @@ func (m *Bookmark) Equals(m2 Model) bool {
 }
 
 // RelatedEntries returns entries that are related to this one
-func (m *Bookmark) RelatedEntries(db *Database) []Model {
-	result := make([]Model, 0, 1)
+func (m *Bookmark) RelatedEntries(db *Database) Related {
+	result := Related{}
 
 	if location := db.FetchFromTable("Location", m.LocationID); location != nil {
-		result = append(result, location)
+		result.Location = location.(*Location)
+	}
+	if pubLocation := db.FetchFromTable("Location", m.LocationID); pubLocation != nil {
+		result.PublicationLocation = pubLocation.(*Location)
 	}
 
 	return result

@@ -57,9 +57,9 @@ func (m *BlockRange) Equals(m2 Model) bool {
 }
 
 // RelatedEntries returns entries that are related to this one
-func (m *BlockRange) RelatedEntries(db *Database) []Model {
-	// We don't need it for now, so just return empty slice
-	return []Model{}
+func (m *BlockRange) RelatedEntries(db *Database) Related {
+	// We don't need it for now
+	return Related{}
 }
 
 // PrettyPrint prints BlockRange in a human readable format and

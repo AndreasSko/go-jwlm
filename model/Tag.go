@@ -49,8 +49,8 @@ func (m *Tag) Equals(m2 Model) bool {
 }
 
 // RelatedEntries returns entries that are related to this one
-func (m *Tag) RelatedEntries(db *Database) []Model {
-	return []Model{}
+func (m *Tag) RelatedEntries(db *Database) Related {
+	return Related{}
 }
 
 // PrettyPrint prints Tag in a human readable format and

@@ -41,7 +41,7 @@ type MergeConflict struct {
 // modelRelatedTuple contains a model and its related entries
 type modelRelatedTuple struct {
 	Model   model.Model
-	Related []model.Model
+	Related model.Related
 }
 
 // InitDBWrapper initializes the DatabaseWrapper for the MergeConflictsWrapper
