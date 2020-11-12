@@ -45,16 +45,16 @@ func (m *Note) Equals(m2 Model) bool {
 }
 
 // RelatedEntries returns entries that are related to this one
-func (m *Note) RelatedEntries(db *Database) []Model {
-	result := make([]Model, 0, 2)
+func (m *Note) RelatedEntries(db *Database) Related {
+	result := Related{}
 
 	if location := db.FetchFromTable("Location", int(m.LocationID.Int32)); location != nil {
-		result = append(result, location)
+		result.Location = location.(*Location)
 	}
 
 	// Todo: Maybe add BlockRange or rather use UserMarkBlockRange?
 	if userMark := db.FetchFromTable("UserMark", int(m.UserMarkID.Int32)); userMark != nil {
-		result = append(result, userMark)
+		result.UserMark = userMark.(*UserMark)
 	}
 
 	return result
@@ -83,16 +83,16 @@ func (m *Note) PrettyPrint(db *Database) string {
 // MarshalJSON returns the JSON encoding of the entry
 func (m Note) MarshalJSON() ([]byte, error) {
 	return json.Marshal(&struct {
-		Type            string
-		NoteID          int
-		GUID            string
-		UserMarkID      sql.NullInt32
-		LocationID      sql.NullInt32
-		Title           sql.NullString
-		Content         sql.NullString
-		LastModified    string
-		BlockType       int
-		BlockIdentifier sql.NullInt32
+		Type            string         `json:"type"`
+		NoteID          int            `json:"noteId"`
+		GUID            string         `json:"guid"`
+		UserMarkID      sql.NullInt32  `json:"userMarkId"`
+		LocationID      sql.NullInt32  `json:"locationId"`
+		Title           sql.NullString `json:"title"`
+		Content         sql.NullString `json:"content"`
+		LastModified    string         `json:"lastModified"`
+		BlockType       int            `json:"blockType"`
+		BlockIdentifier sql.NullInt32  `json:"blockIdentifier"`
 	}{
 		Type:            "Note",
 		NoteID:          m.NoteID,

@@ -115,8 +115,8 @@ func TestBlockRange_RelatedEntries(t *testing.T) {
 		UserMarkID:   1,
 	}
 
-	assert.Empty(t, m1.RelatedEntries(nil))
-	assert.Empty(t, m1.RelatedEntries(&Database{}))
+	assert.Equal(t, Related{}, m1.RelatedEntries(nil))
+	assert.Equal(t, Related{}, m1.RelatedEntries(&Database{}))
 }
 
 func TestBlockRange_MarshalJSON(t *testing.T) {
@@ -130,5 +130,5 @@ func TestBlockRange_MarshalJSON(t *testing.T) {
 	}
 	result, err := json.Marshal(m1)
 	assert.NoError(t, err)
-	assert.Equal(t, `{"Type":"BlockRange","BlockRangeID":1,"BlockType":1,"Identifier":1,"StartToken":{"Int32":1,"Valid":true},"EndToken":{"Int32":2,"Valid":true},"UserMarkID":1}`, string(result))
+	assert.Equal(t, `{"type":"BlockRange","blockRangeId":1,"blockType":1,"identifier":1,"startToken":{"Int32":1,"Valid":true},"endToken":{"Int32":2,"Valid":true},"userMarkId":1}`, string(result))
 }

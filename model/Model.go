@@ -20,11 +20,24 @@ type Model interface {
 	SetID(int)
 	UniqueKey() string
 	Equals(m2 Model) bool
-	RelatedEntries(db *Database) []Model
+	RelatedEntries(db *Database) Related
 	PrettyPrint(db *Database) string
 	tableName() string
 	idName() string
 	scanRow(row *sql.Rows) (Model, error)
+}
+
+// Related combines entries that are related to a given model
+type Related struct {
+	BlockRange          []*BlockRange       `json:"blockRange"`
+	Bookmark            *Bookmark           `json:"bookmark"`
+	Location            *Location           `json:"location"`
+	PublicationLocation *Location           `json:"publicationLocation"`
+	Note                *Note               `json:"note"`
+	Tag                 *Tag                `json:"tag"`
+	TagMap              *TagMap             `json:"tagMap"`
+	UserMark            *UserMark           `json:"userMark"`
+	UserMarkBlockRange  *UserMarkBlockRange `json:"userMarkBlockRange"`
 }
 
 // MakeModelSlice converts a slice of pointers of model-implementing structs to []model

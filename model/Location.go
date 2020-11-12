@@ -70,9 +70,9 @@ func (m *Location) Equals(m2 Model) bool {
 }
 
 // RelatedEntries returns entries that are related to this one
-func (m *Location) RelatedEntries(db *Database) []Model {
-	// We don't need it for now, so just return empty slice
-	return []Model{}
+func (m *Location) RelatedEntries(db *Database) Related {
+	// We don't need it for now
+	return Related{}
 }
 
 // PrettyPrint prints Location in a human readable format and
@@ -86,17 +86,17 @@ func (m *Location) PrettyPrint(db *Database) string {
 // MarshalJSON returns the JSON encoding of the entry
 func (m Location) MarshalJSON() ([]byte, error) {
 	return json.Marshal(&struct {
-		Type           string
-		LocationID     int
-		BookNumber     sql.NullInt32
-		ChapterNumber  sql.NullInt32
-		DocumentID     sql.NullInt32
-		Track          sql.NullInt32
-		IssueTagNumber int
-		KeySymbol      sql.NullString
-		MepsLanguage   int
-		LocationType   int
-		Title          sql.NullString
+		Type           string         `json:"type"`
+		LocationID     int            `json:"locationId"`
+		BookNumber     sql.NullInt32  `json:"bookNumber"`
+		ChapterNumber  sql.NullInt32  `json:"chapterNumber"`
+		DocumentID     sql.NullInt32  `json:"documentId"`
+		Track          sql.NullInt32  `json:"track"`
+		IssueTagNumber int            `json:"issueTagNumber"`
+		KeySymbol      sql.NullString `json:"keySymbol"`
+		MepsLanguage   int            `json:"mepsLanguage"`
+		LocationType   int            `json:"locationType"`
+		Title          sql.NullString `json:"title"`
 	}{
 		Type:           "Location",
 		LocationID:     m.LocationID,

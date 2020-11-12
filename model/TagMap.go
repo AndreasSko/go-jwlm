@@ -56,9 +56,9 @@ func (m *TagMap) Equals(m2 Model) bool {
 }
 
 // RelatedEntries returns entries that are related to this one
-func (m *TagMap) RelatedEntries(db *Database) []Model {
+func (m *TagMap) RelatedEntries(db *Database) Related {
 	// We don't need it for now, so just return empty slice
-	return []Model{}
+	return Related{}
 }
 
 // PrettyPrint prints TagMap in a human readable format and
@@ -70,13 +70,13 @@ func (m *TagMap) PrettyPrint(db *Database) string {
 // MarshalJSON returns the JSON encoding of the entry
 func (m TagMap) MarshalJSON() ([]byte, error) {
 	return json.Marshal(&struct {
-		Type           string
-		TagMapID       int
-		PlaylistItemID sql.NullInt32
-		LocationID     sql.NullInt32
-		NoteID         sql.NullInt32
-		TagID          int
-		Position       int
+		Type           string        `json:"type"`
+		TagMapID       int           `json:"tagMapId"`
+		PlaylistItemID sql.NullInt32 `json:"playlistItemId"`
+		LocationID     sql.NullInt32 `json:"locationId"`
+		NoteID         sql.NullInt32 `json:"noteId"`
+		TagID          int           `json:"tagId"`
+		Position       int           `json:"position"`
 	}{
 		Type:           "TagMap",
 		TagMapID:       m.TagMapID,

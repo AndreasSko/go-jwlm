@@ -43,9 +43,9 @@ func (m *UserMark) Equals(m2 Model) bool {
 }
 
 // RelatedEntries returns entries that are related to this one
-func (m *UserMark) RelatedEntries(db *Database) []Model {
+func (m *UserMark) RelatedEntries(db *Database) Related {
 	// We don't need it for now, so just return empty slice
-	return []Model{}
+	return Related{}
 }
 
 // PrettyPrint prints UserMark in a human readable format and
@@ -60,13 +60,13 @@ func (m *UserMark) PrettyPrint(db *Database) string {
 // MarshalJSON returns the JSON encoding of the entry
 func (m UserMark) MarshalJSON() ([]byte, error) {
 	return json.Marshal(&struct {
-		Type         string
-		UserMarkID   int
-		ColorIndex   int
-		LocationID   int
-		StyleIndex   int
-		UserMarkGUID string
-		Version      int
+		Type         string `json:"type"`
+		UserMarkID   int    `json:"userMarkId"`
+		ColorIndex   int    `json:"colorIndex"`
+		LocationID   int    `json:"locationId"`
+		StyleIndex   int    `json:"styleIndex"`
+		UserMarkGUID string `json:"userMarkGuid"`
+		Version      int    `json:"version"`
 	}{
 		Type:         "UserMark",
 		UserMarkID:   m.UserMarkID,

@@ -57,11 +57,14 @@ func (m *Bookmark) Equals(m2 Model) bool {
 }
 
 // RelatedEntries returns entries that are related to this one
-func (m *Bookmark) RelatedEntries(db *Database) []Model {
-	result := make([]Model, 0, 1)
+func (m *Bookmark) RelatedEntries(db *Database) Related {
+	result := Related{}
 
 	if location := db.FetchFromTable("Location", m.LocationID); location != nil {
-		result = append(result, location)
+		result.Location = location.(*Location)
+	}
+	if pubLocation := db.FetchFromTable("Location", m.LocationID); pubLocation != nil {
+		result.PublicationLocation = pubLocation.(*Location)
 	}
 
 	return result
@@ -84,15 +87,15 @@ func (m *Bookmark) PrettyPrint(db *Database) string {
 // MarshalJSON returns the JSON encoding of the entry
 func (m Bookmark) MarshalJSON() ([]byte, error) {
 	return json.Marshal(&struct {
-		Type                  string
-		BookmarkID            int
-		LocationID            int
-		PublicationLocationID int
-		Slot                  int
-		Title                 string
-		Snippet               sql.NullString
-		BlockType             int
-		BlockIdentifier       sql.NullInt32
+		Type                  string         `json:"type"`
+		BookmarkID            int            `json:"bookmarkId"`
+		LocationID            int            `json:"locationId"`
+		PublicationLocationID int            `json:"publicationLocationId"`
+		Slot                  int            `json:"slot"`
+		Title                 string         `json:"title"`
+		Snippet               sql.NullString `json:"snippet"`
+		BlockType             int            `json:"blockType"`
+		BlockIdentifier       sql.NullInt32  `json:"blockIdentifier"`
 	}{
 		Type:                  "Bookmark",
 		BookmarkID:            m.BookmarkID,

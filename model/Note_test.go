@@ -108,9 +108,8 @@ func TestNote_RelatedEntries(t *testing.T) {
 		},
 	}
 
-	assert.Empty(t, db.Note[1].RelatedEntries(nil))
-	assert.Equal(t, db.Location[1], db.Note[1].RelatedEntries(db)[0])
-	assert.Equal(t, db.UserMark[1], db.Note[1].RelatedEntries(db)[1])
+	assert.Equal(t, Related{}, db.Note[1].RelatedEntries(nil))
+	assert.Equal(t, Related{Location: db.Location[1], UserMark: db.UserMark[1]}, db.Note[1].RelatedEntries(db))
 }
 
 func TestNote_PrettyPrint(t *testing.T) {
@@ -181,6 +180,6 @@ func TestNote_MarshalJSON(t *testing.T) {
 	result, err := json.Marshal(m1)
 	assert.NoError(t, err)
 	assert.Equal(t,
-		`{"Type":"Note","NoteID":1,"GUID":"GUIDFOR1","UserMarkID":{"Int32":2,"Valid":true},"LocationID":{"Int32":3,"Valid":true},"Title":{"String":"A Title","Valid":true},"Content":{"String":"The content","Valid":true},"LastModified":"2017-06-01T19:36:28+0200","BlockType":4,"BlockIdentifier":{"Int32":0,"Valid":false}}`,
+		`{"type":"Note","noteId":1,"guid":"GUIDFOR1","userMarkId":{"Int32":2,"Valid":true},"locationId":{"Int32":3,"Valid":true},"title":{"String":"A Title","Valid":true},"content":{"String":"The content","Valid":true},"lastModified":"2017-06-01T19:36:28+0200","blockType":4,"blockIdentifier":{"Int32":0,"Valid":false}}`,
 		string(result))
 }

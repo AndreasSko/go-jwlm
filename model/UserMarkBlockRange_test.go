@@ -341,8 +341,8 @@ func TestUserMarkBlockRange_RelatedEntries(t *testing.T) {
 		},
 	}
 
-	assert.Empty(t, m1.RelatedEntries(nil))
-	assert.Equal(t, db.Location[1], m1.RelatedEntries(db)[0])
+	assert.Equal(t, Related{}, m1.RelatedEntries(nil))
+	assert.Equal(t, Related{Location: db.Location[1]}, m1.RelatedEntries(db))
 }
 
 func TestUserMarkBlockRange_MarshalJSON(t *testing.T) {
@@ -374,6 +374,6 @@ func TestUserMarkBlockRange_MarshalJSON(t *testing.T) {
 	result, err := json.Marshal(m1)
 	assert.NoError(t, err)
 	assert.Equal(t,
-		`{"Type":"UserMarkBlockRange","UserMark":{"Type":"UserMark","UserMarkID":12345,"ColorIndex":0,"LocationID":0,"StyleIndex":0,"UserMarkGUID":"VERYUNIQUEID","Version":0},"BlockRanges":[{"Type":"BlockRange","BlockRangeID":1,"BlockType":1,"Identifier":1,"StartToken":{"Int32":1,"Valid":true},"EndToken":{"Int32":2,"Valid":true},"UserMarkID":1},{"Type":"BlockRange","BlockRangeID":2,"BlockType":1,"Identifier":20,"StartToken":{"Int32":15,"Valid":true},"EndToken":{"Int32":25,"Valid":true},"UserMarkID":1}]}`,
+		`{"type":"UserMarkBlockRange","userMark":{"type":"UserMark","userMarkId":12345,"colorIndex":0,"locationId":0,"styleIndex":0,"userMarkGuid":"VERYUNIQUEID","version":0},"blockRanges":[{"type":"BlockRange","blockRangeId":1,"blockType":1,"identifier":1,"startToken":{"Int32":1,"Valid":true},"endToken":{"Int32":2,"Valid":true},"userMarkId":1},{"type":"BlockRange","blockRangeId":2,"blockType":1,"identifier":20,"startToken":{"Int32":15,"Valid":true},"endToken":{"Int32":25,"Valid":true},"userMarkId":1}]}`,
 		string(result))
 }

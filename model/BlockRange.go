@@ -57,9 +57,9 @@ func (m *BlockRange) Equals(m2 Model) bool {
 }
 
 // RelatedEntries returns entries that are related to this one
-func (m *BlockRange) RelatedEntries(db *Database) []Model {
-	// We don't need it for now, so just return empty slice
-	return []Model{}
+func (m *BlockRange) RelatedEntries(db *Database) Related {
+	// We don't need it for now
+	return Related{}
 }
 
 // PrettyPrint prints BlockRange in a human readable format and
@@ -72,13 +72,13 @@ func (m *BlockRange) PrettyPrint(db *Database) string {
 // MarshalJSON returns the JSON encoding of the entry
 func (m BlockRange) MarshalJSON() ([]byte, error) {
 	return json.Marshal(&struct {
-		Type         string
-		BlockRangeID int
-		BlockType    int
-		Identifier   int
-		StartToken   sql.NullInt32
-		EndToken     sql.NullInt32
-		UserMarkID   int
+		Type         string        `json:"type"`
+		BlockRangeID int           `json:"blockRangeId"`
+		BlockType    int           `json:"blockType"`
+		Identifier   int           `json:"identifier"`
+		StartToken   sql.NullInt32 `json:"startToken"`
+		EndToken     sql.NullInt32 `json:"endToken"`
+		UserMarkID   int           `json:"userMarkId"`
 	}{
 		Type:         "BlockRange",
 		BlockRangeID: m.BlockRangeID,

@@ -153,8 +153,8 @@ func TestLocation_RelatedEntries(t *testing.T) {
 		Title:          sql.NullString{String: "A title", Valid: true},
 	}
 
-	assert.Empty(t, m1.RelatedEntries(nil))
-	assert.Empty(t, m1.RelatedEntries(&Database{}))
+	assert.Equal(t, Related{}, m1.RelatedEntries(nil))
+	assert.Equal(t, Related{}, m1.RelatedEntries(&Database{}))
 }
 
 func TestLocation_MarshalJSON(t *testing.T) {
@@ -174,6 +174,6 @@ func TestLocation_MarshalJSON(t *testing.T) {
 	result, err := json.Marshal(m1)
 	assert.NoError(t, err)
 	assert.Equal(t,
-		`{"Type":"Location","LocationID":1,"BookNumber":{"Int32":2,"Valid":true},"ChapterNumber":{"Int32":3,"Valid":true},"DocumentID":{"Int32":4,"Valid":true},"Track":{"Int32":5,"Valid":true},"IssueTagNumber":6,"KeySymbol":{"String":"nwtsty","Valid":true},"MepsLanguage":7,"LocationType":8,"Title":{"String":"ThisTitleShouldNotBeInUniqueKey","Valid":true}}`,
+		`{"type":"Location","locationId":1,"bookNumber":{"Int32":2,"Valid":true},"chapterNumber":{"Int32":3,"Valid":true},"documentId":{"Int32":4,"Valid":true},"track":{"Int32":5,"Valid":true},"issueTagNumber":6,"keySymbol":{"String":"nwtsty","Valid":true},"mepsLanguage":7,"locationType":8,"title":{"String":"ThisTitleShouldNotBeInUniqueKey","Valid":true}}`,
 		string(result))
 }
