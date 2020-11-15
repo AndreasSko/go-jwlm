@@ -232,6 +232,19 @@ func (db *Database) importSQLite(filename string) error {
 	}
 	defer sqlite.Close()
 
+	// Make sure these tables are empty as we are not able to merge them yet.
+	// Better to fail, than to risk losing data..
+	emptyTables := []string{"InputField", "PlaylistItem", "PlaylistItemChild", "PlaylistMedia"}
+	for _, table := range emptyTables {
+		count, err := getTableEntryCount(sqlite, table)
+		if err != nil {
+			return err
+		}
+		if count > 0 {
+			return fmt.Errorf("Table %s is not empty. Merging of these entries are not supported yet", table)
+		}
+	}
+
 	// Fill each table struct separately (did not find a DRYer solution yet..)
 	mdl, err := fetchFromSQLite(sqlite, &BlockRange{})
 	if err != nil {
@@ -331,6 +344,17 @@ func fetchFromSQLite(sqlite *sql.DB, modelType Model) ([]Model, error) {
 	}
 
 	return result, nil
+}
+
+// getTableEntryCount returns the number of entries in a given table
+func getTableEntryCount(sqlite *sql.DB, tableName string) (int, error) {
+	var count int
+	err := sqlite.QueryRow(fmt.Sprintf("SELECT Count(*) FROM %s", tableName)).Scan(&count)
+	if err != nil {
+		return 0, errors.Wrapf(err, "Error while determing entry count of table %s", tableName)
+	}
+
+	return count, nil
 }
 
 // getSliceCapacity determines the needed capacity for a slice from a table

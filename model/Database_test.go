@@ -86,11 +86,29 @@ func assertEqualNotDeepSame(t *testing.T, expected interface{}, actual interface
 	}
 }
 
+func Test_getTableEntryCount(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	rows := mock.NewRows([]string{"Count"}).AddRow(123)
+	mock.ExpectQuery("SELECT Count\\(\\*\\) FROM PlaylistItem").WillReturnRows(rows)
+
+	res, err := getTableEntryCount(db, "PlaylistItem")
+	assert.NoError(t, err)
+	assert.Equal(t, 123, res)
+
+	rows = mock.NewRows([]string{"Count"}).AddRow(0)
+	mock.ExpectQuery("SELECT Count\\(\\*\\) FROM InputField").WillReturnRows(rows)
+
+	res, err = getTableEntryCount(db, "InputField")
+	assert.NoError(t, err)
+	assert.Equal(t, 0, res)
+}
+
 func Test_getSliceCapacity(t *testing.T) {
 	db, mock, err := sqlmock.New()
-	if err != nil {
-		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
-	}
+	assert.NoError(t, err)
 	defer db.Close()
 
 	rows := mock.NewRows([]string{"TagId"}).AddRow(3)
@@ -167,6 +185,9 @@ func TestDatabase_importSQLite(t *testing.T) {
 	assert.Len(t, db.Tag, 3)
 	assert.Len(t, db.TagMap, 3)
 	assert.Len(t, db.UserMark, 5)
+
+	path = filepath.Join("testdata", "error_playlistMedia.db")
+	assert.EqualError(t, db.importSQLite(path), "Table PlaylistMedia is not empty. Merging of these entries are not supported yet")
 }
 
 func TestDatabase_ImportJWLBackup(t *testing.T) {
