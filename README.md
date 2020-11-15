@@ -2,7 +2,8 @@
 Status](https://coveralls.io/repos/github/AndreasSko/go-jwlm/badge.svg?branch=master)](https://coveralls.io/github/AndreasSko/go-jwlm?branch=master)
 
 # go-jwlm
-A command line tool to easily merge JW Library backups, written in Go.
+A command-line tool to easily merge JW Library backups, written in Go.
+For the iOS version, visit [ios-jwlm](https://github.com/AndreasSko/ios-jwlm).
 
 go-jwlm allows you to merge two .jwlibrary backup files, while giving you
 control of the process - your notes are precious, and you shouldn‘t need to
@@ -10,9 +11,10 @@ trust a program solving possible merge conflicts for you.
 
 I created this project with the goal of having a tool that is able to work on
 multiple operating systems, and even allowing it to be incorporated in other
-programs as a library (like an iOS app) in the future. It is - and will be for
+programs as a library (like an [iOS app](https://github.com/AndreasSko/ios-jwlm)). 
+It is - and will be for
 quite some time - a work-in-progress project, so I‘m always open for suggestion
-and especially reports if you encounter an unexpected behaviour or other bugs. 
+and especially reports if you encounter an unexpected behavior or other bugs. 
 
 The usage is pretty simple: you have one command, you name your backup files -
 and press enter. The tool will merge all entries for you. If it encounters a
@@ -49,10 +51,16 @@ You can enable these solvers with the `--bookmarks`, `--markings`, and
 go-jwlm merge <left-backup> <right-backup> <merged-backup> --bookmarks chooseLeft --markings chooseRight --notes chooseNewest
 ```
 
-The conflict resolvers are helpful for regular merging, when you are 
-sure that one sides is always the most up-to-date one. For a first merge, 
+The conflict resolvers are helpful for regular merging when you are 
+sure that one side is always the most up-to-date one. For a first merge, 
 it is still recommended to manually solve conflicts, so you don't risk
 accidentally overwriting entries.
+
+### Compare two backups
+To quickly compare two backup files and check if their content is equal,
+you can use the `go-jwlm compare <left-backup> <right-backup>` command. 
+This one is mainly used for validation, but might be helpful in other 
+situations :)
 
 ## Installation 
 You can find the compiled binaries for Windows, Linux, and Mac under the
@@ -66,9 +74,28 @@ brew install andreassko/homebrew-go-jwlm/go-jwlm
 
 See the instructions on how to install Homebrew at https://brew.sh
 
+## Mobile version
+If you want to merge backups using your iPhone or iPad, have a look at
+[JWLM](https://github.com/AndreasSko/ios-jwlm). It uses the whole merge
+logic of go-jwlm, but wraps it in a nice and easy to use iOS app. It is still
+in beta, but volunteers for testing are always welcome! 
+
+There might come an Android version at some point, but as I personally
+don't use any Android devices, it is - unfortunately - not the highest
+priority for me right now. If you are interested in helping with this
+project, feel free to contact me or just start it on your own :)
+
+### Technical background
+[Gomobile](https://github.com/golang/go/wiki/Mobile) enables to 
+include Go packages within a mobile application. As there are still some 
+[limitations](https://pkg.go.dev/golang.org/x/mobile/cmd/gobind#hdr-Type_restrictions),
+I built a wrapper for most structs and methods. To build the binding
+on your own, install Gomobile, change into the `gomobile` directory
+of this repo and run `gomobile bind -target <ios or android>`. 
+
 ## A word of caution 
 It took me a while to trust my own program, but I still keep backups of my
-Libraries - and so should you. Go-jwlm is still in alpha-phase, so there is a
+libraries - and so should you. Go-jwlm is still in alpha-phase, so there is a
 possibility that something might get lost because of a yet-to-find bug. So
 please keep that in mind and - again - if you found a bug, feel free to open an
 issue. 
