@@ -95,7 +95,7 @@ of this repo and run `gomobile bind -target <ios or android>`.
 
 ## A word of caution 
 It took me a while to trust my own program, but I still keep backups of my
-libraries - and so should you. Go-jwlm is still in alpha-phase, so there is a
+libraries - and so should you. Go-jwlm is still in beta-phase, so there is a
 possibility that something might get lost because of a yet-to-find bug. So
 please keep that in mind and - again - if you found a bug, feel free to open an
 issue. 
