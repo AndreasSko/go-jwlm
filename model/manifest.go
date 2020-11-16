@@ -53,11 +53,13 @@ func (mfst *manifest) validateManifest() error {
 	const schemaVersion = 8
 
 	if mfst.Version != version {
-		return fmt.Errorf("Manifest version is incompatible. Should be %d is %d", version, mfst.Version)
+		return fmt.Errorf("Manifest version is incompatible. Should be %d is %d. "+
+			"You might need to upgrade to a newer version of JW Library first", version, mfst.Version)
 	}
 
 	if mfst.UserDataBackup.SchemaVersion != schemaVersion {
-		return fmt.Errorf("Schema version is incompatible. Should be %d is %d", schemaVersion, mfst.UserDataBackup.SchemaVersion)
+		return fmt.Errorf("Schema version is incompatible. Should be %d is %d. "+
+			"You might need to upgrade to a newer version of JW Library first", schemaVersion, mfst.UserDataBackup.SchemaVersion)
 	}
 
 	return nil
