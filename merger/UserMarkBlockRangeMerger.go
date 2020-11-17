@@ -1,8 +1,9 @@
 package merger
 
 import (
-	"fmt"
+	"reflect"
 	"sort"
+	"strings"
 
 	"github.com/AndreasSko/go-jwlm/model"
 )
@@ -38,27 +39,35 @@ func MergeUserMarkAndBlockRange(leftUM []*model.UserMark, leftBR []*model.BlockR
 	left := joinToUserMarkBlockRange(leftUM, leftBR)
 	right := joinToUserMarkBlockRange(rightUM, rightBR)
 
-	merged, changes, err := mergeUMBR(left, right, conflictSolution)
-	um, br := splitUserMarkBlockRange(merged)
-	if err == nil {
-		return um, br, changes, nil
-	}
+	var merged []*model.UserMarkBlockRange
+	var changes IDChanges
+	var err error
 
-	// If merge failed, try to solve conflicts using solveEqualityMergeConflict
-	switch err := err.(type) {
-	case MergeConflictError:
-		autoConflictSolution, _ := solveEqualityMergeConflict(err.Conflicts)
-		for key, autoSol := range autoConflictSolution {
-			conflictSolution["_"+key] = autoSol
+	for {
+		merged, changes, err = mergeUMBR(left, right, conflictSolution)
+		um, br := splitUserMarkBlockRange(merged)
+		if err == nil {
+			return um, br, changes, nil
 		}
-	default:
-		return nil, nil, IDChanges{}, err
+
+		// If merge failed, try to solve conflicts using solveEqualityMergeConflict
+		switch err := err.(type) {
+		case MergeConflictError:
+			autoConflictSolution, sErr := solveEqualityMergeConflict(err.Conflicts)
+			for key, autoSol := range autoConflictSolution {
+				conflictSolution["_"+key] = autoSol
+			}
+			if sErr == nil {
+				continue
+			}
+			// If no more conflicts could be solved, fail and return error
+			if reflect.DeepEqual(err.Conflicts, sErr.(MergeConflictError).Conflicts) {
+				return nil, nil, IDChanges{}, err
+			}
+		default:
+			return nil, nil, IDChanges{}, err
+		}
 	}
-
-	merged, changes, err = mergeUMBR(left, right, conflictSolution)
-	um, br = splitUserMarkBlockRange(merged)
-
-	return um, br, changes, err
 }
 
 // mergeUMBR merges a left and a right side of *[]UserMarkBlockRange. It will check
@@ -75,16 +84,21 @@ func mergeUMBR(left []*model.UserMarkBlockRange, right []*model.UserMarkBlockRan
 
 	// Ingest UserMarks & BlockRanges in a Map[LocationID]map[Identifier][]*model.BlockRange
 	blRanges := ingestUMBR(left, right)
-	conflictsCount := 0
+
 	// For each BlockRange slice per identifier, sort BlockRanges by StartToken
 	for _, locationBlock := range blRanges {
 		for _, identifierBlock := range locationBlock {
-			sort.SliceStable(identifierBlock, func(i, j int) bool {
-				return identifierBlock[i].br.StartToken.Int32 < identifierBlock[j].br.StartToken.Int32
-			})
+			// Filter out duplicates and immediatelly add them to conflicts
+			identifierBlock, moreConflicts := detectAndFilterDuplicateBRs(identifierBlock, left, right)
+			for key, value := range moreConflicts {
+				conflicts[key] = value
+			}
 
 			// Check for overlapping intervals
-			for i, br := range identifierBlock {
+			for i := 0; i < len(identifierBlock); i++ {
+				br := identifierBlock[i]
+
+			Loop:
 				for j := i + 1; j < len(identifierBlock) && br.br.EndToken.Int32 >= identifierBlock[j].br.StartToken.Int32; j++ {
 					// We found a collision!
 
@@ -94,14 +108,31 @@ func mergeUMBR(left []*model.UserMarkBlockRange, right []*model.UserMarkBlockRan
 						continue
 					}
 
-					// If its one different sites, add it to conflicts & make sure
+					// If its on different sides, add it to conflicts & make sure
 					// that entries are on correct side of mergeConflict{}
+					var first, second *model.UserMarkBlockRange
 					if br.side == LeftSide {
-						conflicts[fmt.Sprint(conflictsCount)] = MergeConflict{left[br.br.UserMarkID], right[identifierBlock[j].br.UserMarkID]}
+						first = left[br.br.UserMarkID]
+						second = right[identifierBlock[j].br.UserMarkID]
 					} else {
-						conflicts[fmt.Sprint(conflictsCount)] = MergeConflict{left[identifierBlock[j].br.UserMarkID], right[br.br.UserMarkID]}
+						first = left[identifierBlock[j].br.UserMarkID]
+						second = right[br.br.UserMarkID]
 					}
-					conflictsCount++
+					var conflictKey strings.Builder
+					conflictKey.WriteString(first.UniqueKey())
+					conflictKey.WriteString("_")
+					conflictKey.WriteString(second.UniqueKey())
+					conflicts[conflictKey.String()] = MergeConflict{first, second}
+
+					// Skip further possible collisions of this interval
+					// by continuing at the next BlockRange that starts after the
+					// EndToken of the current found collision, as we don't
+					// know, how the user might resolve the current collision.
+					for ; i < len(identifierBlock); i++ {
+						if identifierBlock[i].br.StartToken.Int32 > identifierBlock[j].br.EndToken.Int32 {
+							break Loop
+						}
+					}
 				}
 			}
 		}
@@ -151,6 +182,83 @@ func mergeUMBR(left []*model.UserMarkBlockRange, right []*model.UserMarkBlockRan
 	}
 
 	return result[:i], changes, nil
+}
+
+// detectAndFilterDuplicateBRs removes block Range entries that exists on both
+// sides (duplicates) and only leaves the one on the left side.
+// It returns a slice of brFroms sorted by StartToken
+func detectAndFilterDuplicateBRs(idBlock []brFrom, left []*model.UserMarkBlockRange,
+	right []*model.UserMarkBlockRange) ([]brFrom, map[string]MergeConflict) {
+	conflicts := map[string]MergeConflict{}
+
+	idBlock = sortBRFroms(idBlock)
+
+	for i := 0; i < len(idBlock); i++ {
+		if idBlock[i] == (brFrom{}) {
+			continue
+		}
+		for j := i + 1; j < len(idBlock); j++ {
+			if idBlock[j] == (brFrom{}) {
+				continue
+			}
+			// We only need to look for entries that are "conflicting"
+			if idBlock[j].br.StartToken.Int32 > idBlock[i].br.EndToken.Int32 {
+				break
+			}
+			if idBlock[i].br.Equals(idBlock[j].br) {
+				// If collision is on the same side, then ignore it
+				// (it's probably not our fault and we hope its okay...)
+				if idBlock[i].side == idBlock[j].side {
+					continue
+				}
+
+				var first, second *model.UserMarkBlockRange
+				if idBlock[i].side == LeftSide {
+					first = left[idBlock[i].br.UserMarkID]
+					second = right[idBlock[j].br.UserMarkID]
+				} else {
+					first = left[idBlock[j].br.UserMarkID]
+					second = right[idBlock[i].br.UserMarkID]
+				}
+				var conflictKey strings.Builder
+				conflictKey.WriteString(first.UniqueKey())
+				conflictKey.WriteString("_")
+				conflictKey.WriteString(second.UniqueKey())
+				conflicts[conflictKey.String()] = MergeConflict{first, second}
+				idBlock[j] = brFrom{}
+			}
+		}
+	}
+
+	idBlock = sortBRFroms(idBlock)
+	return idBlock, conflicts
+}
+
+// sortBRFroms returns a sorted slice of brFrom entries according to their
+// startToken. If a entry is empty, it gets removed
+func sortBRFroms(entries []brFrom) []brFrom {
+	sort.SliceStable(entries, func(i, j int) bool {
+		// Consider emptry entries as infinity
+		if entries[i] == (brFrom{}) {
+			return false
+		}
+		if entries[j] == (brFrom{}) {
+			return true
+		}
+
+		return entries[i].br.StartToken.Int32 < entries[j].br.StartToken.Int32
+	})
+
+	// Remove all empty entries
+	emptyEntries := 0
+	for i := len(entries) - 1; i >= 0; i-- {
+		if entries[i] != (brFrom{}) {
+			break
+		}
+		emptyEntries++
+	}
+
+	return entries[:len(entries)-emptyEntries]
 }
 
 // replaceUMBRConflictsWithSolution removes conflicting entries on the left and right
