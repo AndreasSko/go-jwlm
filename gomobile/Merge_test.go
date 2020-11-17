@@ -132,8 +132,12 @@ func Test_MergeWithAutoresolution(t *testing.T) {
 }
 
 func selectSameSide(mcw *MergeConflictsWrapper, side string) {
-	for i := mcw.GetNextConflictIndex(); i != -1; i = mcw.GetNextConflictIndex() {
-		mcw.SolveConflict(i, side)
+	for {
+		conflict, err := mcw.NextConflict()
+		if err != nil {
+			break
+		}
+		mcw.SolveConflict(conflict.Key, side)
 	}
 }
 
