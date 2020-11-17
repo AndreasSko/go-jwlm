@@ -74,7 +74,7 @@ func merge(leftFilename string, rightFilename string, mergedFilename string, std
 	fmt.Fprintln(stdio.Out, "Done.")
 
 	fmt.Fprintln(stdio.Out, "📑 Merging Bookmarks")
-	var bookmarksConflictSolution map[string]merger.MergeSolution
+	bookmarksConflictSolution := map[string]merger.MergeSolution{}
 	for {
 		mergedBookmarks, _, err := merger.MergeBookmarks(left.Bookmark, right.Bookmark, bookmarksConflictSolution)
 		if err == nil {
@@ -90,7 +90,8 @@ func merge(leftFilename string, rightFilename string, mergedFilename string, std
 					log.Fatal(resErr)
 				}
 			} else {
-				bookmarksConflictSolution = handleMergeConflict(err.Conflicts, &merged, stdio)
+				newSolutions := handleMergeConflict(err.Conflicts, &merged, stdio)
+				addToSolutions(bookmarksConflictSolution, newSolutions)
 			}
 		default:
 			log.Fatal(err)
@@ -117,7 +118,7 @@ func merge(leftFilename string, rightFilename string, mergedFilename string, std
 	fmt.Fprintln(stdio.Out, "Done.")
 
 	fmt.Fprintln(stdio.Out, "🖍  Merging Markings")
-	var UMBRConflictSolution map[string]merger.MergeSolution
+	UMBRConflictSolution := map[string]merger.MergeSolution{}
 	for {
 		mergedUserMarks, mergedBlockRanges, userMarkIDChanges, err := merger.MergeUserMarkAndBlockRange(left.UserMark, left.BlockRange, right.UserMark, right.BlockRange, UMBRConflictSolution)
 		if err == nil {
@@ -135,7 +136,8 @@ func merge(leftFilename string, rightFilename string, mergedFilename string, std
 					log.Fatal(resErr)
 				}
 			} else {
-				UMBRConflictSolution = handleMergeConflict(err.Conflicts, &merged, stdio)
+				newSolutions := handleMergeConflict(err.Conflicts, &merged, stdio)
+				addToSolutions(UMBRConflictSolution, newSolutions)
 			}
 		default:
 			log.Fatal(err)
@@ -144,7 +146,7 @@ func merge(leftFilename string, rightFilename string, mergedFilename string, std
 	fmt.Fprintln(stdio.Out, "Done.")
 
 	fmt.Fprintln(stdio.Out, "📝 Merging Notes")
-	var notesConflictSolution map[string]merger.MergeSolution
+	notesConflictSolution := map[string]merger.MergeSolution{}
 	for {
 		mergedNotes, notesIDChanges, err := merger.MergeNotes(left.Note, right.Note, notesConflictSolution)
 		if err == nil {
@@ -161,7 +163,8 @@ func merge(leftFilename string, rightFilename string, mergedFilename string, std
 					log.Fatal(resErr)
 				}
 			} else {
-				notesConflictSolution = handleMergeConflict(err.Conflicts, &merged, stdio)
+				newSolutions := handleMergeConflict(err.Conflicts, &merged, stdio)
+				addToSolutions(notesConflictSolution, newSolutions)
 			}
 		default:
 			log.Fatal(err)
@@ -193,6 +196,13 @@ func merge(leftFilename string, rightFilename string, mergedFilename string, std
 		log.Fatal(err)
 	}
 
+}
+
+// addToSolutions adds new mergeSolutions to the existing map of mergeSolutions
+func addToSolutions(solutions map[string]merger.MergeSolution, new map[string]merger.MergeSolution) {
+	for key, value := range new {
+		solutions[key] = value
+	}
 }
 
 func handleMergeConflict(conflicts map[string]merger.MergeConflict, mergedDB *model.Database, stdio terminal.Stdio) map[string]merger.MergeSolution {
