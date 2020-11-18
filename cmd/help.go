@@ -17,8 +17,8 @@ func mergeConflictHelp(name string) string {
 		is located, look at the Identifier, Start- and EndToken. The Identifier generally 
 		represents a paragraph in a publication or the verse in a Bible chapter. Start-, and 
 		EndToken represent the beginning and the end of a marking, where words and punctuation 
-		marks are counted as tokens (e.g. the sentence “You are my witnesses,” contains eight 
-		tokens, as three words, three whitespaces and one comma are counted). Note that a 
+		marks are counted as tokens (e.g. the sentence “You are my witnesses,” contains five 
+		tokens, as four words and one comma are counted). Note that a 
 		marking can span multiple Identifiers. ColorIndex represents the color of the marking.
 		After you located the collision, you can choose between the left and the right marking. 
 		In future versions you will be able to merge them into one big marking.`,
