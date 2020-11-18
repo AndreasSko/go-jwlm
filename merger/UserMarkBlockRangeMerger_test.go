@@ -828,7 +828,7 @@ func TestMergeUserMarkAndBlockRange_with_conflict1(t *testing.T) {
 	assert.Equal(t, expectedChanges, changes)
 }
 
-func TestMergeUserMarkAndBlockRange_with_conflict(t *testing.T) {
+func TestMergeUserMarkAndBlockRange_with_conflict2(t *testing.T) {
 	left := []*model.UserMarkBlockRange{
 		nil,
 		{
