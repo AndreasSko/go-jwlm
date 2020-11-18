@@ -10,6 +10,10 @@ import (
 // removes redundant entries and also makes sure that the position-order
 // stays similar.
 func MergeTagMaps(left []*model.TagMap, right []*model.TagMap, conflictSolution map[string]MergeSolution) ([]*model.TagMap, IDChanges, error) {
+	if len(left)+len(right) == 0 {
+		return nil, IDChanges{}, nil
+	}
+
 	// map[TagID]map[UniqueKey]TagMap
 	tags := make(map[int]map[string]*model.TagMap, len(left)+len(right))
 

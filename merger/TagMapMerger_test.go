@@ -280,4 +280,9 @@ func TestMergeTagMaps(t *testing.T) {
 	// Check if original has not been tweaked
 	assert.Equal(t, 12, left[11].TagMapID)
 	assert.Equal(t, 8, right[7].TagMapID)
+
+	assert.NotPanics(t, func() {
+		MergeTagMaps(nil, nil, nil)
+		MergeTagMaps([]*model.TagMap{}, []*model.TagMap{}, nil)
+	})
 }
