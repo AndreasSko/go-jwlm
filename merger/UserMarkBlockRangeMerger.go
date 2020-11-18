@@ -1,9 +1,13 @@
 package merger
 
 import (
+	"fmt"
 	"reflect"
+	"regexp"
 	"sort"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/AndreasSko/go-jwlm/model"
 )
@@ -119,6 +123,10 @@ func mergeUMBR(left []*model.UserMarkBlockRange, right []*model.UserMarkBlockRan
 						second = right[br.br.UserMarkID]
 					}
 					var conflictKey strings.Builder
+					// Use UnixNano as a monotonically increasing number, so we
+					// are able to apply conflict solutions in the right order later
+					conflictKey.WriteString(fmt.Sprint(time.Now().UnixNano()))
+					conflictKey.WriteString("_")
 					conflictKey.WriteString(first.UniqueKey())
 					conflictKey.WriteString("_")
 					conflictKey.WriteString(second.UniqueKey())
@@ -274,7 +282,25 @@ func replaceUMBRConflictsWithSolution(left *[]*model.UserMarkBlockRange, right *
 		Right: map[int]int{},
 	}
 
-	for _, sol := range conflictSolution {
+	// We need to go through solutions in the order they were added. Otherwise
+	// it can happen that we add entry back, after it had already been removed
+	orderedKeys := make([]string, len(conflictSolution))
+	i := 0
+	for key := range conflictSolution {
+		orderedKeys[i] = key
+		i++
+	}
+	// Sort by first part of key, which is a monotonically increasing number.
+	// If that fails, just ignore it..
+	re := regexp.MustCompile(`^(\d*)_.*`)
+	sort.Slice(orderedKeys, func(i int, j int) bool {
+		countI, _ := strconv.ParseInt(re.ReplaceAllString(orderedKeys[i], "$1"), 0, 64)
+		countJ, _ := strconv.ParseInt(re.ReplaceAllString(orderedKeys[j], "$1"), 0, 64)
+		return countI < countJ
+	})
+
+	for _, key := range orderedKeys {
+		sol := conflictSolution[key]
 		var side, other *[]*model.UserMarkBlockRange
 
 		// Ignore non UserMarkBlockRange solutions
