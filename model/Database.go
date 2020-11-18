@@ -435,7 +435,7 @@ func (db *Database) saveToNewSQLite(filename string) error {
 			return err
 		}
 		if err := insertEntries(sqlite, mdl); err != nil {
-			return err
+			return errors.Wrapf(err, "Error while inserting %s", slice)
 		}
 	}
 
@@ -468,12 +468,18 @@ func insertEntries(sqlite *sql.DB, m []Model) error {
 	// one and call the functions there.
 	tableName := ""
 	rowCount := 0
+	foundEntry := false
 	for _, mdl := range m {
 		if reflect.ValueOf(mdl).Elem().IsValid() {
 			tableName = mdl.tableName()
 			rowCount = reflect.ValueOf(mdl).Elem().NumField()
+			foundEntry = true
 			break
 		}
+	}
+	// If slice is empty, we don't need to continue
+	if !foundEntry {
+		return nil
 	}
 
 	tx, err := sqlite.Begin()
@@ -493,7 +499,7 @@ func insertEntries(sqlite *sql.DB, m []Model) error {
 
 	stmt, err := tx.Prepare(query)
 	if err != nil {
-		return errors.Wrap(err, "Error while preparing query")
+		return errors.Wrapf(err, "Error while preparing query %s", query)
 	}
 	defer stmt.Close()
 

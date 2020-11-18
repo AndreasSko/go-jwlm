@@ -227,7 +227,249 @@ func TestMergeUserMarkAndBlockRange_without_conflict(t *testing.T) {
 	assert.Equal(t, 4, leftBR[4].BlockRangeID)
 }
 
-func TestMergeUserMarkAndBlockRange_with_conflict(t *testing.T) {
+func Test_MergeUserMarkAndBlockRange_without_conflict2(t *testing.T) {
+	// Merge without conflict
+	left := []*model.UserMarkBlockRange{
+		nil,
+		{
+			UserMark: &model.UserMark{
+				UserMarkID: 1,
+				LocationID: 1,
+			},
+			BlockRanges: []*model.BlockRange{
+				{
+					BlockRangeID: 1,
+					UserMarkID:   1,
+					Identifier:   1,
+					StartToken:   sql.NullInt32{0, true},
+					EndToken:     sql.NullInt32{0, true},
+				},
+			},
+		},
+		{
+			UserMark: &model.UserMark{
+				UserMarkID: 2,
+				LocationID: 1,
+			},
+			BlockRanges: []*model.BlockRange{
+				{
+					BlockRangeID: 1,
+					UserMarkID:   2,
+					Identifier:   1,
+					StartToken:   sql.NullInt32{1, true},
+					EndToken:     sql.NullInt32{1, true},
+				},
+			},
+		},
+	}
+
+	right := []*model.UserMarkBlockRange{
+		nil,
+		{
+			UserMark: &model.UserMark{
+				UserMarkID: 1,
+				LocationID: 1,
+			},
+			BlockRanges: []*model.BlockRange{
+				{
+					BlockRangeID: 1,
+					UserMarkID:   1,
+					Identifier:   1,
+					StartToken:   sql.NullInt32{0, true},
+					EndToken:     sql.NullInt32{0, true},
+				},
+			},
+		},
+		{
+			UserMark: &model.UserMark{
+				UserMarkID: 2,
+				LocationID: 1,
+			},
+			BlockRanges: []*model.BlockRange{
+				{
+					BlockRangeID: 1,
+					UserMarkID:   2,
+					Identifier:   1,
+					StartToken:   sql.NullInt32{1, true},
+					EndToken:     sql.NullInt32{1, true},
+				},
+			},
+		},
+	}
+
+	expectedResult := []*model.UserMarkBlockRange{
+		nil,
+		{
+			UserMark: &model.UserMark{
+				UserMarkID: 1,
+				LocationID: 1,
+			},
+			BlockRanges: []*model.BlockRange{
+				{
+					BlockRangeID: 1,
+					UserMarkID:   1,
+					Identifier:   1,
+					StartToken:   sql.NullInt32{0, true},
+					EndToken:     sql.NullInt32{0, true},
+				},
+			},
+		},
+		{
+			UserMark: &model.UserMark{
+				UserMarkID: 2,
+				LocationID: 1,
+			},
+			BlockRanges: []*model.BlockRange{
+				{
+					BlockRangeID: 2,
+					UserMarkID:   2,
+					Identifier:   1,
+					StartToken:   sql.NullInt32{1, true},
+					EndToken:     sql.NullInt32{1, true},
+				},
+			},
+		},
+	}
+	expectedChanges := IDChanges{
+		Left: map[int]int{},
+		Right: map[int]int{
+			1: 1,
+			2: 2,
+		},
+	}
+
+	leftUm, leftBr := splitUserMarkBlockRange(left)
+	rightUm, rightBr := splitUserMarkBlockRange(right)
+
+	resUm, resBr, changes, err := MergeUserMarkAndBlockRange(leftUm, leftBr, rightUm, rightBr, nil)
+	result := joinToUserMarkBlockRange(resUm, resBr)
+	assert.NoError(t, err)
+	assert.Equal(t, expectedResult, result)
+	assert.Equal(t, expectedChanges, changes)
+}
+
+func Test_MergeUserMarkAndBlockRange_without_conflict3(t *testing.T) {
+	// Merge without conflict
+	left := []*model.UserMarkBlockRange{
+		nil,
+		{
+			UserMark: &model.UserMark{
+				UserMarkID: 1,
+				LocationID: 1,
+			},
+			BlockRanges: []*model.BlockRange{
+				{
+					BlockRangeID: 1,
+					UserMarkID:   1,
+					Identifier:   1,
+					StartToken:   sql.NullInt32{0, true},
+					EndToken:     sql.NullInt32{0, true},
+				},
+			},
+		},
+		{
+			UserMark: &model.UserMark{
+				UserMarkID: 2,
+				LocationID: 1,
+			},
+			BlockRanges: []*model.BlockRange{
+				{
+					BlockRangeID: 1,
+					UserMarkID:   2,
+					Identifier:   1,
+					StartToken:   sql.NullInt32{0, true},
+					EndToken:     sql.NullInt32{1, true},
+				},
+			},
+		},
+	}
+
+	right := []*model.UserMarkBlockRange{
+		nil,
+		{
+			UserMark: &model.UserMark{
+				UserMarkID: 1,
+				LocationID: 1,
+			},
+			BlockRanges: []*model.BlockRange{
+				{
+					BlockRangeID: 1,
+					UserMarkID:   1,
+					Identifier:   1,
+					StartToken:   sql.NullInt32{0, true},
+					EndToken:     sql.NullInt32{0, true},
+				},
+			},
+		},
+		{
+			UserMark: &model.UserMark{
+				UserMarkID: 2,
+				LocationID: 1,
+			},
+			BlockRanges: []*model.BlockRange{
+				{
+					BlockRangeID: 1,
+					UserMarkID:   2,
+					Identifier:   1,
+					StartToken:   sql.NullInt32{0, true},
+					EndToken:     sql.NullInt32{1, true},
+				},
+			},
+		},
+	}
+
+	expectedResult := []*model.UserMarkBlockRange{
+		nil,
+		{
+			UserMark: &model.UserMark{
+				UserMarkID: 1,
+				LocationID: 1,
+			},
+			BlockRanges: []*model.BlockRange{
+				{
+					BlockRangeID: 1,
+					UserMarkID:   1,
+					Identifier:   1,
+					StartToken:   sql.NullInt32{0, true},
+					EndToken:     sql.NullInt32{0, true},
+				},
+			},
+		},
+		{
+			UserMark: &model.UserMark{
+				UserMarkID: 2,
+				LocationID: 1,
+			},
+			BlockRanges: []*model.BlockRange{
+				{
+					BlockRangeID: 2,
+					UserMarkID:   2,
+					Identifier:   1,
+					StartToken:   sql.NullInt32{0, true},
+					EndToken:     sql.NullInt32{1, true},
+				},
+			},
+		},
+	}
+	expectedChanges := IDChanges{
+		Left: map[int]int{},
+		Right: map[int]int{
+			1: 1,
+			2: 2,
+		},
+	}
+
+	leftUm, leftBr := splitUserMarkBlockRange(left)
+	rightUm, rightBr := splitUserMarkBlockRange(right)
+
+	resUm, resBr, changes, err := MergeUserMarkAndBlockRange(leftUm, leftBr, rightUm, rightBr, nil)
+	result := joinToUserMarkBlockRange(resUm, resBr)
+	assert.NoError(t, err)
+	assert.Equal(t, expectedResult, result)
+	assert.Equal(t, expectedChanges, changes)
+}
+
+func TestMergeUserMarkAndBlockRange_with_conflict1(t *testing.T) {
 	// Try merge and find conflict
 	leftUM := []*model.UserMark{
 		nil,
@@ -586,7 +828,415 @@ func TestMergeUserMarkAndBlockRange_with_conflict(t *testing.T) {
 	assert.Equal(t, expectedChanges, changes)
 }
 
-func Test_mergeUserMarkBlockRange_without_conflict(t *testing.T) {
+func TestMergeUserMarkAndBlockRange_with_conflict2(t *testing.T) {
+	left := []*model.UserMarkBlockRange{
+		nil,
+		{
+			UserMark: &model.UserMark{
+				UserMarkID: 1,
+				LocationID: 1,
+			},
+			BlockRanges: []*model.BlockRange{
+				{
+					BlockRangeID: 1,
+					UserMarkID:   1,
+					Identifier:   1,
+					StartToken:   sql.NullInt32{0, true},
+					EndToken:     sql.NullInt32{0, true},
+				},
+			},
+		},
+		{
+			UserMark: &model.UserMark{
+				UserMarkID: 2,
+				LocationID: 1,
+			},
+			BlockRanges: []*model.BlockRange{
+				{
+					BlockRangeID: 2,
+					UserMarkID:   2,
+					Identifier:   1,
+					StartToken:   sql.NullInt32{1, true},
+					EndToken:     sql.NullInt32{1, true},
+				},
+			},
+		},
+		{
+			UserMark: &model.UserMark{
+				UserMarkID: 3,
+				LocationID: 1,
+			},
+			BlockRanges: []*model.BlockRange{
+				{
+					BlockRangeID: 3,
+					UserMarkID:   3,
+					Identifier:   1,
+					StartToken:   sql.NullInt32{2, true},
+					EndToken:     sql.NullInt32{2, true},
+				},
+			},
+		},
+		{
+			UserMark: &model.UserMark{
+				UserMarkID: 4,
+				LocationID: 1,
+			},
+			BlockRanges: []*model.BlockRange{
+				{
+					BlockRangeID: 4,
+					UserMarkID:   4,
+					Identifier:   1,
+					StartToken:   sql.NullInt32{3, true},
+					EndToken:     sql.NullInt32{3, true},
+				},
+			},
+		},
+	}
+
+	right := []*model.UserMarkBlockRange{
+		nil,
+		{
+			UserMark: &model.UserMark{
+				UserMarkID: 1,
+				LocationID: 1,
+			},
+			BlockRanges: []*model.BlockRange{
+				{
+					BlockRangeID: 1,
+					UserMarkID:   1,
+					Identifier:   1,
+					StartToken:   sql.NullInt32{0, true},
+					EndToken:     sql.NullInt32{20, true},
+				},
+			},
+		},
+	}
+
+	expectedConflicts := []MergeConflict{
+		{
+			Left: &model.UserMarkBlockRange{
+				UserMark: &model.UserMark{
+					UserMarkID: 1,
+					LocationID: 1,
+				},
+				BlockRanges: []*model.BlockRange{
+					{
+						BlockRangeID: 1,
+						UserMarkID:   1,
+						Identifier:   1,
+						StartToken:   sql.NullInt32{0, true},
+						EndToken:     sql.NullInt32{0, true},
+					},
+				},
+			},
+			Right: &model.UserMarkBlockRange{
+				UserMark: &model.UserMark{
+					UserMarkID: 1,
+					LocationID: 1,
+				},
+				BlockRanges: []*model.BlockRange{
+					{
+						BlockRangeID: 1,
+						UserMarkID:   1,
+						Identifier:   1,
+						StartToken:   sql.NullInt32{0, true},
+						EndToken:     sql.NullInt32{20, true},
+					},
+				},
+			},
+		},
+	}
+	leftUM, leftBR := splitUserMarkBlockRange(left)
+	rightUM, rightBR := splitUserMarkBlockRange(right)
+
+	resultUM, resultBR, _, err := MergeUserMarkAndBlockRange(leftUM, leftBR, rightUM, rightBR, nil)
+	conflictResult := mergeConflictMapToSliceHelper(err.(MergeConflictError).Conflicts)
+	assert.Empty(t, resultUM)
+	assert.Empty(t, resultBR)
+	assert.Error(t, err)
+	assert.Equal(t, expectedConflicts, conflictResult)
+
+	conflictSolution := map[string]MergeSolution{
+		"0": {
+			Side: RightSide,
+			Solution: &model.UserMarkBlockRange{
+				UserMark: &model.UserMark{
+					UserMarkID: 1,
+					LocationID: 1,
+				},
+				BlockRanges: []*model.BlockRange{
+					{
+						BlockRangeID: 1,
+						UserMarkID:   1,
+						Identifier:   1,
+						StartToken:   sql.NullInt32{0, true},
+						EndToken:     sql.NullInt32{20, true},
+					},
+				},
+			},
+			Discarded: &model.UserMarkBlockRange{
+				UserMark: &model.UserMark{
+					UserMarkID: 1,
+					LocationID: 1,
+				},
+				BlockRanges: []*model.BlockRange{
+					{
+						BlockRangeID: 1,
+						UserMarkID:   1,
+						Identifier:   1,
+						StartToken:   sql.NullInt32{0, true},
+						EndToken:     sql.NullInt32{0, true},
+					},
+				},
+			},
+		},
+	}
+
+	expectedConflicts = []MergeConflict{
+		{
+			Left: &model.UserMarkBlockRange{
+				UserMark: &model.UserMark{
+					UserMarkID: 2,
+					LocationID: 1,
+				},
+				BlockRanges: []*model.BlockRange{
+					{
+						BlockRangeID: 2,
+						UserMarkID:   2,
+						Identifier:   1,
+						StartToken:   sql.NullInt32{1, true},
+						EndToken:     sql.NullInt32{1, true},
+					},
+				},
+			},
+			Right: &model.UserMarkBlockRange{
+				UserMark: &model.UserMark{
+					UserMarkID: 1,
+					LocationID: 1,
+				},
+				BlockRanges: []*model.BlockRange{
+					{
+						BlockRangeID: 1,
+						UserMarkID:   1,
+						Identifier:   1,
+						StartToken:   sql.NullInt32{0, true},
+						EndToken:     sql.NullInt32{20, true},
+					},
+				},
+			},
+		},
+	}
+
+	leftUM, leftBR = splitUserMarkBlockRange(left)
+	rightUM, rightBR = splitUserMarkBlockRange(right)
+	resultUM, resultBR, _, err = MergeUserMarkAndBlockRange(leftUM, leftBR, rightUM, rightBR, conflictSolution)
+	conflictResult = mergeConflictMapToSliceHelper(err.(MergeConflictError).Conflicts)
+	assert.Empty(t, resultUM)
+	assert.Empty(t, resultBR)
+	assert.Error(t, err)
+	assert.Equal(t, expectedConflicts, conflictResult)
+
+	conflictSolution["2"] = MergeSolution{
+		Side: RightSide,
+		Solution: &model.UserMarkBlockRange{
+			UserMark: &model.UserMark{
+				UserMarkID: 1,
+				LocationID: 1,
+			},
+			BlockRanges: []*model.BlockRange{
+				{
+					BlockRangeID: 1,
+					UserMarkID:   1,
+					Identifier:   1,
+					StartToken:   sql.NullInt32{0, true},
+					EndToken:     sql.NullInt32{20, true},
+				},
+			},
+		},
+		Discarded: &model.UserMarkBlockRange{
+			UserMark: &model.UserMark{
+				UserMarkID: 2,
+				LocationID: 1,
+			},
+			BlockRanges: []*model.BlockRange{
+				{
+					BlockRangeID: 2,
+					UserMarkID:   2,
+					Identifier:   1,
+					StartToken:   sql.NullInt32{1, true},
+					EndToken:     sql.NullInt32{1, true},
+				},
+			},
+		},
+	}
+
+	expectedConflicts = []MergeConflict{
+		{
+			Left: &model.UserMarkBlockRange{
+				UserMark: &model.UserMark{
+					UserMarkID: 3,
+					LocationID: 1,
+				},
+				BlockRanges: []*model.BlockRange{
+					{
+						BlockRangeID: 3,
+						UserMarkID:   3,
+						Identifier:   1,
+						StartToken:   sql.NullInt32{2, true},
+						EndToken:     sql.NullInt32{2, true},
+					},
+				},
+			},
+			Right: &model.UserMarkBlockRange{
+				UserMark: &model.UserMark{
+					UserMarkID: 1,
+					LocationID: 1,
+				},
+				BlockRanges: []*model.BlockRange{
+					{
+						BlockRangeID: 1,
+						UserMarkID:   1,
+						Identifier:   1,
+						StartToken:   sql.NullInt32{0, true},
+						EndToken:     sql.NullInt32{20, true},
+					},
+				},
+			},
+		},
+	}
+
+	leftUM, leftBR = splitUserMarkBlockRange(left)
+	rightUM, rightBR = splitUserMarkBlockRange(right)
+	resultUM, resultBR, _, err = MergeUserMarkAndBlockRange(leftUM, leftBR, rightUM, rightBR, conflictSolution)
+	conflictResult = mergeConflictMapToSliceHelper(err.(MergeConflictError).Conflicts)
+	assert.Empty(t, resultUM)
+	assert.Empty(t, resultBR)
+	assert.Error(t, err)
+	assert.Equal(t, expectedConflicts, conflictResult)
+
+	conflictSolution["3"] = MergeSolution{
+		Side: RightSide,
+		Solution: &model.UserMarkBlockRange{
+			UserMark: &model.UserMark{
+				UserMarkID: 1,
+				LocationID: 1,
+			},
+			BlockRanges: []*model.BlockRange{
+				{
+					BlockRangeID: 1,
+					UserMarkID:   1,
+					Identifier:   1,
+					StartToken:   sql.NullInt32{0, true},
+					EndToken:     sql.NullInt32{20, true},
+				},
+			},
+		},
+		Discarded: &model.UserMarkBlockRange{
+			UserMark: &model.UserMark{
+				UserMarkID: 3,
+				LocationID: 1,
+			},
+			BlockRanges: []*model.BlockRange{
+				{
+					BlockRangeID: 3,
+					UserMarkID:   3,
+					Identifier:   1,
+					StartToken:   sql.NullInt32{2, true},
+					EndToken:     sql.NullInt32{2, true},
+				},
+			},
+		},
+	}
+
+	expectedConflicts = []MergeConflict{
+		{
+			Left: &model.UserMarkBlockRange{
+				UserMark: &model.UserMark{
+					UserMarkID: 4,
+					LocationID: 1,
+				},
+				BlockRanges: []*model.BlockRange{
+					{
+						BlockRangeID: 4,
+						UserMarkID:   4,
+						Identifier:   1,
+						StartToken:   sql.NullInt32{3, true},
+						EndToken:     sql.NullInt32{3, true},
+					},
+				},
+			},
+			Right: &model.UserMarkBlockRange{
+				UserMark: &model.UserMark{
+					UserMarkID: 1,
+					LocationID: 1,
+				},
+				BlockRanges: []*model.BlockRange{
+					{
+						BlockRangeID: 1,
+						UserMarkID:   1,
+						Identifier:   1,
+						StartToken:   sql.NullInt32{0, true},
+						EndToken:     sql.NullInt32{20, true},
+					},
+				},
+			},
+		},
+	}
+
+	leftUM, leftBR = splitUserMarkBlockRange(left)
+	rightUM, rightBR = splitUserMarkBlockRange(right)
+	resultUM, resultBR, _, err = MergeUserMarkAndBlockRange(leftUM, leftBR, rightUM, rightBR, conflictSolution)
+	conflictResult = mergeConflictMapToSliceHelper(err.(MergeConflictError).Conflicts)
+	assert.Empty(t, resultUM)
+	assert.Empty(t, resultBR)
+	assert.Error(t, err)
+	assert.Equal(t, expectedConflicts, conflictResult)
+
+	conflictSolution["4"] = MergeSolution{
+		Side: RightSide,
+		Solution: &model.UserMarkBlockRange{
+			UserMark: &model.UserMark{
+				UserMarkID: 1,
+				LocationID: 1,
+			},
+			BlockRanges: []*model.BlockRange{
+				{
+					BlockRangeID: 1,
+					UserMarkID:   1,
+					Identifier:   1,
+					StartToken:   sql.NullInt32{0, true},
+					EndToken:     sql.NullInt32{20, true},
+				},
+			},
+		},
+		Discarded: &model.UserMarkBlockRange{
+			UserMark: &model.UserMark{
+				UserMarkID: 4,
+				LocationID: 1,
+			},
+			BlockRanges: []*model.BlockRange{
+				{
+					BlockRangeID: 4,
+					UserMarkID:   4,
+					Identifier:   1,
+					StartToken:   sql.NullInt32{3, true},
+					EndToken:     sql.NullInt32{3, true},
+				},
+			},
+		},
+	}
+
+	expectedUM, expectedBR := splitUserMarkBlockRange(right)
+
+	leftUM, leftBR = splitUserMarkBlockRange(left)
+	rightUM, rightBR = splitUserMarkBlockRange(right)
+	resultUM, resultBR, _, err = MergeUserMarkAndBlockRange(leftUM, leftBR, rightUM, rightBR, conflictSolution)
+	assert.NoError(t, err)
+	assert.Equal(t, expectedUM, resultUM)
+	assert.Equal(t, expectedBR, resultBR)
+}
+
+func Test_mergeUMBR_without_conflict1(t *testing.T) {
 	// Merge without conflict
 	left := []*model.UserMarkBlockRange{
 		nil,
@@ -781,7 +1431,7 @@ func Test_mergeUserMarkBlockRange_without_conflict(t *testing.T) {
 	assert.Equal(t, expectedChanges, changes)
 }
 
-func Test_mergeUserMarkBlockRange_with_conflict(t *testing.T) {
+func Test_mergeUMBR_with_conflict(t *testing.T) {
 	// Try merge and find conflict
 	left := []*model.UserMarkBlockRange{
 		nil,
@@ -1160,6 +1810,517 @@ func Test_mergeUserMarkBlockRange_with_conflict(t *testing.T) {
 			1: 4,
 			3: 5,
 			4: 1,
+		},
+	}
+
+	result, changes, err := mergeUMBR(left, right, conflictSolution)
+	assert.NoError(t, err)
+	assert.Equal(t, expectedResult, result)
+	assert.Equal(t, expectedChanges, changes)
+}
+
+func Test_mergeUMBR_with_multi_conflict_1(t *testing.T) {
+	// Try merge and find conflict
+	left := []*model.UserMarkBlockRange{
+		nil,
+		{
+			UserMark: &model.UserMark{
+				UserMarkID: 1,
+				LocationID: 1,
+			},
+			BlockRanges: []*model.BlockRange{
+				{
+					BlockRangeID: 1,
+					UserMarkID:   1,
+					Identifier:   1,
+					StartToken:   sql.NullInt32{0, true},
+					EndToken:     sql.NullInt32{0, true},
+				},
+			},
+		},
+		{
+			UserMark: &model.UserMark{
+				UserMarkID: 2,
+				LocationID: 1,
+			},
+			BlockRanges: []*model.BlockRange{
+				{
+					BlockRangeID: 2,
+					UserMarkID:   2,
+					Identifier:   1,
+					StartToken:   sql.NullInt32{1, true},
+					EndToken:     sql.NullInt32{1, true},
+				},
+			},
+		},
+	}
+
+	right := []*model.UserMarkBlockRange{
+		nil,
+		{
+			UserMark: &model.UserMark{
+				UserMarkID: 1,
+				LocationID: 1,
+			},
+			BlockRanges: []*model.BlockRange{
+				{
+					BlockRangeID: 1,
+					UserMarkID:   1,
+					Identifier:   1,
+					StartToken:   sql.NullInt32{0, true},
+					EndToken:     sql.NullInt32{20, true},
+				},
+			},
+		},
+	}
+
+	expectedConflicts := []MergeConflict{
+		{
+			Left: &model.UserMarkBlockRange{
+				UserMark: &model.UserMark{
+					UserMarkID: 1,
+					LocationID: 1,
+				},
+				BlockRanges: []*model.BlockRange{
+					{
+						BlockRangeID: 1,
+						UserMarkID:   1,
+						Identifier:   1,
+						StartToken:   sql.NullInt32{0, true},
+						EndToken:     sql.NullInt32{0, true},
+					},
+				},
+			},
+			Right: &model.UserMarkBlockRange{
+				UserMark: &model.UserMark{
+					UserMarkID: 1,
+					LocationID: 1,
+				},
+				BlockRanges: []*model.BlockRange{
+					{
+						BlockRangeID: 1,
+						UserMarkID:   1,
+						Identifier:   1,
+						StartToken:   sql.NullInt32{0, true},
+						EndToken:     sql.NullInt32{20, true},
+					},
+				},
+			},
+		},
+	}
+
+	result, _, err := mergeUMBR(left, right, nil)
+	conflictResult := mergeConflictMapToSliceHelper(err.(MergeConflictError).Conflicts)
+	assert.Empty(t, result)
+	assert.Error(t, err)
+	assert.Equal(t, expectedConflicts, conflictResult)
+
+	conflictSolution := map[string]MergeSolution{
+		"0": {
+			Side: RightSide,
+			Solution: &model.UserMarkBlockRange{
+				UserMark: &model.UserMark{
+					UserMarkID: 1,
+					LocationID: 1,
+				},
+				BlockRanges: []*model.BlockRange{
+					{
+						BlockRangeID: 1,
+						UserMarkID:   1,
+						Identifier:   1,
+						StartToken:   sql.NullInt32{0, true},
+						EndToken:     sql.NullInt32{20, true},
+					},
+				},
+			},
+			Discarded: &model.UserMarkBlockRange{
+				UserMark: &model.UserMark{
+					UserMarkID: 1,
+					LocationID: 1,
+				},
+				BlockRanges: []*model.BlockRange{
+					{
+						BlockRangeID: 1,
+						UserMarkID:   1,
+						Identifier:   1,
+						StartToken:   sql.NullInt32{0, true},
+						EndToken:     sql.NullInt32{0, true},
+					},
+				},
+			},
+		},
+	}
+
+	expectedConflicts = []MergeConflict{
+		{
+			Left: &model.UserMarkBlockRange{
+				UserMark: &model.UserMark{
+					UserMarkID: 2,
+					LocationID: 1,
+				},
+				BlockRanges: []*model.BlockRange{
+					{
+						BlockRangeID: 2,
+						UserMarkID:   2,
+						Identifier:   1,
+						StartToken:   sql.NullInt32{1, true},
+						EndToken:     sql.NullInt32{1, true},
+					},
+				},
+			},
+			Right: &model.UserMarkBlockRange{
+				UserMark: &model.UserMark{
+					UserMarkID: 1,
+					LocationID: 1,
+				},
+				BlockRanges: []*model.BlockRange{
+					{
+						BlockRangeID: 1,
+						UserMarkID:   1,
+						Identifier:   1,
+						StartToken:   sql.NullInt32{0, true},
+						EndToken:     sql.NullInt32{20, true},
+					},
+				},
+			},
+		},
+	}
+
+	result, _, err = mergeUMBR(left, right, conflictSolution)
+	conflictResult = mergeConflictMapToSliceHelper(err.(MergeConflictError).Conflicts)
+	assert.Empty(t, result)
+	assert.Error(t, err)
+	assert.Equal(t, expectedConflicts, conflictResult)
+
+	conflictSolution = map[string]MergeSolution{
+		"0": {
+			Side: RightSide,
+			Solution: &model.UserMarkBlockRange{
+				UserMark: &model.UserMark{
+					UserMarkID: 1,
+					LocationID: 1,
+				},
+				BlockRanges: []*model.BlockRange{
+					{
+						BlockRangeID: 1,
+						UserMarkID:   1,
+						Identifier:   1,
+						StartToken:   sql.NullInt32{0, true},
+						EndToken:     sql.NullInt32{20, true},
+					},
+				},
+			},
+			Discarded: &model.UserMarkBlockRange{
+				UserMark: &model.UserMark{
+					UserMarkID: 1,
+					LocationID: 1,
+				},
+				BlockRanges: []*model.BlockRange{
+					{
+						BlockRangeID: 1,
+						UserMarkID:   1,
+						Identifier:   1,
+						StartToken:   sql.NullInt32{0, true},
+						EndToken:     sql.NullInt32{0, true},
+					},
+				},
+			},
+		},
+		"1": {
+			Side: RightSide,
+			Solution: &model.UserMarkBlockRange{
+				UserMark: &model.UserMark{
+					UserMarkID: 1,
+					LocationID: 1,
+				},
+				BlockRanges: []*model.BlockRange{
+					{
+						BlockRangeID: 1,
+						UserMarkID:   1,
+						Identifier:   1,
+						StartToken:   sql.NullInt32{0, true},
+						EndToken:     sql.NullInt32{20, true},
+					},
+				},
+			},
+			Discarded: &model.UserMarkBlockRange{
+				UserMark: &model.UserMark{
+					UserMarkID: 2,
+					LocationID: 1,
+				},
+				BlockRanges: []*model.BlockRange{
+					{
+						BlockRangeID: 2,
+						UserMarkID:   2,
+						Identifier:   1,
+						StartToken:   sql.NullInt32{1, true},
+						EndToken:     sql.NullInt32{1, true},
+					},
+				},
+			},
+		},
+	}
+
+	expectedResult := []*model.UserMarkBlockRange{
+		nil,
+		{
+			UserMark: &model.UserMark{
+				UserMarkID: 1,
+				LocationID: 1,
+			},
+			BlockRanges: []*model.BlockRange{
+				{
+					BlockRangeID: 1,
+					UserMarkID:   1,
+					Identifier:   1,
+					StartToken:   sql.NullInt32{0, true},
+					EndToken:     sql.NullInt32{20, true},
+				},
+			},
+		},
+	}
+	expectedChanges := IDChanges{
+		Left: map[int]int{
+			1: 1,
+			2: 1,
+		},
+		Right: map[int]int{},
+	}
+
+	result, changes, err := mergeUMBR(left, right, conflictSolution)
+	assert.NoError(t, err)
+	assert.Equal(t, expectedResult, result)
+	assert.Equal(t, expectedChanges, changes)
+}
+
+func Test_mergeUMBR_with_multi_conflict_2(t *testing.T) {
+	left := []*model.UserMarkBlockRange{
+		nil,
+		{
+			UserMark: &model.UserMark{
+				UserMarkID: 1,
+				LocationID: 1,
+			},
+			BlockRanges: []*model.BlockRange{
+				{
+					BlockRangeID: 1,
+					UserMarkID:   1,
+					Identifier:   1,
+					StartToken:   sql.NullInt32{0, true},
+					EndToken:     sql.NullInt32{0, true},
+				},
+			},
+		},
+		{
+			UserMark: &model.UserMark{
+				UserMarkID: 2,
+				LocationID: 1,
+			},
+			BlockRanges: []*model.BlockRange{
+				{
+					BlockRangeID: 2,
+					UserMarkID:   2,
+					Identifier:   1,
+					StartToken:   sql.NullInt32{1, true},
+					EndToken:     sql.NullInt32{1, true},
+				},
+			},
+		},
+		{
+			UserMark: &model.UserMark{
+				UserMarkID: 3,
+				LocationID: 1,
+			},
+			BlockRanges: []*model.BlockRange{
+				{
+					BlockRangeID: 3,
+					UserMarkID:   3,
+					Identifier:   1,
+					StartToken:   sql.NullInt32{30, true},
+					EndToken:     sql.NullInt32{31, true},
+				},
+			},
+		},
+		{
+			UserMark: &model.UserMark{
+				UserMarkID: 4,
+				LocationID: 1,
+			},
+			BlockRanges: []*model.BlockRange{
+				{
+					BlockRangeID: 4,
+					UserMarkID:   4,
+					Identifier:   1,
+					StartToken:   sql.NullInt32{2, true},
+					EndToken:     sql.NullInt32{2, true},
+				},
+			},
+		},
+	}
+
+	right := []*model.UserMarkBlockRange{
+		nil,
+		{
+			UserMark: &model.UserMark{
+				UserMarkID: 1,
+				LocationID: 1,
+			},
+			BlockRanges: []*model.BlockRange{
+				{
+					BlockRangeID: 1,
+					UserMarkID:   1,
+					Identifier:   1,
+					StartToken:   sql.NullInt32{0, true},
+					EndToken:     sql.NullInt32{20, true},
+				},
+			},
+		},
+	}
+
+	expectedConflicts := []MergeConflict{
+		{
+			Left: &model.UserMarkBlockRange{
+				UserMark: &model.UserMark{
+					UserMarkID: 1,
+					LocationID: 1,
+				},
+				BlockRanges: []*model.BlockRange{
+					{
+						BlockRangeID: 1,
+						UserMarkID:   1,
+						Identifier:   1,
+						StartToken:   sql.NullInt32{0, true},
+						EndToken:     sql.NullInt32{0, true},
+					},
+				},
+			},
+			Right: &model.UserMarkBlockRange{
+				UserMark: &model.UserMark{
+					UserMarkID: 1,
+					LocationID: 1,
+				},
+				BlockRanges: []*model.BlockRange{
+					{
+						BlockRangeID: 1,
+						UserMarkID:   1,
+						Identifier:   1,
+						StartToken:   sql.NullInt32{0, true},
+						EndToken:     sql.NullInt32{20, true},
+					},
+				},
+			},
+		},
+	}
+
+	result, _, err := mergeUMBR(left, right, nil)
+	conflictResult := mergeConflictMapToSliceHelper(err.(MergeConflictError).Conflicts)
+	assert.Empty(t, result)
+	assert.Error(t, err)
+	assert.Equal(t, expectedConflicts, conflictResult)
+
+	conflictSolution := map[string]MergeSolution{
+		"0": {
+			Side: LeftSide,
+			Solution: &model.UserMarkBlockRange{
+				UserMark: &model.UserMark{
+					UserMarkID: 1,
+					LocationID: 1,
+				},
+				BlockRanges: []*model.BlockRange{
+					{
+						BlockRangeID: 1,
+						UserMarkID:   1,
+						Identifier:   1,
+						StartToken:   sql.NullInt32{0, true},
+						EndToken:     sql.NullInt32{0, true},
+					},
+				},
+			},
+			Discarded: &model.UserMarkBlockRange{
+				UserMark: &model.UserMark{
+					UserMarkID: 1,
+					LocationID: 1,
+				},
+				BlockRanges: []*model.BlockRange{
+					{
+						BlockRangeID: 1,
+						UserMarkID:   1,
+						Identifier:   1,
+						StartToken:   sql.NullInt32{0, true},
+						EndToken:     sql.NullInt32{20, true},
+					},
+				},
+			},
+		},
+	}
+
+	expectedResult := []*model.UserMarkBlockRange{
+		nil,
+		{
+			UserMark: &model.UserMark{
+				UserMarkID: 1,
+				LocationID: 1,
+			},
+			BlockRanges: []*model.BlockRange{
+				{
+					BlockRangeID: 1,
+					UserMarkID:   1,
+					Identifier:   1,
+					StartToken:   sql.NullInt32{0, true},
+					EndToken:     sql.NullInt32{0, true},
+				},
+			},
+		},
+		{
+			UserMark: &model.UserMark{
+				UserMarkID: 2,
+				LocationID: 1,
+			},
+			BlockRanges: []*model.BlockRange{
+				{
+					BlockRangeID: 2,
+					UserMarkID:   2,
+					Identifier:   1,
+					StartToken:   sql.NullInt32{1, true},
+					EndToken:     sql.NullInt32{1, true},
+				},
+			},
+		},
+		{
+			UserMark: &model.UserMark{
+				UserMarkID: 3,
+				LocationID: 1,
+			},
+			BlockRanges: []*model.BlockRange{
+				{
+					BlockRangeID: 3,
+					UserMarkID:   3,
+					Identifier:   1,
+					StartToken:   sql.NullInt32{30, true},
+					EndToken:     sql.NullInt32{31, true},
+				},
+			},
+		},
+		{
+			UserMark: &model.UserMark{
+				UserMarkID: 4,
+				LocationID: 1,
+			},
+			BlockRanges: []*model.BlockRange{
+				{
+					BlockRangeID: 4,
+					UserMarkID:   4,
+					Identifier:   1,
+					StartToken:   sql.NullInt32{2, true},
+					EndToken:     sql.NullInt32{2, true},
+				},
+			},
+		},
+	}
+	expectedChanges := IDChanges{
+		Left: map[int]int{},
+		Right: map[int]int{
+			1: 1,
 		},
 	}
 
@@ -1907,4 +3068,284 @@ func Test_estimateLocationCount(t *testing.T) {
 	assert.Equal(t, 101, estimateLocationCount([]*model.UserMarkBlockRange{{UserMark: &model.UserMark{LocationID: 101}}}, []*model.UserMarkBlockRange{}))
 	assert.Equal(t, 0, estimateLocationCount([]*model.UserMarkBlockRange{}, []*model.UserMarkBlockRange{}))
 	assert.Equal(t, 0, estimateLocationCount([]*model.UserMarkBlockRange{nil}, []*model.UserMarkBlockRange{nil}))
+}
+
+func Test_detectAndFilterDuplicateBRs(t *testing.T) {
+	left := []*model.UserMarkBlockRange{
+		nil,
+		{
+			UserMark: &model.UserMark{
+				UserMarkID:   1,
+				ColorIndex:   1,
+				LocationID:   1,
+				StyleIndex:   1,
+				UserMarkGUID: "FirstDuplicate",
+				Version:      1,
+			},
+			BlockRanges: []*model.BlockRange{
+				{
+					UserMarkID: 1,
+					StartToken: sql.NullInt32{0, true},
+					EndToken:   sql.NullInt32{0, true},
+				},
+			},
+		},
+		{
+			UserMark: &model.UserMark{
+				UserMarkID:   2,
+				ColorIndex:   2,
+				LocationID:   2,
+				StyleIndex:   2,
+				UserMarkGUID: "SecondDuplicate",
+				Version:      1,
+			},
+			BlockRanges: []*model.BlockRange{
+				{
+					UserMarkID: 2,
+					StartToken: sql.NullInt32{1, true},
+					EndToken:   sql.NullInt32{2, true},
+				},
+			},
+		},
+	}
+	right := left
+
+	idBlock := []brFrom{
+		{},
+		{
+			side: RightSide,
+			br: &model.BlockRange{
+				StartToken: sql.NullInt32{4, true},
+				EndToken:   sql.NullInt32{5, true},
+			},
+		},
+		{
+			side: LeftSide,
+			br: &model.BlockRange{
+				UserMarkID: 2,
+				StartToken: sql.NullInt32{1, true},
+				EndToken:   sql.NullInt32{2, true},
+			},
+		},
+		{
+			side: LeftSide,
+			br: &model.BlockRange{
+				UserMarkID: 1,
+				StartToken: sql.NullInt32{0, true},
+				EndToken:   sql.NullInt32{0, true},
+			},
+		},
+		{
+			side: LeftSide,
+			br: &model.BlockRange{
+				StartToken: sql.NullInt32{0, true},
+				EndToken:   sql.NullInt32{1, true},
+			},
+		},
+		{
+			side: RightSide,
+			br: &model.BlockRange{
+				UserMarkID: 1,
+				StartToken: sql.NullInt32{0, true},
+				EndToken:   sql.NullInt32{0, true},
+			},
+		},
+		{
+			side: RightSide,
+			br: &model.BlockRange{
+				UserMarkID: 2,
+				StartToken: sql.NullInt32{1, true},
+				EndToken:   sql.NullInt32{2, true},
+			},
+		},
+	}
+
+	expectedIDBlocks := []brFrom{
+		{
+			side: LeftSide,
+			br: &model.BlockRange{
+				UserMarkID: 1,
+				StartToken: sql.NullInt32{0, true},
+				EndToken:   sql.NullInt32{0, true},
+			},
+		},
+		{
+			side: LeftSide,
+			br: &model.BlockRange{
+				StartToken: sql.NullInt32{0, true},
+				EndToken:   sql.NullInt32{1, true},
+			},
+		},
+		{
+			side: LeftSide,
+			br: &model.BlockRange{
+				UserMarkID: 2,
+				StartToken: sql.NullInt32{1, true},
+				EndToken:   sql.NullInt32{2, true},
+			},
+		},
+		{
+			side: RightSide,
+			br: &model.BlockRange{
+				StartToken: sql.NullInt32{4, true},
+				EndToken:   sql.NullInt32{5, true},
+			},
+		},
+	}
+	expectedCollisions := map[string]MergeConflict{
+		"FirstDuplicate_0_0_0_0_1_FirstDuplicate_0_0_0_0_1": {
+			Left: &model.UserMarkBlockRange{
+				UserMark: &model.UserMark{
+					UserMarkID:   1,
+					ColorIndex:   1,
+					LocationID:   1,
+					StyleIndex:   1,
+					UserMarkGUID: "FirstDuplicate",
+					Version:      1,
+				},
+				BlockRanges: []*model.BlockRange{
+					{
+						UserMarkID: 1,
+						StartToken: sql.NullInt32{0, true},
+						EndToken:   sql.NullInt32{0, true},
+					},
+				},
+			},
+			Right: &model.UserMarkBlockRange{
+				UserMark: &model.UserMark{
+					UserMarkID:   1,
+					ColorIndex:   1,
+					LocationID:   1,
+					StyleIndex:   1,
+					UserMarkGUID: "FirstDuplicate",
+					Version:      1,
+				},
+				BlockRanges: []*model.BlockRange{
+					{
+						UserMarkID: 1,
+						StartToken: sql.NullInt32{0, true},
+						EndToken:   sql.NullInt32{0, true},
+					},
+				},
+			},
+		},
+		"SecondDuplicate_0_0_1_2_2_SecondDuplicate_0_0_1_2_2": {
+			Left: &model.UserMarkBlockRange{
+				UserMark: &model.UserMark{
+					UserMarkID:   2,
+					ColorIndex:   2,
+					LocationID:   2,
+					StyleIndex:   2,
+					UserMarkGUID: "SecondDuplicate",
+					Version:      1,
+				},
+				BlockRanges: []*model.BlockRange{
+					{
+						UserMarkID: 2,
+						StartToken: sql.NullInt32{1, true},
+						EndToken:   sql.NullInt32{2, true},
+					},
+				},
+			},
+			Right: &model.UserMarkBlockRange{
+				UserMark: &model.UserMark{
+					UserMarkID:   2,
+					ColorIndex:   2,
+					LocationID:   2,
+					StyleIndex:   2,
+					UserMarkGUID: "SecondDuplicate",
+					Version:      1,
+				},
+				BlockRanges: []*model.BlockRange{
+					{
+						UserMarkID: 2,
+						StartToken: sql.NullInt32{1, true},
+						EndToken:   sql.NullInt32{2, true},
+					},
+				},
+			},
+		},
+	}
+
+	idBlockResult, collisionsResult := detectAndFilterDuplicateBRs(idBlock, left, right)
+	assert.Equal(t, expectedIDBlocks, idBlockResult)
+	assert.Equal(t, expectedCollisions, collisionsResult)
+}
+
+func Test_sortBRFroms(t *testing.T) {
+	entries := []brFrom{
+		{},
+		{
+			br: &model.BlockRange{
+				StartToken: sql.NullInt32{1, true},
+				EndToken:   sql.NullInt32{2, true},
+			},
+		},
+		{
+			side: "",
+			br:   nil,
+		},
+		{
+			br: &model.BlockRange{
+				StartToken: sql.NullInt32{0, true},
+				EndToken:   sql.NullInt32{0, true},
+			},
+		},
+		{
+			br: &model.BlockRange{
+				StartToken: sql.NullInt32{4, true},
+				EndToken:   sql.NullInt32{5, true},
+			},
+		},
+		{
+			br: &model.BlockRange{
+				StartToken: sql.NullInt32{0, true},
+				EndToken:   sql.NullInt32{0, true},
+			},
+		},
+		{},
+		{},
+		{
+			br: &model.BlockRange{
+				StartToken: sql.NullInt32{1, true},
+				EndToken:   sql.NullInt32{4, true},
+			},
+		},
+		{},
+	}
+
+	expectedResult := []brFrom{
+		{
+			br: &model.BlockRange{
+				StartToken: sql.NullInt32{0, true},
+				EndToken:   sql.NullInt32{0, true},
+			},
+		},
+		{
+			br: &model.BlockRange{
+				StartToken: sql.NullInt32{0, true},
+				EndToken:   sql.NullInt32{0, true},
+			},
+		},
+		{
+			br: &model.BlockRange{
+				StartToken: sql.NullInt32{1, true},
+				EndToken:   sql.NullInt32{2, true},
+			},
+		},
+		{
+			br: &model.BlockRange{
+				StartToken: sql.NullInt32{1, true},
+				EndToken:   sql.NullInt32{4, true},
+			},
+		},
+		{
+			br: &model.BlockRange{
+				StartToken: sql.NullInt32{4, true},
+				EndToken:   sql.NullInt32{5, true},
+			},
+		},
+	}
+
+	assert.Equal(t, expectedResult, sortBRFroms(entries))
 }

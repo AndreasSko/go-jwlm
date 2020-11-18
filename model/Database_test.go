@@ -289,12 +289,10 @@ func TestDatabase_saveToNewSQLite(t *testing.T) {
 		UserMark:   []*UserMark{{2, 1, 2, 0, "2C5E7B4A-4997-4EDA-9CFF-38A7599C487B", 1}},
 	}
 	path := filepath.Join(tmp, "user_data.db")
-	err = db.saveToNewSQLite(path)
-	assert.NoError(t, err)
+	assert.NoError(t, db.saveToNewSQLite(path))
 
 	db2 := Database{}
-	err = db2.importSQLite(path)
-	assert.NoError(t, err)
+	assert.NoError(t, db2.importSQLite(path))
 
 	assert.Equal(t, db.BlockRange[0], db2.BlockRange[3])
 	assert.Equal(t, db.Bookmark[0], db2.Bookmark[2])
@@ -302,6 +300,13 @@ func TestDatabase_saveToNewSQLite(t *testing.T) {
 	assert.Equal(t, db.Note[0], db2.Note[2])
 	assert.Equal(t, db.TagMap[0], db2.TagMap[2])
 	assert.Equal(t, db.UserMark[0], db2.UserMark[2])
+
+	// Check if saving empty tables is possible
+	db = Database{
+		BlockRange: []*BlockRange{{3, 2, 13, sql.NullInt32{Int32: 0, Valid: true}, sql.NullInt32{Int32: 14, Valid: true}, 3}},
+		Bookmark:   []*Bookmark{nil},
+	}
+	assert.NoError(t, db.saveToNewSQLite(path))
 }
 
 func TestDatabase_Equals(t *testing.T) {
