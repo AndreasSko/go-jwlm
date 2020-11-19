@@ -88,14 +88,33 @@ func Test_MergeMultiCollisionAllExceptOneRight(t *testing.T) {
 		nil,
 		{
 			BlockRangeID: 1,
-			UserMarkID:   1,
+			BlockType:    1,
 			Identifier:   1,
 			StartToken:   sql.NullInt32{3, true},
 			EndToken:     sql.NullInt32{3, true},
+			UserMarkID:   1,
 		},
 	}
 
 	assert.True(t, dbw.merged.Equals(expected))
+}
+
+func Test_MergeMultiCollisionAutoSolver(t *testing.T) {
+	dbw := DatabaseWrapper{
+		left:  model.MakeDatabaseCopy(leftMultiCollision),
+		right: model.MakeDatabaseCopy(rightMultiCollision),
+	}
+	dbw.Init()
+
+	mcw := &MergeConflictsWrapper{}
+	assert.NoError(t, dbw.MergeLocations())
+	assert.NoError(t, dbw.MergeBookmarks("", mcw))
+	assert.NoError(t, dbw.MergeTags())
+	assert.NoError(t, dbw.MergeUserMarkAndBlockRange("chooseRight", mcw))
+	assert.NoError(t, dbw.MergeNotes("", mcw))
+	assert.NoError(t, dbw.MergeTagMaps())
+
+	assert.True(t, dbw.merged.Equals(rightMultiCollision))
 }
 
 var leftMultiCollision = &model.Database{
@@ -103,38 +122,48 @@ var leftMultiCollision = &model.Database{
 		nil,
 		{
 			BlockRangeID: 1,
-			UserMarkID:   1,
+			BlockType:    1,
 			Identifier:   1,
 			StartToken:   sql.NullInt32{0, true},
 			EndToken:     sql.NullInt32{0, true},
+			UserMarkID:   1,
 		},
 		{
 			BlockRangeID: 2,
-			UserMarkID:   2,
+			BlockType:    1,
 			Identifier:   1,
 			StartToken:   sql.NullInt32{1, true},
 			EndToken:     sql.NullInt32{1, true},
+			UserMarkID:   2,
 		},
 		{
 			BlockRangeID: 3,
-			UserMarkID:   3,
+			BlockType:    1,
 			Identifier:   1,
 			StartToken:   sql.NullInt32{2, true},
 			EndToken:     sql.NullInt32{2, true},
+			UserMarkID:   3,
 		},
 		{
 			BlockRangeID: 4,
-			UserMarkID:   4,
+			BlockType:    1,
 			Identifier:   1,
 			StartToken:   sql.NullInt32{3, true},
 			EndToken:     sql.NullInt32{3, true},
+			UserMarkID:   4,
 		},
 	},
 	Bookmark: []*model.Bookmark{nil},
 	Location: []*model.Location{
 		nil,
 		{
-			LocationID: 1,
+			LocationID:    1,
+			BookNumber:    sql.NullInt32{1, true},
+			ChapterNumber: sql.NullInt32{1, true},
+			KeySymbol:     sql.NullString{"nwtsty", true},
+			MepsLanguage:  2,
+			LocationType:  0,
+			Title:         sql.NullString{"1. Mose 1", true},
 		},
 	},
 	Note:   []*model.Note{nil},
@@ -143,20 +172,32 @@ var leftMultiCollision = &model.Database{
 	UserMark: []*model.UserMark{
 		nil,
 		{
-			UserMarkID: 1,
-			LocationID: 1,
+			UserMarkID:   1,
+			ColorIndex:   1,
+			LocationID:   1,
+			StyleIndex:   1,
+			UserMarkGUID: "1",
 		},
 		{
-			UserMarkID: 2,
-			LocationID: 1,
+			UserMarkID:   2,
+			ColorIndex:   1,
+			LocationID:   1,
+			StyleIndex:   1,
+			UserMarkGUID: "2",
 		},
 		{
-			UserMarkID: 3,
-			LocationID: 1,
+			UserMarkID:   3,
+			ColorIndex:   1,
+			LocationID:   1,
+			StyleIndex:   1,
+			UserMarkGUID: "3",
 		},
 		{
-			UserMarkID: 4,
-			LocationID: 1,
+			UserMarkID:   4,
+			ColorIndex:   1,
+			LocationID:   1,
+			StyleIndex:   1,
+			UserMarkGUID: "4",
 		},
 	},
 }
@@ -166,17 +207,24 @@ var rightMultiCollision = &model.Database{
 		nil,
 		{
 			BlockRangeID: 1,
-			UserMarkID:   1,
+			BlockType:    1,
 			Identifier:   1,
 			StartToken:   sql.NullInt32{0, true},
 			EndToken:     sql.NullInt32{20, true},
+			UserMarkID:   1,
 		},
 	},
 	Bookmark: []*model.Bookmark{nil},
 	Location: []*model.Location{
 		nil,
 		{
-			LocationID: 1,
+			LocationID:    1,
+			BookNumber:    sql.NullInt32{1, true},
+			ChapterNumber: sql.NullInt32{1, true},
+			KeySymbol:     sql.NullString{"nwtsty", true},
+			MepsLanguage:  2,
+			LocationType:  0,
+			Title:         sql.NullString{"1. Mose 1", true},
 		},
 	},
 	Note:   []*model.Note{nil},
@@ -185,8 +233,11 @@ var rightMultiCollision = &model.Database{
 	UserMark: []*model.UserMark{
 		nil,
 		{
-			UserMarkID: 1,
-			LocationID: 1,
+			UserMarkID:   1,
+			ColorIndex:   1,
+			LocationID:   1,
+			StyleIndex:   1,
+			UserMarkGUID: "1R",
 		},
 	},
 }
