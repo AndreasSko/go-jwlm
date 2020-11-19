@@ -213,7 +213,14 @@ func detectAndFilterDuplicateBRs(idBlock []brFrom, left []*model.UserMarkBlockRa
 			if idBlock[j].br.StartToken.Int32 > idBlock[i].br.EndToken.Int32 {
 				break
 			}
-			if idBlock[i].br.Equals(idBlock[j].br) {
+
+			// Check if they equal in all except userMarkID
+			// (BlockRange.Equals checks userMarkID, which we don't want here,
+			// as they obviously can differ between backups..)
+			if idBlock[i].br.BlockType == idBlock[j].br.BlockType &&
+				idBlock[i].br.Identifier == idBlock[j].br.Identifier &&
+				idBlock[i].br.StartToken.Int32 == idBlock[j].br.StartToken.Int32 &&
+				idBlock[i].br.EndToken.Int32 == idBlock[j].br.EndToken.Int32 {
 				// If collision is on the same side, then ignore it
 				// (it's probably not our fault and we hope its okay...)
 				if idBlock[i].side == idBlock[j].side {
