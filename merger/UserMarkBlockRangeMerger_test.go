@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/AndreasSko/go-jwlm/model"
-	"github.com/davecgh/go-spew/spew"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -454,25 +453,22 @@ func Test_MergeUserMarkAndBlockRange_without_conflict3(t *testing.T) {
 			},
 		},
 	}
-	// expectedChanges := IDChanges{
-	// 	Left: map[int]int{},
-	// 	Right: map[int]int{
-	// 		1: 1,
-	// 		2: 2,
-	// 	},
-	// }
+	expectedChanges := IDChanges{
+		Left: map[int]int{},
+		Right: map[int]int{
+			3: 1,
+			4: 2,
+		},
+	}
 
 	leftUm, leftBr := splitUserMarkBlockRange(left)
 	rightUm, rightBr := splitUserMarkBlockRange(right)
 
-	resUm, resBr, _, err := MergeUserMarkAndBlockRange(leftUm, leftBr, rightUm, rightBr, nil)
-	spew.Dump(resUm)
-	spew.Dump(resBr)
+	resUm, resBr, changes, err := MergeUserMarkAndBlockRange(leftUm, leftBr, rightUm, rightBr, nil)
 	result := joinToUserMarkBlockRange(resUm, resBr)
-	spew.Dump(result)
 	assert.NoError(t, err)
 	assert.Equal(t, expectedResult, result)
-	// assert.Equal(t, expectedChanges, changes)
+	assert.Equal(t, expectedChanges, changes)
 }
 
 func TestMergeUserMarkAndBlockRange_with_conflict1(t *testing.T) {
