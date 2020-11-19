@@ -228,6 +228,12 @@ func detectAndFilterDuplicateBRs(idBlock []brFrom, left []*model.UserMarkBlockRa
 					first = left[idBlock[j].br.UserMarkID]
 					second = right[idBlock[i].br.UserMarkID]
 				}
+
+				// Last check before calling it a duplicate: Are UserMark equal?
+				if !first.UserMark.Equals(second.UserMark) {
+					continue
+				}
+
 				var conflictKey strings.Builder
 				conflictKey.WriteString(first.UniqueKey())
 				conflictKey.WriteString("_")

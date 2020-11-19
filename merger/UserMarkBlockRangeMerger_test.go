@@ -3070,7 +3070,7 @@ func Test_estimateLocationCount(t *testing.T) {
 	assert.Equal(t, 0, estimateLocationCount([]*model.UserMarkBlockRange{nil}, []*model.UserMarkBlockRange{nil}))
 }
 
-func Test_detectAndFilterDuplicateBRs(t *testing.T) {
+func Test_detectAndFilterDuplicateBRs1(t *testing.T) {
 	left := []*model.UserMarkBlockRange{
 		nil,
 		{
@@ -3270,6 +3270,91 @@ func Test_detectAndFilterDuplicateBRs(t *testing.T) {
 	idBlockResult, collisionsResult := detectAndFilterDuplicateBRs(idBlock, left, right)
 	assert.Equal(t, expectedIDBlocks, idBlockResult)
 	assert.Equal(t, expectedCollisions, collisionsResult)
+}
+
+func Test_detectAndFilterDuplicateBRs2(t *testing.T) {
+	left := []*model.UserMarkBlockRange{
+		nil,
+		{
+			UserMark: &model.UserMark{
+				UserMarkID:   1,
+				ColorIndex:   1,
+				LocationID:   1,
+				StyleIndex:   1,
+				UserMarkGUID: "NotADuplicate",
+				Version:      1,
+			},
+			BlockRanges: []*model.BlockRange{
+				{
+					UserMarkID: 1,
+					StartToken: sql.NullInt32{0, true},
+					EndToken:   sql.NullInt32{0, true},
+				},
+			},
+		},
+	}
+	right := []*model.UserMarkBlockRange{
+		nil,
+		{
+			UserMark: &model.UserMark{
+				UserMarkID:   1,
+				ColorIndex:   2,
+				LocationID:   1,
+				StyleIndex:   1,
+				UserMarkGUID: "NotADuplicate",
+				Version:      1,
+			},
+			BlockRanges: []*model.BlockRange{
+				{
+					UserMarkID: 1,
+					StartToken: sql.NullInt32{0, true},
+					EndToken:   sql.NullInt32{0, true},
+				},
+			},
+		},
+	}
+
+	idBlock := []brFrom{
+		{
+			side: LeftSide,
+			br: &model.BlockRange{
+				UserMarkID: 1,
+				StartToken: sql.NullInt32{0, true},
+				EndToken:   sql.NullInt32{0, true},
+			},
+		},
+		{
+			side: RightSide,
+			br: &model.BlockRange{
+				UserMarkID: 1,
+				StartToken: sql.NullInt32{0, true},
+				EndToken:   sql.NullInt32{0, true},
+			},
+		},
+	}
+
+	expectedIDBlocks := []brFrom{
+		{
+			side: LeftSide,
+			br: &model.BlockRange{
+				UserMarkID: 1,
+				StartToken: sql.NullInt32{0, true},
+				EndToken:   sql.NullInt32{0, true},
+			},
+		},
+		{
+			side: RightSide,
+			br: &model.BlockRange{
+				UserMarkID: 1,
+				StartToken: sql.NullInt32{0, true},
+				EndToken:   sql.NullInt32{0, true},
+			},
+		},
+	}
+
+	idBlockResult, collisionsResult := detectAndFilterDuplicateBRs(idBlock, left, right)
+	assert.Equal(t, expectedIDBlocks, idBlockResult)
+	assert.Empty(t, collisionsResult)
 }
 
 func Test_sortBRFroms(t *testing.T) {
