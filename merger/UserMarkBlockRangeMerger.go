@@ -59,7 +59,7 @@ func MergeUserMarkAndBlockRange(leftUM []*model.UserMark, leftBR []*model.BlockR
 		case MergeConflictError:
 			autoConflictSolution, sErr := solveEqualityMergeConflict(err.Conflicts)
 			for key, autoSol := range autoConflictSolution {
-				conflictSolution["_"+key] = autoSol
+				conflictSolution[key] = autoSol
 			}
 			if sErr == nil {
 				continue
