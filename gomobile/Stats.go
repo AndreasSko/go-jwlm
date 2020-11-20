@@ -1,6 +1,10 @@
 package gomobile
 
-import "github.com/AndreasSko/go-jwlm/model"
+import (
+	"reflect"
+
+	"github.com/AndreasSko/go-jwlm/model"
+)
 
 // DatabaseStats represents the rough number of entries
 // within a Database{} by defining it as the length
@@ -35,12 +39,32 @@ func (dbw *DatabaseWrapper) Stats(side string) *DatabaseStats {
 	}
 
 	return &DatabaseStats{
-		BlockRange: len(db.BlockRange),
-		Bookmark:   len(db.Bookmark),
-		Location:   len(db.Location),
-		Note:       len(db.Note),
-		Tag:        len(db.Tag),
-		TagMap:     len(db.TagMap),
-		UserMark:   len(db.UserMark),
+		BlockRange: countSliceEntries(db.BlockRange),
+		Bookmark:   countSliceEntries(db.Bookmark),
+		Location:   countSliceEntries(db.Location),
+		Note:       countSliceEntries(db.Note),
+		Tag:        countSliceEntries(db.Tag),
+		TagMap:     countSliceEntries(db.TagMap),
+		UserMark:   countSliceEntries(db.UserMark),
 	}
+}
+
+func countSliceEntries(entries interface{}) int {
+	count := 0
+
+	slice := reflect.ValueOf(entries)
+	tp := slice.Kind()
+	switch tp {
+	case reflect.Slice:
+		for j := 0; j < slice.Len(); j++ {
+			if slice.Index(j).IsNil() {
+				continue
+			}
+			count++
+		}
+	default:
+		return 0
+	}
+
+	return count
 }
