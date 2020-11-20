@@ -243,6 +243,10 @@ func detectAndFilterDuplicateBRs(idBlock []brFrom, left []*model.UserMarkBlockRa
 				}
 
 				var conflictKey strings.Builder
+				// Use UnixNano as a monotonically increasing number, so we
+				// are able to apply conflict solutions in the right order later
+				conflictKey.WriteString(fmt.Sprint(time.Now().UnixNano()))
+				conflictKey.WriteString("_")
 				conflictKey.WriteString(first.UniqueKey())
 				conflictKey.WriteString("_")
 				conflictKey.WriteString(second.UniqueKey())

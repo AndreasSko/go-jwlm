@@ -3296,8 +3296,8 @@ func Test_detectAndFilterDuplicateBRs1(t *testing.T) {
 			},
 		},
 	}
-	expectedCollisions := map[string]MergeConflict{
-		"FirstDuplicate_0_0_0_0_1_FirstDuplicate_0_0_0_0_1": {
+	expectedCollisions := []MergeConflict{
+		{
 			Left: &model.UserMarkBlockRange{
 				UserMark: &model.UserMark{
 					UserMarkID:   1,
@@ -3333,7 +3333,7 @@ func Test_detectAndFilterDuplicateBRs1(t *testing.T) {
 				},
 			},
 		},
-		"SecondDuplicate_0_0_1_2_2_SecondDuplicate_0_0_1_2_2": {
+		{
 			Left: &model.UserMarkBlockRange{
 				UserMark: &model.UserMark{
 					UserMarkID:   2,
@@ -3373,7 +3373,7 @@ func Test_detectAndFilterDuplicateBRs1(t *testing.T) {
 
 	idBlockResult, collisionsResult := detectAndFilterDuplicateBRs(idBlock, left, right)
 	assert.Equal(t, expectedIDBlocks, idBlockResult)
-	assert.Equal(t, expectedCollisions, collisionsResult)
+	assert.Equal(t, expectedCollisions, mergeConflictMapToSliceHelper(collisionsResult))
 }
 
 func Test_detectAndFilterDuplicateBRs2(t *testing.T) {
@@ -3534,8 +3534,8 @@ func Test_detectAndFilterDuplicateBRs3(t *testing.T) {
 		},
 	}
 
-	expectedCollisions := map[string]MergeConflict{
-		"Duplicate_0_0_0_0_1_Duplicate_0_0_0_0_2": {
+	expectedCollisions := []MergeConflict{
+		{
 			Left: &model.UserMarkBlockRange{
 				UserMark: &model.UserMark{
 					UserMarkID:   1,
@@ -3575,7 +3575,7 @@ func Test_detectAndFilterDuplicateBRs3(t *testing.T) {
 
 	idBlockResult, collisionsResult := detectAndFilterDuplicateBRs(idBlock, left, right)
 	assert.Equal(t, expectedIDBlocks, idBlockResult)
-	assert.Equal(t, expectedCollisions, collisionsResult)
+	assert.Equal(t, expectedCollisions, mergeConflictMapToSliceHelper(collisionsResult))
 }
 
 func Test_sortBRFroms(t *testing.T) {
