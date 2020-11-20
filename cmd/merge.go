@@ -85,10 +85,11 @@ func merge(leftFilename string, rightFilename string, mergedFilename string, std
 		case merger.MergeConflictError:
 			if BookmarkResolver != "" {
 				var resErr error
-				bookmarksConflictSolution, resErr = merger.AutoResolveConflicts(err.Conflicts, BookmarkResolver)
+				newSolutions, resErr := merger.AutoResolveConflicts(err.Conflicts, BookmarkResolver)
 				if resErr != nil {
 					log.Fatal(resErr)
 				}
+				addToSolutions(bookmarksConflictSolution, newSolutions)
 			} else {
 				newSolutions := handleMergeConflict(err.Conflicts, &merged, stdio)
 				addToSolutions(bookmarksConflictSolution, newSolutions)
@@ -131,10 +132,11 @@ func merge(leftFilename string, rightFilename string, mergedFilename string, std
 		case merger.MergeConflictError:
 			if MarkingResolver != "" {
 				var resErr error
-				UMBRConflictSolution, resErr = merger.AutoResolveConflicts(err.Conflicts, MarkingResolver)
+				newSolutions, resErr := merger.AutoResolveConflicts(err.Conflicts, MarkingResolver)
 				if resErr != nil {
 					log.Fatal(resErr)
 				}
+				addToSolutions(UMBRConflictSolution, newSolutions)
 			} else {
 				newSolutions := handleMergeConflict(err.Conflicts, &merged, stdio)
 				addToSolutions(UMBRConflictSolution, newSolutions)
@@ -158,10 +160,11 @@ func merge(leftFilename string, rightFilename string, mergedFilename string, std
 		case merger.MergeConflictError:
 			if NoteResolver != "" {
 				var resErr error
-				notesConflictSolution, resErr = merger.AutoResolveConflicts(err.Conflicts, NoteResolver)
+				newSolutions, resErr := merger.AutoResolveConflicts(err.Conflicts, NoteResolver)
 				if resErr != nil {
 					log.Fatal(resErr)
 				}
+				addToSolutions(notesConflictSolution, newSolutions)
 			} else {
 				newSolutions := handleMergeConflict(err.Conflicts, &merged, stdio)
 				addToSolutions(notesConflictSolution, newSolutions)

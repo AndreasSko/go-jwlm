@@ -19,6 +19,8 @@ func TestMakeModelCopy(t *testing.T) {
 	brCp := MakeModelCopy(br)
 	assert.Equal(t, br, brCp)
 	assert.NotSame(t, br, brCp)
+	br.SetID(5)
+	assert.Equal(t, 1, brCp.ID())
 
 	bm := &Bookmark{
 		BookmarkID:            1,
@@ -33,6 +35,8 @@ func TestMakeModelCopy(t *testing.T) {
 	bmCp := MakeModelCopy(bm)
 	assert.Equal(t, bm, bmCp)
 	assert.NotSame(t, bm, bmCp)
+	bm.SetID(5)
+	assert.Equal(t, 1, bmCp.ID())
 
 	loc := &Location{
 		LocationID:     1,
@@ -49,6 +53,8 @@ func TestMakeModelCopy(t *testing.T) {
 	locCp := MakeModelCopy(loc)
 	assert.Equal(t, loc, locCp)
 	assert.NotSame(t, loc, locCp)
+	loc.SetID(5)
+	assert.Equal(t, 1, locCp.ID())
 
 	note := &Note{
 		NoteID:          1,
@@ -64,6 +70,8 @@ func TestMakeModelCopy(t *testing.T) {
 	noteCp := MakeModelCopy(note)
 	assert.Equal(t, note, noteCp)
 	assert.NotSame(t, note, noteCp)
+	note.SetID(5)
+	assert.Equal(t, 1, noteCp.ID())
 
 	tag := &Tag{
 		TagID:         1,
@@ -74,6 +82,8 @@ func TestMakeModelCopy(t *testing.T) {
 	tagCp := MakeModelCopy(tag)
 	assert.Equal(t, tag, tagCp)
 	assert.NotSame(t, tag, tagCp)
+	tag.SetID(5)
+	assert.Equal(t, 1, tagCp.ID())
 
 	tm := &TagMap{
 		TagMapID:       1,
@@ -86,6 +96,8 @@ func TestMakeModelCopy(t *testing.T) {
 	tmCp := MakeModelCopy(tm)
 	assert.Equal(t, tm, tmCp)
 	assert.NotSame(t, tm, tmCp)
+	tm.SetID(5)
+	assert.Equal(t, 1, tmCp.ID())
 
 	um := &UserMark{
 		UserMarkID:   1,
@@ -98,11 +110,37 @@ func TestMakeModelCopy(t *testing.T) {
 	umCp := MakeModelCopy(um)
 	assert.Equal(t, um, umCp)
 	assert.NotSame(t, um, umCp)
+	um.SetID(5)
+	assert.Equal(t, 1, umCp.ID())
 
-	assert.Panics(t, func() {
-		umbr := &UserMarkBlockRange{}
-		MakeModelCopy(umbr)
-	})
+	umbr := &UserMarkBlockRange{
+		UserMark: &UserMark{
+			UserMarkID:   1,
+			ColorIndex:   1,
+			LocationID:   1,
+			StyleIndex:   1,
+			UserMarkGUID: "FIRST",
+			Version:      1,
+		},
+		BlockRanges: []*BlockRange{
+			nil,
+			{
+				BlockRangeID: 1,
+				BlockType:    1,
+				Identifier:   1,
+				StartToken:   sql.NullInt32{Int32: 1, Valid: true},
+				EndToken:     sql.NullInt32{Int32: 2, Valid: true},
+				UserMarkID:   1,
+			},
+		},
+	}
+	umbrCP := MakeModelCopy(umbr)
+	assert.Equal(t, umbr, umbrCP)
+	assert.NotSame(t, umbr, umbrCP)
+	umbr.UserMark.SetID(5)
+	umbr.BlockRanges[1].SetID(5)
+	assert.Equal(t, 1, umbrCP.(*UserMarkBlockRange).UserMark.UserMarkID)
+	assert.Equal(t, 1, umbrCP.(*UserMarkBlockRange).BlockRanges[1].BlockRangeID)
 }
 
 func TestPrettyPrint(t *testing.T) {

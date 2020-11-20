@@ -24,6 +24,9 @@ func (dbw *DatabaseWrapper) MergeLocations() error {
 // MergeBookmarks merges bookmarks
 func (dbw *DatabaseWrapper) MergeBookmarks(conflictSolver string, mcw *MergeConflictsWrapper) error {
 	var conflictSolution = mcw.solutions
+	if conflictSolution == nil {
+		conflictSolution = map[string]merger.MergeSolution{}
+	}
 	for {
 		merged, _, err := merger.MergeBookmarks(dbw.leftTmp.Bookmark, dbw.rightTmp.Bookmark, conflictSolution)
 		if err == nil {
@@ -37,10 +40,11 @@ func (dbw *DatabaseWrapper) MergeBookmarks(conflictSolver string, mcw *MergeConf
 				return MergeConflictError{}
 			}
 			var resErr error
-			conflictSolution, resErr = merger.AutoResolveConflicts(err.Conflicts, conflictSolver)
+			newSolutions, resErr := merger.AutoResolveConflicts(err.Conflicts, conflictSolver)
 			if resErr != nil {
 				return errors.Wrap(err, "Could not automatically solve conflicts for bookmarks")
 			}
+			addToSolutions(conflictSolution, newSolutions)
 		default:
 			return errors.Wrap(err, "Could not merge bookmarks")
 		}
@@ -68,6 +72,9 @@ func (dbw *DatabaseWrapper) MergeTags() error {
 // MergeUserMarkAndBlockRange merges UserMarks and BlockRanges
 func (dbw *DatabaseWrapper) MergeUserMarkAndBlockRange(conflictSolver string, mcw *MergeConflictsWrapper) error {
 	var conflictSolution = mcw.solutions
+	if conflictSolution == nil {
+		conflictSolution = map[string]merger.MergeSolution{}
+	}
 	for {
 		mergedUserMarks, mergedBlockRanges, idChanges, err := merger.MergeUserMarkAndBlockRange(dbw.leftTmp.UserMark, dbw.leftTmp.BlockRange, dbw.rightTmp.UserMark, dbw.rightTmp.BlockRange, conflictSolution)
 		if err == nil {
@@ -83,10 +90,11 @@ func (dbw *DatabaseWrapper) MergeUserMarkAndBlockRange(conflictSolver string, mc
 				return MergeConflictError{}
 			}
 			var resErr error
-			conflictSolution, resErr = merger.AutoResolveConflicts(err.Conflicts, conflictSolver)
+			newSolutions, resErr := merger.AutoResolveConflicts(err.Conflicts, conflictSolver)
 			if resErr != nil {
 				return errors.Wrap(err, "Could not automatically solve conflicts for markings")
 			}
+			addToSolutions(conflictSolution, newSolutions)
 		default:
 			return errors.Wrap(err, "Could not merge markings")
 		}
@@ -98,6 +106,9 @@ func (dbw *DatabaseWrapper) MergeUserMarkAndBlockRange(conflictSolver string, mc
 // MergeNotes merges notes
 func (dbw *DatabaseWrapper) MergeNotes(conflictSolver string, mcw *MergeConflictsWrapper) error {
 	var conflictSolution = mcw.solutions
+	if conflictSolution == nil {
+		conflictSolution = map[string]merger.MergeSolution{}
+	}
 	for {
 		merged, idChanges, err := merger.MergeNotes(dbw.leftTmp.Note, dbw.rightTmp.Note, conflictSolution)
 		if err == nil {
@@ -112,10 +123,11 @@ func (dbw *DatabaseWrapper) MergeNotes(conflictSolver string, mcw *MergeConflict
 				return MergeConflictError{}
 			}
 			var resErr error
-			conflictSolution, resErr = merger.AutoResolveConflicts(err.Conflicts, conflictSolver)
+			newSolutions, resErr := merger.AutoResolveConflicts(err.Conflicts, conflictSolver)
 			if resErr != nil {
 				return errors.Wrap(err, "Could not automatically solve conflicts for notes")
 			}
+			addToSolutions(conflictSolution, newSolutions)
 		default:
 			return errors.Wrap(err, "Could not merge notes")
 		}
@@ -138,4 +150,11 @@ func (dbw *DatabaseWrapper) MergeTagMaps() error {
 	}
 
 	return nil
+}
+
+// addToSolutions adds new mergeSolutions to the existing map of mergeSolutions
+func addToSolutions(solutions map[string]merger.MergeSolution, new map[string]merger.MergeSolution) {
+	for key, value := range new {
+		solutions[key] = value
+	}
 }

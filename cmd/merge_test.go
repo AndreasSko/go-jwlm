@@ -29,9 +29,13 @@ func Test_merge(t *testing.T) {
 	leftFilename := filepath.Join(tmp, "left.jwlibrary")
 	rightFilename := filepath.Join(tmp, "right.jwlibrary")
 	mergedFilename := filepath.Join(tmp, "merged.jwlibrary")
+	leftMultiCollisionFilename := filepath.Join(tmp, "leftMultiCollision.jwlibrary")
+	rightMultiCollisionFilename := filepath.Join(tmp, "rightMultiCollision.jwlibrary")
 	assert.NoError(t, emptyDB.ExportJWLBackup(emptyFilename))
 	assert.NoError(t, leftDB.ExportJWLBackup(leftFilename))
 	assert.NoError(t, rightDB.ExportJWLBackup(rightFilename))
+	assert.NoError(t, leftMultiCollision.ExportJWLBackup(leftMultiCollisionFilename))
+	assert.NoError(t, rightMultiCollision.ExportJWLBackup(rightMultiCollisionFilename))
 
 	// Merge against empty DB and see if result is still the same
 	RunCmdTest(t,
@@ -110,6 +114,24 @@ func Test_merge(t *testing.T) {
 			merged.ImportJWLBackup(mergedFilename)
 			assert.True(t, mergedAllRightDB.Equals(merged))
 		})
+
+	// Merge multiCollision with autoresolver all right
+	RunCmdTest(t,
+		func(t *testing.T, c *expect.Console) {
+			_, err := c.ExpectString("🎉 Finished merging!")
+			assert.NoError(t, err)
+			c.ExpectEOF()
+		},
+		func(t *testing.T, c *expect.Console) {
+			MarkingResolver = "chooseRight"
+			merge(leftMultiCollisionFilename,
+				rightMultiCollisionFilename,
+				mergedFilename,
+				terminal.Stdio{In: c.Tty(), Out: c.Tty(), Err: c.Tty()})
+			merged := &model.Database{}
+			merged.ImportJWLBackup(mergedFilename)
+			assert.True(t, rightMultiCollision.Equals(merged))
+		})
 }
 
 // https://github.com/AlecAivazis/survey/blob/master/survey_posix_test.go
@@ -136,6 +158,131 @@ func RunCmdTest(t *testing.T, procedure func(*testing.T, *expect.Console), test 
 
 	// Dump the terminal's screen.
 	t.Logf("\n%s", expect.StripTrailingEmptyLines(state.String()))
+}
+
+var leftMultiCollision = &model.Database{
+	BlockRange: []*model.BlockRange{
+		nil,
+		{
+			BlockRangeID: 1,
+			BlockType:    1,
+			Identifier:   1,
+			StartToken:   sql.NullInt32{0, true},
+			EndToken:     sql.NullInt32{0, true},
+			UserMarkID:   1,
+		},
+		{
+			BlockRangeID: 2,
+			BlockType:    1,
+			Identifier:   1,
+			StartToken:   sql.NullInt32{1, true},
+			EndToken:     sql.NullInt32{1, true},
+			UserMarkID:   2,
+		},
+		{
+			BlockRangeID: 3,
+			BlockType:    1,
+			Identifier:   1,
+			StartToken:   sql.NullInt32{2, true},
+			EndToken:     sql.NullInt32{2, true},
+			UserMarkID:   3,
+		},
+		{
+			BlockRangeID: 4,
+			BlockType:    1,
+			Identifier:   1,
+			StartToken:   sql.NullInt32{3, true},
+			EndToken:     sql.NullInt32{3, true},
+			UserMarkID:   4,
+		},
+	},
+	Bookmark: []*model.Bookmark{nil},
+	Location: []*model.Location{
+		nil,
+		{
+			LocationID:    1,
+			BookNumber:    sql.NullInt32{1, true},
+			ChapterNumber: sql.NullInt32{1, true},
+			KeySymbol:     sql.NullString{"nwtsty", true},
+			MepsLanguage:  2,
+			LocationType:  0,
+			Title:         sql.NullString{"1. Mose 1", true},
+		},
+	},
+	Note:   []*model.Note{nil},
+	Tag:    []*model.Tag{nil},
+	TagMap: []*model.TagMap{nil},
+	UserMark: []*model.UserMark{
+		nil,
+		{
+			UserMarkID:   1,
+			ColorIndex:   1,
+			LocationID:   1,
+			StyleIndex:   1,
+			UserMarkGUID: "1",
+		},
+		{
+			UserMarkID:   2,
+			ColorIndex:   1,
+			LocationID:   1,
+			StyleIndex:   1,
+			UserMarkGUID: "2",
+		},
+		{
+			UserMarkID:   3,
+			ColorIndex:   1,
+			LocationID:   1,
+			StyleIndex:   1,
+			UserMarkGUID: "3",
+		},
+		{
+			UserMarkID:   4,
+			ColorIndex:   1,
+			LocationID:   1,
+			StyleIndex:   1,
+			UserMarkGUID: "4",
+		},
+	},
+}
+
+var rightMultiCollision = &model.Database{
+	BlockRange: []*model.BlockRange{
+		nil,
+		{
+			BlockRangeID: 1,
+			BlockType:    1,
+			Identifier:   1,
+			StartToken:   sql.NullInt32{0, true},
+			EndToken:     sql.NullInt32{20, true},
+			UserMarkID:   1,
+		},
+	},
+	Bookmark: []*model.Bookmark{nil},
+	Location: []*model.Location{
+		nil,
+		{
+			LocationID:    1,
+			BookNumber:    sql.NullInt32{1, true},
+			ChapterNumber: sql.NullInt32{1, true},
+			KeySymbol:     sql.NullString{"nwtsty", true},
+			MepsLanguage:  2,
+			LocationType:  0,
+			Title:         sql.NullString{"1. Mose 1", true},
+		},
+	},
+	Note:   []*model.Note{nil},
+	Tag:    []*model.Tag{nil},
+	TagMap: []*model.TagMap{nil},
+	UserMark: []*model.UserMark{
+		nil,
+		{
+			UserMarkID:   1,
+			ColorIndex:   1,
+			LocationID:   1,
+			StyleIndex:   1,
+			UserMarkGUID: "1R",
+		},
+	},
 }
 
 var emptyDB = &model.Database{}

@@ -75,6 +75,24 @@ func MakeModelCopy(mdl Model) Model {
 		mdlCopy = &TagMap{}
 	case *UserMark:
 		mdlCopy = &UserMark{}
+	case *UserMarkBlockRange:
+		umbr := mdl.(*UserMarkBlockRange)
+
+		umCopy := &UserMark{}
+		copier.Copy(umCopy, umbr.UserMark)
+
+		// Copier doesn't deep copy slices, so doing it manually
+		brSliceCopy := make([]*BlockRange, len(umbr.BlockRanges))
+		for i, br := range umbr.BlockRanges {
+			if br != nil {
+				brSliceCopy[i] = &BlockRange{}
+				copier.Copy(brSliceCopy[i], umbr.BlockRanges[i])
+			}
+		}
+		return &UserMarkBlockRange{
+			UserMark:    umCopy,
+			BlockRanges: brSliceCopy,
+		}
 	default:
 		panic(fmt.Sprintf("Type %T is not supported for copying", mdl))
 	}

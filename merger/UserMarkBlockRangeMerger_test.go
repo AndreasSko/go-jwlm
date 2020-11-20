@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/AndreasSko/go-jwlm/model"
-	"github.com/davecgh/go-spew/spew"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -454,25 +453,22 @@ func Test_MergeUserMarkAndBlockRange_without_conflict3(t *testing.T) {
 			},
 		},
 	}
-	// expectedChanges := IDChanges{
-	// 	Left: map[int]int{},
-	// 	Right: map[int]int{
-	// 		1: 1,
-	// 		2: 2,
-	// 	},
-	// }
+	expectedChanges := IDChanges{
+		Left: map[int]int{},
+		Right: map[int]int{
+			3: 1,
+			4: 2,
+		},
+	}
 
 	leftUm, leftBr := splitUserMarkBlockRange(left)
 	rightUm, rightBr := splitUserMarkBlockRange(right)
 
-	resUm, resBr, _, err := MergeUserMarkAndBlockRange(leftUm, leftBr, rightUm, rightBr, nil)
-	spew.Dump(resUm)
-	spew.Dump(resBr)
+	resUm, resBr, changes, err := MergeUserMarkAndBlockRange(leftUm, leftBr, rightUm, rightBr, nil)
 	result := joinToUserMarkBlockRange(resUm, resBr)
-	spew.Dump(result)
 	assert.NoError(t, err)
 	assert.Equal(t, expectedResult, result)
-	// assert.Equal(t, expectedChanges, changes)
+	assert.Equal(t, expectedChanges, changes)
 }
 
 func TestMergeUserMarkAndBlockRange_with_conflict1(t *testing.T) {
@@ -1823,6 +1819,108 @@ func Test_mergeUMBR_with_conflict(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, expectedResult, result)
 	assert.Equal(t, expectedChanges, changes)
+}
+
+func Test_mergeUMBR_checkCopiedUMBRs(t *testing.T) {
+	// Test, if the UMBR in conflict solutions is the SAME as the one in the
+	// result. They should be different, so changes of IDs are not propagated to
+	// the solutions (which can result in error if the solution is used a second
+	// time).
+	left := []*model.UserMarkBlockRange{
+		nil,
+		nil,
+		nil,
+		{
+			UserMark: &model.UserMark{
+				UserMarkID: 3,
+				ColorIndex: 1,
+				LocationID: 1,
+			},
+			BlockRanges: []*model.BlockRange{
+				{
+					BlockRangeID: 1,
+					UserMarkID:   3,
+					Identifier:   1,
+					StartToken:   sql.NullInt32{0, true},
+					EndToken:     sql.NullInt32{0, true},
+				},
+			},
+		},
+	}
+
+	right := []*model.UserMarkBlockRange{
+		nil,
+		{
+			UserMark: &model.UserMark{
+				UserMarkID: 1,
+				ColorIndex: 2,
+				LocationID: 1,
+			},
+			BlockRanges: []*model.BlockRange{
+				{
+					BlockRangeID: 1,
+					UserMarkID:   1,
+					Identifier:   1,
+					StartToken:   sql.NullInt32{0, true},
+					EndToken:     sql.NullInt32{0, true},
+				},
+			},
+		},
+	}
+
+	expectedConflicts := []MergeConflict{
+		{
+			Left: &model.UserMarkBlockRange{
+				UserMark: &model.UserMark{
+					UserMarkID: 3,
+					ColorIndex: 1,
+					LocationID: 1,
+				},
+				BlockRanges: []*model.BlockRange{
+					{
+						BlockRangeID: 1,
+						UserMarkID:   3,
+						Identifier:   1,
+						StartToken:   sql.NullInt32{0, true},
+						EndToken:     sql.NullInt32{0, true},
+					},
+				},
+			},
+			Right: &model.UserMarkBlockRange{
+				UserMark: &model.UserMark{
+					UserMarkID: 1,
+					ColorIndex: 2,
+					LocationID: 1,
+				},
+				BlockRanges: []*model.BlockRange{
+					{
+						BlockRangeID: 1,
+						UserMarkID:   1,
+						Identifier:   1,
+						StartToken:   sql.NullInt32{0, true},
+						EndToken:     sql.NullInt32{0, true},
+					},
+				},
+			},
+		},
+	}
+
+	result, _, err := mergeUMBR(left, right, nil)
+	conflictResult := mergeConflictMapToSliceHelper(err.(MergeConflictError).Conflicts)
+	assert.Empty(t, result)
+	assert.Error(t, err)
+	assert.Equal(t, expectedConflicts, conflictResult)
+
+	conflictSolution := map[string]MergeSolution{
+		"0": {
+			Side:      LeftSide,
+			Solution:  conflictResult[0].Left,
+			Discarded: conflictResult[0].Right,
+		},
+	}
+	_, _, err = mergeUMBR(left, right, conflictSolution)
+	assert.NoError(t, err)
+	assert.Equal(t, 3, conflictSolution["0"].Solution.ID())
 }
 
 func Test_mergeUMBR_with_multi_conflict_1(t *testing.T) {
@@ -3198,8 +3296,8 @@ func Test_detectAndFilterDuplicateBRs1(t *testing.T) {
 			},
 		},
 	}
-	expectedCollisions := map[string]MergeConflict{
-		"FirstDuplicate_0_0_0_0_1_FirstDuplicate_0_0_0_0_1": {
+	expectedCollisions := []MergeConflict{
+		{
 			Left: &model.UserMarkBlockRange{
 				UserMark: &model.UserMark{
 					UserMarkID:   1,
@@ -3235,7 +3333,7 @@ func Test_detectAndFilterDuplicateBRs1(t *testing.T) {
 				},
 			},
 		},
-		"SecondDuplicate_0_0_1_2_2_SecondDuplicate_0_0_1_2_2": {
+		{
 			Left: &model.UserMarkBlockRange{
 				UserMark: &model.UserMark{
 					UserMarkID:   2,
@@ -3275,7 +3373,7 @@ func Test_detectAndFilterDuplicateBRs1(t *testing.T) {
 
 	idBlockResult, collisionsResult := detectAndFilterDuplicateBRs(idBlock, left, right)
 	assert.Equal(t, expectedIDBlocks, idBlockResult)
-	assert.Equal(t, expectedCollisions, collisionsResult)
+	assert.Equal(t, expectedCollisions, mergeConflictMapToSliceHelper(collisionsResult))
 }
 
 func Test_detectAndFilterDuplicateBRs2(t *testing.T) {
@@ -3436,8 +3534,8 @@ func Test_detectAndFilterDuplicateBRs3(t *testing.T) {
 		},
 	}
 
-	expectedCollisions := map[string]MergeConflict{
-		"Duplicate_0_0_0_0_1_Duplicate_0_0_0_0_2": {
+	expectedCollisions := []MergeConflict{
+		{
 			Left: &model.UserMarkBlockRange{
 				UserMark: &model.UserMark{
 					UserMarkID:   1,
@@ -3477,7 +3575,7 @@ func Test_detectAndFilterDuplicateBRs3(t *testing.T) {
 
 	idBlockResult, collisionsResult := detectAndFilterDuplicateBRs(idBlock, left, right)
 	assert.Equal(t, expectedIDBlocks, idBlockResult)
-	assert.Equal(t, expectedCollisions, collisionsResult)
+	assert.Equal(t, expectedCollisions, mergeConflictMapToSliceHelper(collisionsResult))
 }
 
 func Test_sortBRFroms(t *testing.T) {

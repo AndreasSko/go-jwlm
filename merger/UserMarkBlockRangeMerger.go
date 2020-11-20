@@ -49,8 +49,8 @@ func MergeUserMarkAndBlockRange(leftUM []*model.UserMark, leftBR []*model.BlockR
 
 	for {
 		merged, changes, err = mergeUMBR(left, right, conflictSolution)
-		um, br := splitUserMarkBlockRange(merged)
 		if err == nil {
+			um, br := splitUserMarkBlockRange(merged)
 			return um, br, changes, nil
 		}
 
@@ -59,14 +59,14 @@ func MergeUserMarkAndBlockRange(leftUM []*model.UserMark, leftBR []*model.BlockR
 		case MergeConflictError:
 			autoConflictSolution, sErr := solveEqualityMergeConflict(err.Conflicts)
 			for key, autoSol := range autoConflictSolution {
-				conflictSolution["_"+key] = autoSol
+				conflictSolution[key] = autoSol
 			}
 			if sErr == nil {
 				continue
 			}
 			// If no more conflicts could be solved, fail and return error
 			if reflect.DeepEqual(err.Conflicts, sErr.(MergeConflictError).Conflicts) {
-				return nil, nil, IDChanges{}, err
+				return nil, nil, IDChanges{}, sErr
 			}
 		default:
 			return nil, nil, IDChanges{}, err
@@ -165,6 +165,7 @@ func mergeUMBR(left []*model.UserMarkBlockRange, right []*model.UserMarkBlockRan
 			if entry == nil {
 				continue
 			}
+			entry = model.MakeModelCopy(entry).(*model.UserMarkBlockRange)
 			// Note IDChanges if necessary
 			if entry.ID() != i {
 				if mergeSide == LeftSide {
@@ -242,6 +243,10 @@ func detectAndFilterDuplicateBRs(idBlock []brFrom, left []*model.UserMarkBlockRa
 				}
 
 				var conflictKey strings.Builder
+				// Use UnixNano as a monotonically increasing number, so we
+				// are able to apply conflict solutions in the right order later
+				conflictKey.WriteString(fmt.Sprint(time.Now().UnixNano()))
+				conflictKey.WriteString("_")
 				conflictKey.WriteString(first.UniqueKey())
 				conflictKey.WriteString("_")
 				conflictKey.WriteString(second.UniqueKey())
