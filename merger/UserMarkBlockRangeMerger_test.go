@@ -1821,6 +1821,108 @@ func Test_mergeUMBR_with_conflict(t *testing.T) {
 	assert.Equal(t, expectedChanges, changes)
 }
 
+func Test_mergeUMBR_checkCopiedUMBRs(t *testing.T) {
+	// Test, if the UMBR in conflict solutions is the SAME as the one in the
+	// result. They should be different, so changes of IDs are not propagated to
+	// the solutions (which can result in error if the solution is used a second
+	// time).
+	left := []*model.UserMarkBlockRange{
+		nil,
+		nil,
+		nil,
+		{
+			UserMark: &model.UserMark{
+				UserMarkID: 3,
+				ColorIndex: 1,
+				LocationID: 1,
+			},
+			BlockRanges: []*model.BlockRange{
+				{
+					BlockRangeID: 1,
+					UserMarkID:   3,
+					Identifier:   1,
+					StartToken:   sql.NullInt32{0, true},
+					EndToken:     sql.NullInt32{0, true},
+				},
+			},
+		},
+	}
+
+	right := []*model.UserMarkBlockRange{
+		nil,
+		{
+			UserMark: &model.UserMark{
+				UserMarkID: 1,
+				ColorIndex: 2,
+				LocationID: 1,
+			},
+			BlockRanges: []*model.BlockRange{
+				{
+					BlockRangeID: 1,
+					UserMarkID:   1,
+					Identifier:   1,
+					StartToken:   sql.NullInt32{0, true},
+					EndToken:     sql.NullInt32{0, true},
+				},
+			},
+		},
+	}
+
+	expectedConflicts := []MergeConflict{
+		{
+			Left: &model.UserMarkBlockRange{
+				UserMark: &model.UserMark{
+					UserMarkID: 3,
+					ColorIndex: 1,
+					LocationID: 1,
+				},
+				BlockRanges: []*model.BlockRange{
+					{
+						BlockRangeID: 1,
+						UserMarkID:   3,
+						Identifier:   1,
+						StartToken:   sql.NullInt32{0, true},
+						EndToken:     sql.NullInt32{0, true},
+					},
+				},
+			},
+			Right: &model.UserMarkBlockRange{
+				UserMark: &model.UserMark{
+					UserMarkID: 1,
+					ColorIndex: 2,
+					LocationID: 1,
+				},
+				BlockRanges: []*model.BlockRange{
+					{
+						BlockRangeID: 1,
+						UserMarkID:   1,
+						Identifier:   1,
+						StartToken:   sql.NullInt32{0, true},
+						EndToken:     sql.NullInt32{0, true},
+					},
+				},
+			},
+		},
+	}
+
+	result, _, err := mergeUMBR(left, right, nil)
+	conflictResult := mergeConflictMapToSliceHelper(err.(MergeConflictError).Conflicts)
+	assert.Empty(t, result)
+	assert.Error(t, err)
+	assert.Equal(t, expectedConflicts, conflictResult)
+
+	conflictSolution := map[string]MergeSolution{
+		"0": {
+			Side:      LeftSide,
+			Solution:  conflictResult[0].Left,
+			Discarded: conflictResult[0].Right,
+		},
+	}
+	_, _, err = mergeUMBR(left, right, conflictSolution)
+	assert.NoError(t, err)
+	assert.Equal(t, 3, conflictSolution["0"].Solution.ID())
+}
+
 func Test_mergeUMBR_with_multi_conflict_1(t *testing.T) {
 	// Try merge and find conflict
 	left := []*model.UserMarkBlockRange{

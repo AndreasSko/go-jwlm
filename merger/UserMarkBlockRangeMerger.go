@@ -165,6 +165,7 @@ func mergeUMBR(left []*model.UserMarkBlockRange, right []*model.UserMarkBlockRan
 			if entry == nil {
 				continue
 			}
+			entry = model.MakeModelCopy(entry).(*model.UserMarkBlockRange)
 			// Note IDChanges if necessary
 			if entry.ID() != i {
 				if mergeSide == LeftSide {
