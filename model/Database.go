@@ -435,7 +435,7 @@ func (db *Database) saveToNewSQLite(filename string) error {
 			return err
 		}
 		if err := insertEntries(sqlite, mdl); err != nil {
-			return errors.Wrapf(err, "Error while inserting %s", slice)
+			return errors.Wrapf(err, "Error while inserting entries of field %d", j)
 		}
 	}
 
