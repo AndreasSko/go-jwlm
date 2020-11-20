@@ -648,7 +648,7 @@ var rightDB = &model.Database{
 	},
 }
 
-var mergedAllLeftDB = model.Database{
+var mergedAllLeftDB = &model.Database{
 	BlockRange: []*model.BlockRange{
 		nil,
 		{
@@ -821,7 +821,7 @@ var mergedAllLeftDB = model.Database{
 	},
 }
 
-var mergedAllRightDB = model.Database{
+var mergedAllRightDB = &model.Database{
 	BlockRange: []*model.BlockRange{
 		nil,
 		{
