@@ -49,8 +49,8 @@ func MergeUserMarkAndBlockRange(leftUM []*model.UserMark, leftBR []*model.BlockR
 
 	for {
 		merged, changes, err = mergeUMBR(left, right, conflictSolution)
-		um, br := splitUserMarkBlockRange(merged)
 		if err == nil {
+			um, br := splitUserMarkBlockRange(merged)
 			return um, br, changes, nil
 		}
 
