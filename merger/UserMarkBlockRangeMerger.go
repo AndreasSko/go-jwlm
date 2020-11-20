@@ -66,7 +66,7 @@ func MergeUserMarkAndBlockRange(leftUM []*model.UserMark, leftBR []*model.BlockR
 			}
 			// If no more conflicts could be solved, fail and return error
 			if reflect.DeepEqual(err.Conflicts, sErr.(MergeConflictError).Conflicts) {
-				return nil, nil, IDChanges{}, err
+				return nil, nil, IDChanges{}, sErr
 			}
 		default:
 			return nil, nil, IDChanges{}, err
