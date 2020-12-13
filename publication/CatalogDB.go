@@ -37,6 +37,20 @@ type catalogManifest struct {
 	Current string `json:"current"`
 }
 
+// CatalogNeedsUpdate checks if catalog.db located at path is still up-to-date.
+// For now it just makes sure that its younger than one month.
+// If it can't find a file at path, it returns true
+func CatalogNeedsUpdate(path string) bool {
+	stat, err := os.Stat(path)
+	if err == nil {
+		old := time.Now().Add(-time.Hour * 24 * 30)
+		if !stat.ModTime().Before(old) {
+			return false
+		}
+	}
+	return true
+}
+
 // DownloadCatalog downloads the newest catalog.db and saves it at dst.
 // The prgrs channel informs about the progress of the download.
 func DownloadCatalog(ctx context.Context, prgrs chan Progress, dst string) error {

@@ -17,6 +17,22 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestCatalogNeedsUpdate(t *testing.T) {
+	tmp, err := ioutil.TempDir("", "go-jwlm")
+	assert.NoError(t, err)
+	defer os.RemoveAll(tmp)
+
+	assert.True(t, CatalogNeedsUpdate("not-valid-path"))
+
+	filePath := filepath.Join(tmp, "catalog.db")
+	_, err = os.Create(filePath)
+
+	assert.False(t, CatalogNeedsUpdate(filePath))
+
+	os.Chtimes(filePath, time.Now(), time.Now().Add(-time.Hour*24*30))
+	assert.True(t, CatalogNeedsUpdate(filePath))
+}
+
 func Test_DownloadCatalog(t *testing.T) {
 	tmp, err := ioutil.TempDir("", "go-jwlm")
 	assert.NoError(t, err)
