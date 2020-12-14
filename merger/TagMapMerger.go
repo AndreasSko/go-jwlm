@@ -38,7 +38,7 @@ func MergeTagMaps(left []*model.TagMap, right []*model.TagMap, conflictSolution 
 	// Go through map in sorted order so we have deterministic results
 	sortedTagIDs := make([]int, len(tags))
 	i := 0
-	for key, _ := range tags {
+	for key := range tags {
 		sortedTagIDs[i] = key
 		i++
 	}
