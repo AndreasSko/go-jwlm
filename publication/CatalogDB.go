@@ -51,6 +51,22 @@ func CatalogNeedsUpdate(path string) bool {
 	return true
 }
 
+// CatalogExists checks if catalog.db exists at path
+func CatalogExists(path string) bool {
+	_, err := os.Stat(path)
+	return err == nil
+}
+
+// CatalogSize returns the size of the catalog.db at path
+func CatalogSize(path string) int64 {
+	info, err := os.Stat(path)
+	if err != nil {
+		return 0
+	}
+
+	return info.Size()
+}
+
 // DownloadCatalog downloads the newest catalog.db and saves it at dst.
 // The prgrs channel informs about the progress of the download.
 func DownloadCatalog(ctx context.Context, prgrs chan Progress, dst string) error {
