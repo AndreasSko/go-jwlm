@@ -33,6 +33,23 @@ func TestCatalogNeedsUpdate(t *testing.T) {
 	assert.True(t, CatalogNeedsUpdate(filePath))
 }
 
+func TestCatalogExists(t *testing.T) {
+	tmp, err := ioutil.TempDir("", "go-jwlm")
+	assert.NoError(t, err)
+	defer os.RemoveAll(tmp)
+
+	filePath := filepath.Join(tmp, "catalog.db")
+	_, err = os.Create(filePath)
+
+	assert.False(t, CatalogExists("not-valid-path"))
+	assert.True(t, CatalogExists(filePath))
+}
+
+func TestCatalogSize(t *testing.T) {
+	assert.Equal(t, int64(77824), CatalogSize(filepath.Join("testdata", "catalog.db")))
+	assert.Equal(t, int64(0), CatalogSize("not-valid-path"))
+}
+
 func Test_DownloadCatalog(t *testing.T) {
 	tmp, err := ioutil.TempDir("", "go-jwlm")
 	assert.NoError(t, err)
