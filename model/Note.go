@@ -64,7 +64,7 @@ func (m *Note) RelatedEntries(db *Database) Related {
 // adds information about related entries if helpful.
 func (m *Note) PrettyPrint(db *Database) string {
 	fields := []string{"Title", "Content", "LastModified"}
-	result := prettyPrint(m, fields)
+	result := PrettyPrint(m, fields)
 
 	// TODO: Use RelatedEntries
 	if location := db.FetchFromTable("Location", int(m.LocationID.Int32)); location != nil {

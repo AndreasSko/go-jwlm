@@ -52,7 +52,7 @@ func (m *UserMark) RelatedEntries(db *Database) Related {
 // adds information about related entries if helpful.
 func (m *UserMark) PrettyPrint(db *Database) string {
 	fields := []string{"ColorIndex"}
-	result := prettyPrint(m, fields)
+	result := PrettyPrint(m, fields)
 
 	return result
 }

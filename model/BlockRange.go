@@ -66,7 +66,7 @@ func (m *BlockRange) RelatedEntries(db *Database) Related {
 // adds information about related entries if helpful.
 func (m *BlockRange) PrettyPrint(db *Database) string {
 	fields := []string{"Identifier", "StartToken", "EndToken"}
-	return prettyPrint(m, fields)
+	return PrettyPrint(m, fields)
 }
 
 // MarshalJSON returns the JSON encoding of the entry

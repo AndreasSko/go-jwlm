@@ -102,9 +102,9 @@ func MakeModelCopy(mdl Model) Model {
 	return mdlCopy
 }
 
-// prettyPrint prints the given fields of a Model as a table. If the field
+// PrettyPrint prints the given fields of a Model as a table. If the field
 // is empty, its omitted.
-func prettyPrint(m Model, fields []string) string {
+func PrettyPrint(m Model, fields []string) string {
 	buf := new(bytes.Buffer)
 	w := tabwriter.NewWriter(buf, 0, 0, 1, ' ', 0)
 

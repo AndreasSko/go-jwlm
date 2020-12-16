@@ -88,10 +88,10 @@ func (m *UserMarkBlockRange) PrettyPrint(db *Database) string {
 		result += location.PrettyPrint(db)
 	}
 
-	result += "\n" + prettyPrint(m.UserMark, umFields) + "\n"
+	result += "\n" + PrettyPrint(m.UserMark, umFields) + "\n"
 
 	for _, br := range m.BlockRanges {
-		result += prettyPrint(br, brFields) + "\n"
+		result += PrettyPrint(br, brFields) + "\n"
 	}
 
 	return result

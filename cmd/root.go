@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/spf13/cobra"
 
@@ -54,6 +55,13 @@ func initConfig() {
 		viper.AddConfigPath(home)
 		viper.SetConfigName(".go-jwlm")
 	}
+
+	home, err := homedir.Dir()
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	viper.SetDefault("appData", filepath.Join(home, ".go-jwlm"))
 
 	viper.AutomaticEnv() // read in environment variables that match
 

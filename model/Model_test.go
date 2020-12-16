@@ -148,7 +148,7 @@ func TestPrettyPrint(t *testing.T) {
 		LocationID: 1,
 	}
 	assert.PanicsWithValue(t, "Given struct does not contain field notexistent", func() {
-		prettyPrint(location, []string{"notexistent"})
+		PrettyPrint(location, []string{"notexistent"})
 	})
 
 	umbr := &UserMarkBlockRange{
@@ -156,7 +156,7 @@ func TestPrettyPrint(t *testing.T) {
 	}
 
 	assert.PanicsWithValue(t, "Unsupported type for field UserMark", func() {
-		prettyPrint(umbr, []string{"UserMark"})
+		PrettyPrint(umbr, []string{"UserMark"})
 	})
 }
 

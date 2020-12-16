@@ -57,7 +57,7 @@ func (m *Tag) RelatedEntries(db *Database) Related {
 // adds information about related entries if helpful.
 func (m *Tag) PrettyPrint(db *Database) string {
 	fields := []string{"Name"}
-	return prettyPrint(m, fields)
+	return PrettyPrint(m, fields)
 }
 
 // MarshalJSON returns the JSON encoding of the entry
