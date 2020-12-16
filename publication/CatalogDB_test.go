@@ -50,6 +50,29 @@ func TestCatalogSize(t *testing.T) {
 	assert.Equal(t, int64(0), CatalogSize("not-valid-path"))
 }
 
+func Test_DownloadCatalogRealLife(t *testing.T) {
+	tmp, err := ioutil.TempDir("", "go-jwlm")
+	assert.NoError(t, err)
+	defer os.RemoveAll(tmp)
+
+	prgrs := make(chan Progress)
+	done := make(chan struct{})
+	go func() {
+		err = DownloadCatalog(context.Background(), prgrs, filepath.Join(tmp, "catalog.db"))
+		assert.NoError(t, err)
+		done <- struct{}{}
+	}()
+	for progress := range prgrs {
+		assert.IsType(t, Progress{}, progress)
+		assert.NotEqual(t, Progress{}, progress)
+	}
+	<-done
+
+	info, err := os.Stat(filepath.Join(tmp, "catalog.db"))
+	assert.NoError(t, err)
+	assert.Greater(t, info.Size(), int64(100000000)) // catalog should by > 100MB
+}
+
 func Test_DownloadCatalog(t *testing.T) {
 	tmp, err := ioutil.TempDir("", "go-jwlm")
 	assert.NoError(t, err)
