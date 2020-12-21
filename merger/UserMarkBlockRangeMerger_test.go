@@ -2689,6 +2689,45 @@ func Test_replaceUMBRConflictsWithSolution(t *testing.T) {
 	assert.Equal(t, expectedInvertedChanges, invertedChanges)
 }
 
+func Test_sortedSolutionKeys(t *testing.T) {
+	type args struct {
+		conflictSolution map[string]MergeSolution
+	}
+	tests := []struct {
+		input    map[string]MergeSolution
+		expected []string
+	}{
+		{
+			input: map[string]MergeSolution{
+				"5_abc":        {},
+				"3_sfas":       {},
+				"1_sfasfsd":    {},
+				"2_sadfasfasf": {},
+				"4_askodaf":    {},
+			},
+			expected: []string{"1_sfasfsd", "2_sadfasfasf", "3_sfas", "4_askodaf", "5_abc"},
+		},
+		{
+			input: map[string]MergeSolution{
+				"4_2": {},
+				"1_5": {},
+				"3_3": {},
+				"2_4": {},
+				"5_1": {},
+			},
+			expected: []string{"1_5", "2_4", "3_3", "4_2", "5_1"},
+		},
+		{
+			input:    map[string]MergeSolution{},
+			expected: []string{},
+		},
+	}
+	for _, tt := range tests {
+		result := sortedSolutionKeys(tt.input)
+		assert.Equal(t, tt.expected, result)
+	}
+}
+
 func Test_ingestUMBR(t *testing.T) {
 	left := []*model.UserMarkBlockRange{
 		nil,

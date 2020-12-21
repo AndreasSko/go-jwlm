@@ -302,22 +302,9 @@ func replaceUMBRConflictsWithSolution(left *[]*model.UserMarkBlockRange, right *
 
 	// We need to go through solutions in the order they were added. Otherwise
 	// it can happen that we add entry back, after it had already been removed
-	orderedKeys := make([]string, len(conflictSolution))
-	i := 0
-	for key := range conflictSolution {
-		orderedKeys[i] = key
-		i++
-	}
-	// Sort by first part of key, which is a monotonically increasing number.
-	// If that fails, just ignore it..
-	re := regexp.MustCompile(`^(\d*)_.*`)
-	sort.Slice(orderedKeys, func(i int, j int) bool {
-		countI, _ := strconv.ParseInt(re.ReplaceAllString(orderedKeys[i], "$1"), 0, 64)
-		countJ, _ := strconv.ParseInt(re.ReplaceAllString(orderedKeys[j], "$1"), 0, 64)
-		return countI < countJ
-	})
+	sortedKeys := sortedSolutionKeys(conflictSolution)
 
-	for _, key := range orderedKeys {
+	for _, key := range sortedKeys {
 		sol := conflictSolution[key]
 		var side, other *[]*model.UserMarkBlockRange
 
@@ -346,6 +333,33 @@ func replaceUMBRConflictsWithSolution(left *[]*model.UserMarkBlockRange, right *
 	}
 
 	return changes, invertedChanges
+}
+
+// sortedSolutionKeys returns a list of keys from the conflictSolution map,
+// where the keys are sorted by the first number-part of a key (i.e.
+// 12345_uniqueKey would be sorted according to 12345).
+func sortedSolutionKeys(conflictSolution map[string]MergeSolution) []string {
+	orderedKeys := make([]string, len(conflictSolution))
+	i := 0
+	for key := range conflictSolution {
+		orderedKeys[i] = key
+		i++
+	}
+	// Sort by first part of key, which is a monotonically increasing number.
+	// If that fails, just ignore it..
+	re := regexp.MustCompile(`^(\d*)`)
+	sort.Slice(orderedKeys, func(i int, j int) bool {
+		matchI := re.FindStringSubmatch(orderedKeys[i])
+		matchJ := re.FindStringSubmatch(orderedKeys[j])
+		if len(matchI) != 2 || len(matchJ) != 2 {
+			return false
+		}
+		countI, _ := strconv.ParseInt(matchI[0], 0, 64)
+		countJ, _ := strconv.ParseInt(matchJ[0], 0, 64)
+		return countI < countJ
+	})
+
+	return orderedKeys
 }
 
 // ingestUMBR ingest UserMarks & BlockRanges in a Map[LocationID]map[Identifier][]*model.BlockRange

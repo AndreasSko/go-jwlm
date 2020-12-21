@@ -50,55 +50,59 @@ func Test_MergeMultiCollisionAllRight(t *testing.T) {
 }
 
 func Test_MergeMultiCollisionAllExceptOneRight(t *testing.T) {
-	dbw := DatabaseWrapper{
-		left:  model.MakeDatabaseCopy(leftMultiCollision),
-		right: model.MakeDatabaseCopy(rightMultiCollision),
+	// Test multiple times so we are sure that a pass is not only a coincidence
+	// (the order of maps change and with this we can check if we depend on it somewhere)
+	for i := 0; i < 10; i++ {
+		dbw := DatabaseWrapper{
+			left:  model.MakeDatabaseCopy(leftMultiCollision),
+			right: model.MakeDatabaseCopy(rightMultiCollision),
+		}
+		dbw.Init()
+
+		mcw := &MergeConflictsWrapper{}
+		assert.NoError(t, dbw.MergeLocations())
+		assert.NoError(t, dbw.MergeBookmarks("", mcw))
+		assert.NoError(t, dbw.MergeTags())
+
+		assert.Error(t, dbw.MergeUserMarkAndBlockRange("", mcw))
+		conflict, err := mcw.NextConflict()
+		assert.NoError(t, err)
+		assert.NoError(t, mcw.SolveConflict(conflict.Key, "rightSide"))
+
+		assert.Error(t, dbw.MergeUserMarkAndBlockRange("", mcw))
+		conflict, err = mcw.NextConflict()
+		assert.NoError(t, err)
+		assert.NoError(t, mcw.SolveConflict(conflict.Key, "rightSide"))
+
+		assert.Error(t, dbw.MergeUserMarkAndBlockRange("", mcw))
+		conflict, err = mcw.NextConflict()
+		assert.NoError(t, err)
+		assert.NoError(t, mcw.SolveConflict(conflict.Key, "rightSide"))
+
+		assert.Error(t, dbw.MergeUserMarkAndBlockRange("", mcw))
+		conflict, err = mcw.NextConflict()
+		assert.NoError(t, err)
+		assert.NoError(t, mcw.SolveConflict(conflict.Key, "leftSide"))
+
+		assert.NoError(t, dbw.MergeUserMarkAndBlockRange("", mcw))
+		assert.NoError(t, dbw.MergeNotes("", mcw))
+		assert.NoError(t, dbw.MergeTagMaps())
+
+		expected := model.MakeDatabaseCopy(rightMultiCollision)
+		expected.BlockRange = []*model.BlockRange{
+			nil,
+			{
+				BlockRangeID: 1,
+				BlockType:    1,
+				Identifier:   1,
+				StartToken:   sql.NullInt32{3, true},
+				EndToken:     sql.NullInt32{3, true},
+				UserMarkID:   1,
+			},
+		}
+
+		assert.True(t, dbw.merged.Equals(expected))
 	}
-	dbw.Init()
-
-	mcw := &MergeConflictsWrapper{}
-	assert.NoError(t, dbw.MergeLocations())
-	assert.NoError(t, dbw.MergeBookmarks("", mcw))
-	assert.NoError(t, dbw.MergeTags())
-
-	assert.Error(t, dbw.MergeUserMarkAndBlockRange("", mcw))
-	conflict, err := mcw.NextConflict()
-	assert.NoError(t, err)
-	assert.NoError(t, mcw.SolveConflict(conflict.Key, "rightSide"))
-
-	assert.Error(t, dbw.MergeUserMarkAndBlockRange("", mcw))
-	conflict, err = mcw.NextConflict()
-	assert.NoError(t, err)
-	assert.NoError(t, mcw.SolveConflict(conflict.Key, "rightSide"))
-
-	assert.Error(t, dbw.MergeUserMarkAndBlockRange("", mcw))
-	conflict, err = mcw.NextConflict()
-	assert.NoError(t, err)
-	assert.NoError(t, mcw.SolveConflict(conflict.Key, "rightSide"))
-
-	assert.Error(t, dbw.MergeUserMarkAndBlockRange("", mcw))
-	conflict, err = mcw.NextConflict()
-	assert.NoError(t, err)
-	assert.NoError(t, mcw.SolveConflict(conflict.Key, "leftSide"))
-
-	assert.NoError(t, dbw.MergeUserMarkAndBlockRange("", mcw))
-	assert.NoError(t, dbw.MergeNotes("", mcw))
-	assert.NoError(t, dbw.MergeTagMaps())
-
-	expected := model.MakeDatabaseCopy(rightMultiCollision)
-	expected.BlockRange = []*model.BlockRange{
-		nil,
-		{
-			BlockRangeID: 1,
-			BlockType:    1,
-			Identifier:   1,
-			StartToken:   sql.NullInt32{3, true},
-			EndToken:     sql.NullInt32{3, true},
-			UserMarkID:   1,
-		},
-	}
-
-	assert.True(t, dbw.merged.Equals(expected))
 }
 
 func Test_MergeMultiCollisionAutoSolver(t *testing.T) {

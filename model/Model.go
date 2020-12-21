@@ -9,7 +9,6 @@ import (
 	"strings"
 	"text/tabwriter"
 
-	"github.com/jinzhu/copier"
 	"github.com/mitchellh/go-wordwrap"
 )
 
@@ -62,42 +61,98 @@ func MakeModelCopy(mdl Model) Model {
 	var mdlCopy Model
 	switch mdl.(type) {
 	case *BlockRange:
-		mdlCopy = &BlockRange{}
+		mdl := mdl.(*BlockRange)
+		mdlCopy = &BlockRange{
+			BlockRangeID: mdl.BlockRangeID,
+			BlockType:    mdl.BlockType,
+			Identifier:   mdl.Identifier,
+			StartToken:   sql.NullInt32{Int32: mdl.StartToken.Int32, Valid: mdl.StartToken.Valid},
+			EndToken:     sql.NullInt32{Int32: mdl.EndToken.Int32, Valid: mdl.EndToken.Valid},
+			UserMarkID:   mdl.UserMarkID,
+		}
 	case *Bookmark:
-		mdlCopy = &Bookmark{}
+		mdl := mdl.(*Bookmark)
+		mdlCopy = &Bookmark{
+			BookmarkID:            mdl.BookmarkID,
+			LocationID:            mdl.LocationID,
+			PublicationLocationID: mdl.PublicationLocationID,
+			Slot:                  mdl.Slot,
+			Title:                 mdl.Title,
+			Snippet:               sql.NullString{String: mdl.Snippet.String, Valid: mdl.Snippet.Valid},
+			BlockType:             mdl.BlockType,
+			BlockIdentifier:       sql.NullInt32{Int32: mdl.BlockIdentifier.Int32, Valid: mdl.BlockIdentifier.Valid},
+		}
 	case *Location:
-		mdlCopy = &Location{}
+		mdl := mdl.(*Location)
+		mdlCopy = &Location{
+			LocationID:     mdl.LocationID,
+			BookNumber:     sql.NullInt32{Int32: mdl.BookNumber.Int32, Valid: mdl.BookNumber.Valid},
+			ChapterNumber:  sql.NullInt32{Int32: mdl.ChapterNumber.Int32, Valid: mdl.ChapterNumber.Valid},
+			DocumentID:     sql.NullInt32{Int32: mdl.DocumentID.Int32, Valid: mdl.DocumentID.Valid},
+			Track:          sql.NullInt32{Int32: mdl.Track.Int32, Valid: mdl.Track.Valid},
+			IssueTagNumber: mdl.IssueTagNumber,
+			KeySymbol:      sql.NullString{String: mdl.KeySymbol.String, Valid: mdl.KeySymbol.Valid},
+			MepsLanguage:   mdl.MepsLanguage,
+			LocationType:   mdl.LocationType,
+			Title:          sql.NullString{String: mdl.Title.String, Valid: mdl.Title.Valid},
+		}
 	case *Note:
-		mdlCopy = &Note{}
+		mdl := mdl.(*Note)
+		mdlCopy = &Note{
+			NoteID:          mdl.NoteID,
+			GUID:            mdl.GUID,
+			UserMarkID:      sql.NullInt32{Int32: mdl.UserMarkID.Int32, Valid: mdl.UserMarkID.Valid},
+			LocationID:      sql.NullInt32{Int32: mdl.LocationID.Int32, Valid: mdl.LocationID.Valid},
+			Title:           sql.NullString{String: mdl.Title.String, Valid: mdl.Title.Valid},
+			Content:         sql.NullString{String: mdl.Content.String, Valid: mdl.Content.Valid},
+			LastModified:    mdl.LastModified,
+			BlockType:       mdl.BlockType,
+			BlockIdentifier: sql.NullInt32{Int32: mdl.BlockIdentifier.Int32, Valid: mdl.BlockIdentifier.Valid},
+		}
 	case *Tag:
-		mdlCopy = &Tag{}
+		mdl := mdl.(*Tag)
+		mdlCopy = &Tag{
+			TagID:         mdl.TagID,
+			TagType:       mdl.TagType,
+			Name:          mdl.Name,
+			ImageFilename: sql.NullString{String: mdl.ImageFilename.String, Valid: mdl.ImageFilename.Valid},
+		}
 	case *TagMap:
-		mdlCopy = &TagMap{}
+		mdl := mdl.(*TagMap)
+		mdlCopy = &TagMap{
+			TagMapID:       mdl.TagMapID,
+			PlaylistItemID: sql.NullInt32{Int32: mdl.PlaylistItemID.Int32, Valid: mdl.PlaylistItemID.Valid},
+			LocationID:     sql.NullInt32{Int32: mdl.LocationID.Int32, Valid: mdl.LocationID.Valid},
+			NoteID:         sql.NullInt32{Int32: mdl.NoteID.Int32, Valid: mdl.NoteID.Valid},
+			TagID:          mdl.TagID,
+			Position:       mdl.Position,
+		}
 	case *UserMark:
-		mdlCopy = &UserMark{}
+		mdl := mdl.(*UserMark)
+		mdlCopy = &UserMark{
+			UserMarkID:   mdl.UserMarkID,
+			ColorIndex:   mdl.ColorIndex,
+			LocationID:   mdl.LocationID,
+			StyleIndex:   mdl.StyleIndex,
+			UserMarkGUID: mdl.UserMarkGUID,
+			Version:      mdl.Version,
+		}
 	case *UserMarkBlockRange:
-		umbr := mdl.(*UserMarkBlockRange)
+		mdl := mdl.(*UserMarkBlockRange)
 
-		umCopy := &UserMark{}
-		copier.Copy(umCopy, umbr.UserMark)
-
-		// Copier doesn't deep copy slices, so doing it manually
-		brSliceCopy := make([]*BlockRange, len(umbr.BlockRanges))
-		for i, br := range umbr.BlockRanges {
+		brSliceCopy := make([]*BlockRange, len(mdl.BlockRanges))
+		for i, br := range mdl.BlockRanges {
 			if br != nil {
-				brSliceCopy[i] = &BlockRange{}
-				copier.Copy(brSliceCopy[i], umbr.BlockRanges[i])
+				brSliceCopy[i] = MakeModelCopy(br).(*BlockRange)
 			}
 		}
 		return &UserMarkBlockRange{
-			UserMark:    umCopy,
+			UserMark:    MakeModelCopy(mdl.UserMark).(*UserMark),
 			BlockRanges: brSliceCopy,
 		}
 	default:
 		panic(fmt.Sprintf("Type %T is not supported for copying", mdl))
 	}
-
-	copier.Copy(mdlCopy, mdl)
 
 	return mdlCopy
 }
