@@ -4,10 +4,6 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
-	"io"
-	"io/ioutil"
-	"log"
-	"os"
 	"path/filepath"
 	"time"
 
@@ -31,15 +27,12 @@ type userDataBackup struct {
 
 // importManifest imports a manifest.json at path
 func (mfst *manifest) importManifest(path string) error {
-	file, err := os.Open(path)
+	_, data, err := GetPersistence().GetFile(path)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Error loading manifest file")
 	}
-	defer file.Close()
 
-	blob, _ := ioutil.ReadAll(file)
-
-	err = json.Unmarshal([]byte(blob), &mfst)
+	err = json.Unmarshal(data, &mfst)
 	if err != nil {
 		return errors.Wrap(err, "Could not unmarshall backup manifest file")
 	}
@@ -69,16 +62,11 @@ func (mfst *manifest) validateManifest() error {
 // later be exported
 func generateManifest(backupName string, dbFile string) (*manifest, error) {
 	// Get SHA256 of SQLite file
-	f, err := os.Open(dbFile)
+	_, data, err := GetPersistence().GetFile(dbFile)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Error while opening SQLite file %s to calculate hash", dbFile)
 	}
-	defer f.Close()
-	hasher := sha256.New()
-	if _, err := io.Copy(hasher, f); err != nil {
-		log.Fatal(err)
-	}
-	hash := fmt.Sprintf("%x", hasher.Sum(nil))
+	hash := fmt.Sprintf("%x", sha256.Sum256(data))
 
 	mfst := &manifest{
 		CreationDate: time.Now().Format("2006-01-02"),
@@ -104,7 +92,8 @@ func (mfst *manifest) exportManifest(path string) error {
 		return errors.Wrap(err, "Error while marshalling manifest")
 	}
 
-	if err := ioutil.WriteFile(path, bytes, 0644); err != nil {
+	err = GetPersistence().WriteFile(path, bytes)
+	if err != nil {
 		return errors.Wrap(err, fmt.Sprintf("Error while saving manifest file at %v", path))
 	}
 
