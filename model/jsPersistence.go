@@ -15,7 +15,7 @@ import (
 	"strings"
 	"syscall/js"
 
-	_ "github.com/matrix-org/go-sqlite3-js"
+	_ "github.com/fritzbauer/go-sqlite3-js"
 	"github.com/pkg/errors"
 )
 
