@@ -37,11 +37,11 @@ func (pers *fsPersistence) CreateTempStorage(prefix string) (path string, err er
 }
 
 func (pers *fsPersistence) StoreSQLiteDB(filename string, dbData []byte) (fullFileName string, err error) {
-	return nil, errors.Errorf("Not needed to store the JWLBackup when using fsPersistence")
+	return "", errors.Errorf("Not needed to store the JWLBackup when using fsPersistence")
 }
 
 func (pers *fsPersistence) OpenSQLiteDB(fullFileName string) (*sql.DB, error) {
-	return sql.Open("sqlite3", path)
+	return sql.Open("sqlite3", fullFileName)
 }
 
 func (pers *fsPersistence) RetrieveSQLiteData(fullFileName string) ([]byte, error) {

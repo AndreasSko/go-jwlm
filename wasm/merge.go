@@ -191,7 +191,7 @@ func Merge(leftFile []byte, rightFile []byte, mergedFilename string) []byte {
 	fmt.Println("🎉 Finished merging!")
 
 	fmt.Println("Exporting merged database")
-	mergedPath := tmpPath + string(os.PathSeparator) + "merged.jwlibrary"
+	mergedPath := tmpPath + string(os.PathSeparator) + mergedFilename
 	err = merged.ExportJWLBackup(mergedPath)
 	if err != nil {
 		log.Fatal(err)

@@ -19,6 +19,8 @@ import (
 	"github.com/pkg/errors"
 )
 
+const jsSqliteVarPrefix = "_go-jwlm_db"
+
 type jsPersistence struct {
 	storage map[string]*PersistedFolder
 }
@@ -53,19 +55,13 @@ func (pers *jsPersistence) CreateTempStorage(prefix string) (path string, err er
 
 func (pers *jsPersistence) StoreSQLiteDB(filename string, dbData []byte) (fullFileName string, err error) {
 	//TODO think of proper errorhandling
+	jsName := fmt.Sprintf("%s_%d_%s", jsSqliteVarPrefix, 0, filename)
 
 	//prevent using an already used JS variable
-	jsName := fmt.Sprintf("_go-jwlm_db_%d_%s", 0, filename)
 	for i := 1; js.Global().Get(jsName).Truthy(); i++ {
-		jsName = fmt.Sprintf("_go-jwlm_db_%d_%s", i, filename)
+		jsName = fmt.Sprintf("%s_%d_%s", jsSqliteVarPrefix, i, filename)
 	}
-	/*
-		if folder, ok := storage[path]; !ok {
-			storage[path] = make(map[string]PersistedFile)
-		}
 
-		storage[path][jsName] = &PersistedFile{Name: jsName, Data = dbData}
-	*/
 	arr := js.Global().Get("Uint8Array").New(len(dbData))
 	js.CopyBytesToJS(arr, dbData)
 	js.Global().Set(jsName, arr)
@@ -73,18 +69,6 @@ func (pers *jsPersistence) StoreSQLiteDB(filename string, dbData []byte) (fullFi
 }
 
 func (pers *jsPersistence) OpenSQLiteDB(fullFileName string) (*sql.DB, error) {
-	/*fullfileNameParts = strings.Split(fullFileName, os.PathSeparator)
-	path := strings.Join(fullfileNameParts[:len(fullfileNameParts)-1])
-	fileName := fullfileNameParts[len(fullfileNameParts)]
-
-	if folder, ok := storage[path]; !ok {
-		return nil, errors.Errorf("Could not find path of sqlite DB")
-	}
-
-	if file, ok := folder[fileName]; !ok {
-		return nil, errors.Errorf("Could not find sqlite DB file")
-	}*/
-
 	if strings.Contains(fullFileName, "?") { //remove ?immutable=1
 		fullFileName = strings.Split(fullFileName, "?")[0]
 	}
@@ -94,13 +78,19 @@ func (pers *jsPersistence) OpenSQLiteDB(fullFileName string) (*sql.DB, error) {
 		return nil, errors.Wrap(err, "Could not store SQLite db")
 	}
 
+	//add a "file" to store the mapping of filepath to js var name
+	err = pers.WriteFile(fullFileName, []byte(jsStorageVariableName))
+	if err != nil {
+		return nil, errors.Wrap(err, "Error storing jsStorageVariableName")
+	}
+
 	return sql.Open("sqlite3_js", jsStorageVariableName)
 }
 
-func (pers *jsPersistence) RetrieveSQLiteData(fullFileName string) ([]byte, error) {
+func (pers *jsPersistence) RetrieveSQLiteData(jsVarName string) ([]byte, error) {
 	//TODO think of proper errorhandling
 	dbMap := js.Global().Get("_go_sqlite_dbs")
-	jsData := dbMap.Call("get", fullFileName).Call("export")
+	jsData := dbMap.Call("get", jsVarName).Call("export")
 	data := make([]byte, jsData.Get("byteLength").Int())
 	js.CopyBytesToGo(data, jsData)
 	return data, nil
@@ -116,27 +106,22 @@ func (pers *jsPersistence) StoreJWLBackup(fullFileName string, archiveData []byt
 	}
 
 	folder.Files[fileName] = &PersistedFile{Name: fileName, Data: archiveData}
-	println("StoreJWLBackup:")
-	pers.printStorage()
+	//pers.printStorage() //debug
 	return nil
 }
 
 func (pers *jsPersistence) ProcessJWLBackup(fullFileName string, exportPath string) error {
 
 	_, data, err := pers.GetFile(fullFileName)
-	//path, fileName := evaluateFullFileName(fullFileName)
-	//jwlBackup := pers.storage[path].Files[fileName]
 	if err != nil {
 		return errors.Wrap(err, fmt.Sprintf("Could not find JW Library backup at %v", fullFileName))
 	}
-	println("Data length: " + string(len(data)))
 	reader := bytes.NewReader(data)
 
 	r, err := zip.NewReader(reader, int64(len(data)))
 	if err != nil {
 		return errors.Wrap(err, "Could not read zip")
 	}
-	//defer reader.Close()
 
 	for _, file := range r.File {
 		fileReader, err := file.Open()
@@ -153,15 +138,8 @@ func (pers *jsPersistence) ProcessJWLBackup(fullFileName string, exportPath stri
 
 		path := filepath.Join(exportPath, file.Name)
 		pers.WriteFile(path, buf.Bytes())
-		/*folder, ok := pers.storage[exportPath]
-		if !ok {
-			pers.storage[path] = &PersistedFolder{Files: make(map[string]*PersistedFile)}
-			folder = pers.storage[path]
-		}
-		folder.Files[file.Name] = &PersistedFile{Name: file.Name, Data: buf.Bytes()}*/
 	}
-	println("ProcessJWLBackup:")
-	pers.printStorage()
+	//pers.printStorage() //debug
 	return nil
 }
 
@@ -171,7 +149,16 @@ func (pers *jsPersistence) GetFile(fullFileName string) (filename string, data [
 	if file == nil {
 		return "", nil, errors.Errorf("Could not find file '%v' at %v", fileName, path)
 	}
-	//fmt.Printf("Returning %s; Length: %d\n", file.Name, len(file.Data))
+
+	if strings.HasPrefix(string(file.Data), jsSqliteVarPrefix) {
+		mergedData, err := pers.RetrieveSQLiteData(string(file.Data))
+		if err != nil {
+			return "", nil, errors.Wrap(err, "Error while getting SQLite DB")
+		}
+		return fileName, mergedData, nil
+	}
+
+	//fmt.Printf("Returning %s; Length: %d\n", file.Name, len(file.Data)) //debug
 	return file.Name, file.Data, nil
 }
 
@@ -180,7 +167,7 @@ func (pers *jsPersistence) WriteFile(fullFileName string, data []byte) error {
 
 	folder := pers.getFolder(path)
 
-	folder.Files[fileName] = &PersistedFile{Name: fileName, Data: data}
+	folder.Files[fileName] = &PersistedFile{Name: fileName, Data: data} //this is silently overwriting any existing file
 	return nil
 }
 
