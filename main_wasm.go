@@ -1,3 +1,5 @@
+// +build js
+
 package main
 
 import (
@@ -35,8 +37,8 @@ func registerCallbacks() {
 
 func main() {
 	//https://blog.twitch.tv/de-de/2019/04/10/go-memory-ballast-how-i-learnt-to-stop-worrying-and-love-the-heap-26c2462549a2/
-	ballast := make([]byte, 100<<20) //100MiB
-	ballast[0] = 1
+	//ballast := make([]byte, 100<<20) //100MiB
+	//ballast[0] = 1
 	c := make(chan struct{}, 0)
 
 	println("WASM Go Initialized")

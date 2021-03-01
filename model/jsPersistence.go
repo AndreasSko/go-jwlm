@@ -84,7 +84,7 @@ func (pers *jsPersistence) OpenSQLiteDB(fullFileName string) (*sql.DB, error) {
 		return nil, errors.Wrap(err, "Error storing jsStorageVariableName")
 	}
 
-	return sql.Open("sqlite3_js", jsStorageVariableName)
+	return sql.Open("sqlite3_js", fmt.Sprintf("jsvar:%s", jsStorageVariableName))
 }
 
 func (pers *jsPersistence) RetrieveSQLiteData(jsVarName string) ([]byte, error) {

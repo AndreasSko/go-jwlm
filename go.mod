@@ -11,7 +11,7 @@ require (
 	github.com/cavaliercoder/grab v1.0.1-0.20201108051000-98a5bfe305ec
 	github.com/codeclysm/extract/v3 v3.0.2
 	github.com/davecgh/go-spew v1.1.1
-	github.com/fritzbauer/go-sqlite3-js v0.0.0-20210227210033-af80406c0f5d
+	github.com/fritzbauer/go-sqlite3-js v0.0.0-20210228162201-a9149e4032a8
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	github.com/go-openapi/errors v0.19.9 // indirect
 	github.com/go-openapi/strfmt v0.19.11 // indirect
