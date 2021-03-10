@@ -1,13 +1,9 @@
 package model
 
 import (
-	"archive/zip"
 	"database/sql"
+	"encoding/json"
 	"fmt"
-	"io"
-	"io/ioutil"
-	"os"
-	"path/filepath"
 	"reflect"
 	"time"
 
@@ -174,72 +170,30 @@ func (db *Database) Equals(other *Database) bool {
 	return true
 }
 
-// ImportJWLBackup unzips a given JW Library Backup file and imports the
-// included SQLite DB to the Database struct
-func (db *Database) ImportJWLBackup(filename string) error {
-	// Create tmp folder and place all files there
-	tmp, err := ioutil.TempDir("", "go-jwlm")
+func (db *Database) Import(manifestBytes []byte, sqlDB *sql.DB) error {
+	// Parse manifest
+	mfst := manifest{}
+	err := json.Unmarshal([]byte(manifestBytes), &mfst) // TODO: Is []byte() needed??
 	if err != nil {
-		return errors.Wrap(err, "Error while creating temporary directory")
-	}
-	defer os.RemoveAll(tmp)
-
-	r, err := zip.OpenReader(filename)
-	if err != nil {
-		return err
-	}
-	defer r.Close()
-
-	for _, file := range r.File {
-		fileReader, err := file.Open()
-		if err != nil {
-			return err
-		}
-		defer fileReader.Close()
-
-		path := filepath.Join(tmp, file.Name)
-		targetFile, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, file.Mode())
-		if err != nil {
-			return err
-		}
-		defer targetFile.Close()
-
-		if _, err := io.Copy(targetFile, fileReader); err != nil {
-			return errors.Wrap(err, "Error while copying files from backup to temporary folder")
-		}
-	}
-
-	// Import manifest
-	path := filepath.Join(tmp, manifestFilename)
-	manifest := manifest{}
-	if err := manifest.importManifest(path); err != nil {
-		return errors.Wrap(err, "Error while importing manifest")
+		return errors.Wrap(err, "Could not unmarshall backup manifest file")
 	}
 
 	// Make sure that we support this backup version
-	if err := manifest.validateManifest(); err != nil {
+	if err := mfst.validateManifest(); err != nil {
 		return err
 	}
 
 	// Fill the Database with actual data
-	path = filepath.Join(tmp, manifest.UserDataBackup.DatabaseName)
-	return db.importSQLite(path)
+	return db.importSQLite(sqlDB)
 }
 
 // importSQLite imports a given SQLite DB into the Database struct
-func (db *Database) importSQLite(filename string) error {
-	// Open SQLite file as immutable to avoid locks (and therefore speed up import)
-	sqlite, err := sql.Open("sqlite3", filename+"?immutable=1")
-	if err != nil {
-		return errors.Wrap(err, "Error while opening SQLite database")
-	}
-	defer sqlite.Close()
-
+func (db *Database) importSQLite(sqlDB *sql.DB) error {
 	// Make sure these tables are empty as we are not able to merge them yet.
 	// Better to fail, than to risk losing data..
 	emptyTables := []string{"PlaylistItem", "PlaylistItemChild", "PlaylistMedia"}
 	for _, table := range emptyTables {
-		count, err := getTableEntryCount(sqlite, table)
+		count, err := getTableEntryCount(sqlDB, table)
 		if err != nil {
 			return err
 		}
@@ -249,49 +203,49 @@ func (db *Database) importSQLite(filename string) error {
 	}
 
 	// Fill each table struct separately (did not find a DRYer solution yet..)
-	mdl, err := fetchFromSQLite(sqlite, &BlockRange{})
+	mdl, err := fetchFromSQLite(sqlDB, &BlockRange{})
 	if err != nil {
 		return err
 	}
 	db.BlockRange = BlockRange{}.MakeSlice(mdl)
 
-	mdl, err = fetchFromSQLite(sqlite, &Bookmark{})
+	mdl, err = fetchFromSQLite(sqlDB, &Bookmark{})
 	if err != nil {
 		return err
 	}
 	db.Bookmark = Bookmark{}.MakeSlice(mdl)
 
-	mdl, err = fetchFromSQLite(sqlite, &InputField{})
+	mdl, err = fetchFromSQLite(sqlDB, &InputField{})
 	if err != nil {
 		return err
 	}
 	db.InputField = InputField{}.MakeSlice(mdl)
 
-	mdl, err = fetchFromSQLite(sqlite, &Location{})
+	mdl, err = fetchFromSQLite(sqlDB, &Location{})
 	if err != nil {
 		return err
 	}
 	db.Location = Location{}.MakeSlice(mdl)
 
-	mdl, err = fetchFromSQLite(sqlite, &Note{})
+	mdl, err = fetchFromSQLite(sqlDB, &Note{})
 	if err != nil {
 		return err
 	}
 	db.Note = Note{}.MakeSlice(mdl)
 
-	mdl, err = fetchFromSQLite(sqlite, &Tag{})
+	mdl, err = fetchFromSQLite(sqlDB, &Tag{})
 	if err != nil {
 		return err
 	}
 	db.Tag = Tag{}.MakeSlice(mdl)
 
-	mdl, err = fetchFromSQLite(sqlite, &TagMap{})
+	mdl, err = fetchFromSQLite(sqlDB, &TagMap{})
 	if err != nil {
 		return err
 	}
 	db.TagMap = TagMap{}.MakeSlice(mdl)
 
-	mdl, err = fetchFromSQLite(sqlite, &UserMark{})
+	mdl, err = fetchFromSQLite(sqlDB, &UserMark{})
 	if err != nil {
 		return err
 	}
@@ -400,21 +354,15 @@ func getSliceCapacity(sqlite *sql.DB, modelType Model) (int, error) {
 
 // ExportJWLBackup creates a .jwlibrary backup file out of a Database{} struct
 func (db *Database) ExportJWLBackup(filename string) error {
-	// Create tmp folder and place all files there
-	tmp, err := ioutil.TempDir("", "go-jwlm")
-	if err != nil {
-		return errors.Wrap(err, "Error while creating temporary directory")
-	}
-	defer os.RemoveAll(tmp)
 
-	// Create user_data.db
-	dbPath := filepath.Join(tmp, "user_data.db")
-	if err := db.saveToNewSQLite(dbPath); err != nil {
-		return errors.Wrap(err, "Could not create SQLite database for exporting")
+}
+
+func (db *Database) Export(sqlDB *sql.DB) ([]byte, error) {
+	if err := db.saveToSQLite(sqlDB); err != nil {
+		return nil, errors.Wrap(err, "Error while saving to SQLiteDB")
 	}
 
 	// Create manifest.json
-	manifestPath := filepath.Join(tmp, manifestFilename)
 	mfst, err := generateManifest("go-jwlm", dbPath)
 	if err != nil {
 		return errors.Wrap(err, "Error while generating manifest")
@@ -422,29 +370,11 @@ func (db *Database) ExportJWLBackup(filename string) error {
 	if err := mfst.exportManifest(manifestPath); err != nil {
 		return errors.Wrap(err, "Error while creating manifest.json")
 	}
-
-	// Store files in .jwlibrary (zip)-file
-	files := []string{dbPath, manifestPath}
-	if err := zipFiles(filename, files); err != nil {
-		return errors.Wrap(err, fmt.Sprintf("Error while storing files in zip archive %s", filename))
-	}
-
-	return nil
 }
 
 // SaveToNewSQLite creates a new SQLite database with the JW Library scheme
 // and saves all entries of the Database{} struct to it
-func (db *Database) saveToNewSQLite(filename string) error {
-	if err := createEmptySQLiteDB(filename); err != nil {
-		return errors.Wrap(err, "Error while creating new empty SQLite database")
-	}
-
-	sqlite, err := sql.Open("sqlite3", filename)
-	if err != nil {
-		return errors.Wrap(err, "Error while opening SQLite database")
-	}
-	defer sqlite.Close()
-
+func (db *Database) saveToSQLite(sqlDB *sql.DB) error {
 	// For every field of the Database{} struct, create a []model slice
 	// and use it to insert its entries to the new SQLite DB
 	dbFields := reflect.ValueOf(db).Elem()
@@ -454,20 +384,20 @@ func (db *Database) saveToNewSQLite(filename string) error {
 		if err != nil {
 			return err
 		}
-		if err := insertEntries(sqlite, mdl); err != nil {
+		if err := insertEntries(sqlDB, mdl); err != nil {
 			return errors.Wrapf(err, "Error while inserting entries of field %d", j)
 		}
 	}
 
 	// Update LastModified
 	lastModified := time.Now().Format("2006-01-02T15:04:05-07:00")
-	_, err = sqlite.Exec(fmt.Sprintf("UPDATE LastModified SET LastModified = \"%s\" WHERE LastModified = (SELECT * FROM LastModified)", lastModified))
+	_, err := sqlDB.Exec(fmt.Sprintf("UPDATE LastModified SET LastModified = \"%s\" WHERE LastModified = (SELECT * FROM LastModified)", lastModified))
 	if err != nil {
 		return errors.Wrap(err, "Error while updating LastModified")
 	}
 
 	// Vacuum to clean up SQLite DB
-	_, err = sqlite.Exec("VACUUM")
+	_, err = sqlDB.Exec("VACUUM")
 	if err != nil {
 		return errors.Wrap(err, "Error while vacuuming SQLite DB")
 	}
@@ -559,20 +489,6 @@ func insertEntries(sqlite *sql.DB, m []Model) error {
 
 	if err := tx.Commit(); err != nil {
 		return errors.Wrap(err, "Error while commiting entries")
-	}
-
-	return nil
-}
-
-// createEmptySQLiteDB creates a new SQLite database at filename with the base user_data.db from JWLibrary
-func createEmptySQLiteDB(filename string) error {
-	userData, err := Asset("user_data.db")
-	if err != nil {
-		return errors.Wrap(err, "Error while fetching user_data.db")
-	}
-
-	if err := ioutil.WriteFile(filename, userData, 0644); err != nil {
-		return errors.Wrap(err, fmt.Sprintf("Error while saving new SQLite database at %s", filename))
 	}
 
 	return nil
