@@ -113,7 +113,6 @@ func Test_getSliceCapacity(t *testing.T) {
 
 	rows := mock.NewRows([]string{"TagId"}).AddRow(3)
 	mock.ExpectQuery("SELECT TagId FROM Tag ORDER BY TagId DESC LIMIT 1").WillReturnRows(rows)
-
 	res, err := getSliceCapacity(db, &Tag{})
 	assert.NoError(t, err)
 	assert.Equal(t, 4, res)
@@ -124,6 +123,13 @@ func Test_getSliceCapacity(t *testing.T) {
 	res, err = getSliceCapacity(db, &Tag{})
 	assert.NoError(t, err)
 	assert.Equal(t, 1, res)
+
+	// Test with Type that does not have an ID
+	rows = mock.NewRows([]string{"Count"}).AddRow(5)
+	mock.ExpectQuery("SELECT COUNT\\(\\*\\) FROM InputField").WillReturnRows(rows)
+	res, err = getSliceCapacity(db, &InputField{})
+	assert.NoError(t, err)
+	assert.Equal(t, 6, res)
 }
 
 func Test_fetchFromSQLite(t *testing.T) {

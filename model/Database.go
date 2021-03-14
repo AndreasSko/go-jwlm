@@ -358,10 +358,17 @@ func getTableEntryCount(sqlite *sql.DB, tableName string) (int, error) {
 }
 
 // getSliceCapacity determines the needed capacity for a slice from a table
-// by looking at the highest ID in the DB
+// by looking at the highest ID in the DB. If the table does not have a ID
+// column, it will simply count the number of entries.
 func getSliceCapacity(sqlite *sql.DB, modelType Model) (int, error) {
-	row, err := sqlite.Query(fmt.Sprintf("SELECT %s FROM %s ORDER BY %s DESC LIMIT 1",
-		modelType.idName(), modelType.tableName(), modelType.idName()))
+	var query string
+	if modelType.idName() != "" {
+		query = fmt.Sprintf("SELECT %s FROM %s ORDER BY %s DESC LIMIT 1",
+			modelType.idName(), modelType.tableName(), modelType.idName())
+	} else {
+		query = fmt.Sprintf("SELECT COUNT(*) FROM %s", modelType.tableName())
+	}
+	row, err := sqlite.Query(query)
 	if err != nil {
 		return 0, err
 	}
