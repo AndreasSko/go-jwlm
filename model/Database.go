@@ -479,8 +479,16 @@ func insertEntries(sqlite *sql.DB, m []Model) error {
 	for _, mdl := range m {
 		if reflect.ValueOf(mdl).Elem().IsValid() {
 			tableName = mdl.tableName()
-			rowCount = reflect.ValueOf(mdl).Elem().NumField()
 			foundEntry = true
+
+			// Count number of fields that don't have the "ignore" tag set
+			reflTypes := reflect.TypeOf(mdl).Elem()
+			for j := 0; j < reflTypes.NumField(); j++ {
+				if _, ignore := reflTypes.Field(j).Tag.Lookup("ignore"); ignore {
+					continue
+				}
+				rowCount++
+			}
 			break
 		}
 	}
@@ -514,6 +522,7 @@ func insertEntries(sqlite *sql.DB, m []Model) error {
 		// Prepare struct for ingestion with stmt.Exec
 		values := make([]interface{}, rowCount)
 		reflValues := reflect.ValueOf(entry).Elem()
+		reflTypes := reflect.TypeOf(entry).Elem()
 
 		// Check if entry is actually a nil-pointer and shouldn't be considered
 		if !reflValues.IsValid() {
@@ -522,6 +531,10 @@ func insertEntries(sqlite *sql.DB, m []Model) error {
 
 		// Add all fields of the struct to the values slice, so we can ingest them later
 		for j := 0; j < reflValues.NumField(); j++ {
+			// If struct field has `ignore` tag then skip it
+			if _, ignore := reflTypes.Field(j).Tag.Lookup("ignore"); ignore {
+				continue
+			}
 			v := reflValues.Field(j).Interface()
 			values[j] = v
 		}

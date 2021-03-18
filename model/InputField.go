@@ -12,7 +12,7 @@ type InputField struct {
 	LocationID int
 	TextTag    string
 	Value      string
-	pseudoID   int
+	pseudoID   int `ignore:"true"`
 }
 
 // ID returns the ID of the entry. As the InputField table does not have
