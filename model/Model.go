@@ -200,12 +200,12 @@ Loop:
 	return buf.String()
 }
 
-// sortByUniqueKey sorts the given pointer to a slice of Model by UniqueKey,
+// SortByUniqueKey sorts the given pointer to a slice of Model by UniqueKey,
 // removes unnecessary nil-entries (except at position 0),
 // and also updates the IDs accordingly. It tracks these changes
 // by a map, for which the key represents the old ID,
 // and value represents the new ID.
-func sortByUniqueKey(slice interface{}) map[int]int {
+func SortByUniqueKey(slice interface{}) map[int]int {
 	changes := map[int]int{}
 
 	if reflect.TypeOf(slice).Kind() != reflect.Ptr || reflect.TypeOf(slice).Elem().Kind() != reflect.Slice {

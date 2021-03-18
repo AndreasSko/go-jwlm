@@ -104,7 +104,7 @@ func (db *Database) Equals(other *Database) bool {
 
 	// Sort all tables by UniqueKey and update IDs in other tables
 	for _, db := range []*Database{dbCp, otherCp} {
-		locIDChanges := sortByUniqueKey(&db.Location)
+		locIDChanges := SortByUniqueKey(&db.Location)
 		UpdateIDs(db.Bookmark, "LocationID", locIDChanges)
 		UpdateIDs(db.Bookmark, "PublicationLocationID", locIDChanges)
 		UpdateIDs(db.InputField, "LocationID", locIDChanges)
@@ -112,22 +112,22 @@ func (db *Database) Equals(other *Database) bool {
 		UpdateIDs(db.TagMap, "LocationID", locIDChanges)
 		UpdateIDs(db.UserMark, "LocationID", locIDChanges)
 
-		sortByUniqueKey(&db.Bookmark)
-		sortByUniqueKey(&db.InputField)
+		SortByUniqueKey(&db.Bookmark)
+		SortByUniqueKey(&db.InputField)
 
-		tagIDChanges := sortByUniqueKey(&db.Tag)
+		tagIDChanges := SortByUniqueKey(&db.Tag)
 		UpdateIDs(db.TagMap, "TagID", tagIDChanges)
 
-		umIDChanges := sortByUniqueKey(&db.UserMark)
+		umIDChanges := SortByUniqueKey(&db.UserMark)
 		UpdateIDs(db.BlockRange, "UserMarkID", umIDChanges)
 		UpdateIDs(db.Note, "UserMarkID", umIDChanges)
 
-		sortByUniqueKey(&db.BlockRange)
+		SortByUniqueKey(&db.BlockRange)
 
-		noteIDChanges := sortByUniqueKey(&db.Note)
+		noteIDChanges := SortByUniqueKey(&db.Note)
 		UpdateIDs(db.TagMap, "NoteID", noteIDChanges)
 
-		sortByUniqueKey(&db.TagMap)
+		SortByUniqueKey(&db.TagMap)
 	}
 
 	// Check if all entries are equal.

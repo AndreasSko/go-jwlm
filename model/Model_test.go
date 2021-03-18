@@ -254,11 +254,11 @@ func Test_sortByUniqueKey(t *testing.T) {
 		3: 1,
 	}
 
-	locIDChanges := sortByUniqueKey(&locations)
+	locIDChanges := SortByUniqueKey(&locations)
 	assert.Equal(t, expectedLocations, locations)
 	assert.Equal(t, expectedLocIDChanges, locIDChanges)
 
-	noteIDChanges := sortByUniqueKey(&notes)
+	noteIDChanges := SortByUniqueKey(&notes)
 	assert.Equal(t, expectedNotes, notes)
 	assert.Equal(t, expectedNoteIDChanges, noteIDChanges)
 }
