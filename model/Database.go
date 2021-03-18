@@ -25,6 +25,7 @@ const manifestFilename = "manifest.json"
 type Database struct {
 	BlockRange []*BlockRange
 	Bookmark   []*Bookmark
+	InputField []*InputField
 	Location   []*Location
 	Note       []*Note
 	Tag        []*Tag
@@ -106,11 +107,13 @@ func (db *Database) Equals(other *Database) bool {
 		locIDChanges := sortByUniqueKey(&db.Location)
 		UpdateIDs(db.Bookmark, "LocationID", locIDChanges)
 		UpdateIDs(db.Bookmark, "PublicationLocationID", locIDChanges)
+		UpdateIDs(db.InputField, "LocationID", locIDChanges)
 		UpdateIDs(db.Note, "LocationID", locIDChanges)
 		UpdateIDs(db.TagMap, "LocationID", locIDChanges)
 		UpdateIDs(db.UserMark, "LocationID", locIDChanges)
 
 		sortByUniqueKey(&db.Bookmark)
+		sortByUniqueKey(&db.InputField)
 
 		tagIDChanges := sortByUniqueKey(&db.Tag)
 		UpdateIDs(db.TagMap, "TagID", tagIDChanges)
@@ -234,7 +237,7 @@ func (db *Database) importSQLite(filename string) error {
 
 	// Make sure these tables are empty as we are not able to merge them yet.
 	// Better to fail, than to risk losing data..
-	emptyTables := []string{"InputField", "PlaylistItem", "PlaylistItemChild", "PlaylistMedia"}
+	emptyTables := []string{"PlaylistItem", "PlaylistItemChild", "PlaylistMedia"}
 	for _, table := range emptyTables {
 		count, err := getTableEntryCount(sqlite, table)
 		if err != nil {
@@ -257,6 +260,12 @@ func (db *Database) importSQLite(filename string) error {
 		return err
 	}
 	db.Bookmark = Bookmark{}.MakeSlice(mdl)
+
+	mdl, err = fetchFromSQLite(sqlite, &InputField{})
+	if err != nil {
+		return err
+	}
+	db.InputField = InputField{}.MakeSlice(mdl)
 
 	mdl, err = fetchFromSQLite(sqlite, &Location{})
 	if err != nil {
@@ -305,12 +314,13 @@ func fetchFromSQLite(sqlite *sql.DB, modelType Model) ([]Model, error) {
 	}
 	result := make([]Model, capacity)
 
-	rows, err := sqlite.Query(fmt.Sprintf("SELECT * FROM %s ORDER BY %s", modelType.tableName(), modelType.idName()))
+	rows, err := sqlite.Query(fmt.Sprintf("SELECT * FROM %s", modelType.tableName()))
 	if err != nil {
 		return nil, errors.Wrap(err, "Error while querying SQLite database")
 	}
 
 	// Put entries in slice with the index coresponding to the ID in the SQLite DB
+	i := 1
 	defer rows.Close()
 	for rows.Next() {
 		var m Model
@@ -319,6 +329,8 @@ func fetchFromSQLite(sqlite *sql.DB, modelType Model) ([]Model, error) {
 			m = &BlockRange{}
 		case *Bookmark:
 			m = &Bookmark{}
+		case *InputField:
+			m = &InputField{pseudoID: i}
 		case *Location:
 			m = &Location{}
 		case *Note:
@@ -337,6 +349,7 @@ func fetchFromSQLite(sqlite *sql.DB, modelType Model) ([]Model, error) {
 			return nil, errors.Wrap(err, "Error while scanning results from SQLite database")
 		}
 		result[mn.ID()] = mn
+		i++
 	}
 	err = rows.Err()
 	if err != nil {

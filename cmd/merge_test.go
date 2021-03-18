@@ -196,7 +196,8 @@ var leftMultiCollision = &model.Database{
 			UserMarkID:   4,
 		},
 	},
-	Bookmark: []*model.Bookmark{nil},
+	Bookmark:   []*model.Bookmark{nil},
+	InputField: []*model.InputField{nil},
 	Location: []*model.Location{
 		nil,
 		{
@@ -257,7 +258,8 @@ var rightMultiCollision = &model.Database{
 			UserMarkID:   1,
 		},
 	},
-	Bookmark: []*model.Bookmark{nil},
+	Bookmark:   []*model.Bookmark{nil},
+	InputField: []*model.InputField{nil},
 	Location: []*model.Location{
 		nil,
 		{
@@ -311,6 +313,7 @@ var leftDB = &model.Database{
 			BlockIdentifier:       sql.NullInt32{1, true},
 		},
 	},
+	InputField: []*model.InputField{nil},
 	Location: []*model.Location{
 		nil,
 		{
@@ -445,6 +448,7 @@ var rightDB = &model.Database{
 			BlockIdentifier:       sql.NullInt32{1, true},
 		},
 	},
+	InputField: []*model.InputField{nil},
 	Location: []*model.Location{
 		nil,
 		{
@@ -598,6 +602,7 @@ var mergedAllLeftDB = model.Database{
 			BlockIdentifier:       sql.NullInt32{1, true},
 		},
 	},
+	InputField: []*model.InputField{nil},
 	Location: []*model.Location{
 		nil,
 		{
@@ -779,6 +784,7 @@ var mergedAllRightDB = model.Database{
 			BlockIdentifier:       sql.NullInt32{1, true},
 		},
 	},
+	InputField: []*model.InputField{nil},
 	Location: []*model.Location{
 		nil,
 		{
