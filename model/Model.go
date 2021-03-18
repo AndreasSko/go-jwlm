@@ -82,6 +82,14 @@ func MakeModelCopy(mdl Model) Model {
 			BlockType:             mdl.BlockType,
 			BlockIdentifier:       sql.NullInt32{Int32: mdl.BlockIdentifier.Int32, Valid: mdl.BlockIdentifier.Valid},
 		}
+	case *InputField:
+		mdl := mdl.(*InputField)
+		mdlCopy = &InputField{
+			LocationID: mdl.LocationID,
+			TextTag:    mdl.TextTag,
+			Value:      mdl.Value,
+			pseudoID:   mdl.pseudoID,
+		}
 	case *Location:
 		mdl := mdl.(*Location)
 		mdlCopy = &Location{
