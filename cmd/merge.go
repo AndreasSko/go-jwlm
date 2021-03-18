@@ -27,7 +27,7 @@ be included in the merged backup. You are able to let the merger
 automatically solve conflicts using the 'chooseLeft', 'chooseRight', and 
 'chooseNewest' resolvers (see Flags).`,
 	Example: `go-jwlm merge left.jwlibrary right.jwlibrary merged.jwlibrary
-go-jwlm merge left.jwlibrary right.jwlibrary merged.jwlibrary --bookmarks chooseLeft --markings chooseRight --notes chooseNewest`,
+go-jwlm merge left.jwlibrary right.jwlibrary merged.jwlibrary --bookmarks chooseLeft --markings chooseRight --notes chooseNewest --inputFields chooseRight`,
 	Run: func(cmd *cobra.Command, args []string) {
 		leftFilename := args[0]
 		rightFilename := args[1]
@@ -45,6 +45,9 @@ var MarkingResolver string
 
 // NoteResolver represents a resolver that should be used for conflicting Notes
 var NoteResolver string
+
+// InputFieldResolver represents a resolver that should be used for conflicting InputFields
+var InputFieldResolver string
 
 func merge(leftFilename string, rightFilename string, mergedFilename string, stdio terminal.Stdio) {
 	fmt.Fprintln(stdio.Out, "Importing left backup")
@@ -65,9 +68,13 @@ func merge(leftFilename string, rightFilename string, mergedFilename string, std
 
 	fmt.Fprintln(stdio.Out, "🧭 Merging Locations")
 	mergedLocations, locationIDChanges, err := merger.MergeLocations(left.Location, right.Location)
+	if err != nil {
+		log.Fatal(err)
+	}
 	merged.Location = mergedLocations
 	merger.UpdateLRIDs(left.Bookmark, right.Bookmark, "LocationID", locationIDChanges)
 	merger.UpdateLRIDs(left.Bookmark, right.Bookmark, "PublicationLocationID", locationIDChanges)
+	merger.UpdateLRIDs(left.InputField, right.InputField, "LocationID", locationIDChanges)
 	merger.UpdateLRIDs(left.Note, right.Note, "LocationID", locationIDChanges)
 	merger.UpdateLRIDs(left.TagMap, right.TagMap, "LocationID", locationIDChanges)
 	merger.UpdateLRIDs(left.UserMark, right.UserMark, "LocationID", locationIDChanges)
@@ -93,6 +100,33 @@ func merge(leftFilename string, rightFilename string, mergedFilename string, std
 			} else {
 				newSolutions := handleMergeConflict(err.Conflicts, &merged, stdio)
 				addToSolutions(bookmarksConflictSolution, newSolutions)
+			}
+		default:
+			log.Fatal(err)
+		}
+	}
+	fmt.Fprintln(stdio.Out, "Done.")
+
+	fmt.Fprintln(stdio.Out, "✍️  Merging InputFields")
+	inputFieldConflictSolution := map[string]merger.MergeSolution{}
+	for {
+		mergedInputFields, _, err := merger.MergeInputFields(left.InputField, right.InputField, inputFieldConflictSolution)
+		if err == nil {
+			merged.InputField = mergedInputFields
+			break
+		}
+		switch err := err.(type) {
+		case merger.MergeConflictError:
+			if InputFieldResolver != "" {
+				var resErr error
+				newSolutions, resErr := merger.AutoResolveConflicts(err.Conflicts, InputFieldResolver)
+				if resErr != nil {
+					log.Fatal(resErr)
+				}
+				addToSolutions(inputFieldConflictSolution, newSolutions)
+			} else {
+				newSolutions := handleMergeConflict(err.Conflicts, &merged, stdio)
+				addToSolutions(inputFieldConflictSolution, newSolutions)
 			}
 		default:
 			log.Fatal(err)
@@ -277,4 +311,5 @@ func init() {
 	mergeCmd.Flags().StringVar(&BookmarkResolver, "bookmarks", "", "Resolve conflicting bookmarks with resolver (can be 'chooseLeft' or 'chooseRight')")
 	mergeCmd.Flags().StringVar(&MarkingResolver, "markings", "", "Resolve conflicting markings with resolver (can be 'chooseLeft' or 'chooseRight')")
 	mergeCmd.Flags().StringVar(&NoteResolver, "notes", "", "Resolve conflicting notes with resolver (can be 'chooseNewest', 'chooseLeft', or 'chooseRight')")
+	mergeCmd.Flags().StringVar(&InputFieldResolver, "inputFields", "", "Resolve conflicting inputFields with resolver (can be 'chooseLeft', or 'chooseRight')")
 }

@@ -19,6 +19,7 @@ func TestDatabaseWrapper_Stats(t *testing.T) {
 	left := &DatabaseStats{
 		BlockRange: 4,
 		Bookmark:   0,
+		InputField: 2,
 		Location:   1,
 		Note:       0,
 		Tag:        0,
@@ -37,7 +38,8 @@ func TestDatabaseWrapper_Stats(t *testing.T) {
 	merged := &DatabaseStats{
 		BlockRange: 3,
 		Bookmark:   1,
-		Location:   3,
+		InputField: 3,
+		Location:   4,
 		Note:       3,
 		Tag:        4,
 		TagMap:     3,
