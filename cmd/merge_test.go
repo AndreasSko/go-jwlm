@@ -14,8 +14,8 @@ import (
 	"github.com/AndreasSko/go-jwlm/model"
 	expect "github.com/Netflix/go-expect"
 	"github.com/hinshun/vt10x"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/tj/assert"
 )
 
 func Test_merge(t *testing.T) {

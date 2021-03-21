@@ -16,7 +16,7 @@ import (
 	"time"
 
 	"github.com/AndreasSko/go-jwlm/publication"
-	"github.com/tj/assert"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestDownloadCatalog(t *testing.T) {

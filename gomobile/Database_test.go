@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	"github.com/AndreasSko/go-jwlm/model"
-	"github.com/tj/assert"
+	"github.com/stretchr/testify/assert"
 )
 
 var backupFile = filepath.Join("..", "model", "testdata", "backup.jwlibrary")

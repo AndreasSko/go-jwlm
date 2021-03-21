@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/AndreasSko/go-jwlm/model"
-	"github.com/tj/assert"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestMergeInputFields_WithoutConflict(t *testing.T) {

@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/tj/assert"
+	"github.com/stretchr/testify/assert"
 )
 
 var exampleManifest = &manifest{
