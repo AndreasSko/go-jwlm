@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/AndreasSko/go-jwlm/model"
-	"github.com/tj/assert"
+	"github.com/stretchr/testify/assert"
 )
 
 func Test_MergeMultiCollisionAllRight(t *testing.T) {
@@ -20,10 +20,17 @@ func Test_MergeMultiCollisionAllRight(t *testing.T) {
 	mcw := &MergeConflictsWrapper{}
 	assert.NoError(t, dbw.MergeLocations())
 	assert.NoError(t, dbw.MergeBookmarks("", mcw))
+
+	assert.Error(t, dbw.MergeInputFields("", mcw))
+	conflict, err := mcw.NextConflict()
+	assert.NoError(t, err)
+	assert.NoError(t, mcw.SolveConflict(conflict.Key, "rightSide"))
+	assert.NoError(t, dbw.MergeInputFields("", mcw))
+
 	assert.NoError(t, dbw.MergeTags())
 
 	assert.Error(t, dbw.MergeUserMarkAndBlockRange("", mcw))
-	conflict, err := mcw.NextConflict()
+	conflict, err = mcw.NextConflict()
 	assert.NoError(t, err)
 	assert.NoError(t, mcw.SolveConflict(conflict.Key, "rightSide"))
 
@@ -62,10 +69,17 @@ func Test_MergeMultiCollisionAllExceptOneRight(t *testing.T) {
 		mcw := &MergeConflictsWrapper{}
 		assert.NoError(t, dbw.MergeLocations())
 		assert.NoError(t, dbw.MergeBookmarks("", mcw))
+
+		assert.Error(t, dbw.MergeInputFields("", mcw))
+		conflict, err := mcw.NextConflict()
+		assert.NoError(t, err)
+		assert.NoError(t, mcw.SolveConflict(conflict.Key, "rightSide"))
+		assert.NoError(t, dbw.MergeInputFields("", mcw))
+
 		assert.NoError(t, dbw.MergeTags())
 
 		assert.Error(t, dbw.MergeUserMarkAndBlockRange("", mcw))
-		conflict, err := mcw.NextConflict()
+		conflict, err = mcw.NextConflict()
 		assert.NoError(t, err)
 		assert.NoError(t, mcw.SolveConflict(conflict.Key, "rightSide"))
 
@@ -114,6 +128,7 @@ func Test_MergeMultiCollisionAutoSolver(t *testing.T) {
 
 	mcw := &MergeConflictsWrapper{}
 	assert.NoError(t, dbw.MergeLocations())
+	assert.NoError(t, dbw.MergeInputFields("chooseRight", mcw))
 	assert.NoError(t, dbw.MergeBookmarks("", mcw))
 	assert.NoError(t, dbw.MergeTags())
 	assert.NoError(t, dbw.MergeUserMarkAndBlockRange("chooseRight", mcw))
@@ -160,6 +175,19 @@ var leftMultiCollision = &model.Database{
 		},
 	},
 	Bookmark: []*model.Bookmark{nil},
+	InputField: []*model.InputField{
+		nil,
+		{
+			LocationID: 1,
+			TextTag:    "a1",
+			Value:      "a1",
+		},
+		{
+			LocationID: 1,
+			TextTag:    "a2",
+			Value:      "a2",
+		},
+	},
 	Location: []*model.Location{
 		nil,
 		{
@@ -221,6 +249,24 @@ var rightMultiCollision = &model.Database{
 		},
 	},
 	Bookmark: []*model.Bookmark{nil},
+	InputField: []*model.InputField{
+		nil,
+		{
+			LocationID: 1,
+			TextTag:    "a1",
+			Value:      "different",
+		},
+		{
+			LocationID: 1,
+			TextTag:    "a2",
+			Value:      "a2",
+		},
+		{
+			LocationID: 1,
+			TextTag:    "b1",
+			Value:      "b1",
+		},
+	},
 	Location: []*model.Location{
 		nil,
 		{
@@ -261,6 +307,7 @@ func Test_MergeWithEmpty(t *testing.T) {
 	mcw := &MergeConflictsWrapper{}
 
 	assert.NoError(t, dbw.MergeLocations())
+	assert.NoError(t, dbw.MergeInputFields("", mcw))
 	assert.NoError(t, dbw.MergeBookmarks("", mcw))
 	assert.NoError(t, dbw.MergeTags())
 	assert.NoError(t, dbw.MergeUserMarkAndBlockRange("", mcw))
@@ -287,6 +334,13 @@ func Test_MergeAllRight(t *testing.T) {
 	dbw.Init()
 	assert.NoError(t, dbw.MergeLocations())
 	assert.NoError(t, dbw.MergeBookmarks("", mcw))
+	assert.Error(t, dbw.MergeInputFields("", mcw))
+	selectSameSide(mcw, "rightSide")
+
+	dbw.Init()
+	assert.NoError(t, dbw.MergeLocations())
+	assert.NoError(t, dbw.MergeBookmarks("", mcw))
+	assert.NoError(t, dbw.MergeInputFields("", mcw))
 	assert.NoError(t, dbw.MergeTags())
 	assert.Error(t, dbw.MergeUserMarkAndBlockRange("", mcw))
 	selectSameSide(mcw, "rightSide")
@@ -294,6 +348,7 @@ func Test_MergeAllRight(t *testing.T) {
 	dbw.Init()
 	assert.NoError(t, dbw.MergeLocations())
 	assert.NoError(t, dbw.MergeBookmarks("", mcw))
+	assert.NoError(t, dbw.MergeInputFields("", mcw))
 	assert.NoError(t, dbw.MergeTags())
 	assert.NoError(t, dbw.MergeUserMarkAndBlockRange("", mcw))
 	assert.Error(t, dbw.MergeNotes("", mcw))
@@ -302,6 +357,7 @@ func Test_MergeAllRight(t *testing.T) {
 	dbw.Init()
 	assert.NoError(t, dbw.MergeLocations())
 	assert.NoError(t, dbw.MergeBookmarks("", mcw))
+	assert.NoError(t, dbw.MergeInputFields("", mcw))
 	assert.NoError(t, dbw.MergeTags())
 	assert.NoError(t, dbw.MergeUserMarkAndBlockRange("", mcw))
 	assert.NoError(t, dbw.MergeNotes("", mcw))
@@ -327,6 +383,13 @@ func Test_MergeAllLeft(t *testing.T) {
 	dbw.Init()
 	assert.NoError(t, dbw.MergeLocations())
 	assert.NoError(t, dbw.MergeBookmarks("", mcw))
+	assert.Error(t, dbw.MergeInputFields("", mcw))
+	selectSameSide(mcw, "leftSide")
+
+	dbw.Init()
+	assert.NoError(t, dbw.MergeLocations())
+	assert.NoError(t, dbw.MergeBookmarks("", mcw))
+	assert.NoError(t, dbw.MergeInputFields("", mcw))
 	assert.NoError(t, dbw.MergeTags())
 	assert.Error(t, dbw.MergeUserMarkAndBlockRange("", mcw))
 	selectSameSide(mcw, "leftSide")
@@ -334,6 +397,7 @@ func Test_MergeAllLeft(t *testing.T) {
 	dbw.Init()
 	assert.NoError(t, dbw.MergeLocations())
 	assert.NoError(t, dbw.MergeBookmarks("", mcw))
+	assert.NoError(t, dbw.MergeInputFields("", mcw))
 	assert.NoError(t, dbw.MergeTags())
 	assert.NoError(t, dbw.MergeUserMarkAndBlockRange("", mcw))
 	assert.Error(t, dbw.MergeNotes("", mcw))
@@ -342,6 +406,7 @@ func Test_MergeAllLeft(t *testing.T) {
 	dbw.Init()
 	assert.NoError(t, dbw.MergeLocations())
 	assert.NoError(t, dbw.MergeBookmarks("", mcw))
+	assert.NoError(t, dbw.MergeInputFields("", mcw))
 	assert.NoError(t, dbw.MergeTags())
 	assert.NoError(t, dbw.MergeUserMarkAndBlockRange("", mcw))
 	assert.NoError(t, dbw.MergeNotes("", mcw))
@@ -350,7 +415,7 @@ func Test_MergeAllLeft(t *testing.T) {
 	assert.True(t, mergedAllLeftDB.Equals(dbw.merged))
 }
 
-// Merge with auto resolution: chooseRight for Bookmarks & Markings,
+// Merge with auto resolution: chooseRight for Bookmarks & Markings & InputFields,
 // chooseNewest for Notes
 func Test_MergeWithAutoresolution(t *testing.T) {
 	dbw := DatabaseWrapper{
@@ -363,6 +428,7 @@ func Test_MergeWithAutoresolution(t *testing.T) {
 
 	assert.NoError(t, dbw.MergeLocations())
 	assert.NoError(t, dbw.MergeBookmarks("chooseRight", mcw))
+	assert.NoError(t, dbw.MergeInputFields("chooseRight", mcw))
 	assert.NoError(t, dbw.MergeTags())
 	assert.NoError(t, dbw.MergeUserMarkAndBlockRange("chooseRight", mcw))
 	assert.NoError(t, dbw.MergeNotes("chooseNewest", mcw))
@@ -407,6 +473,19 @@ var leftDB = &model.Database{
 			BlockIdentifier:       sql.NullInt32{1, true},
 		},
 	},
+	InputField: []*model.InputField{
+		nil,
+		{
+			LocationID: 5,
+			TextTag:    "a1",
+			Value:      "a1",
+		},
+		{
+			LocationID: 5,
+			TextTag:    "a2",
+			Value:      "a2",
+		},
+	},
 	Location: []*model.Location{
 		nil,
 		{
@@ -423,6 +502,15 @@ var leftDB = &model.Database{
 			KeySymbol:    sql.NullString{"nwtsty", true},
 			MepsLanguage: 2,
 			LocationType: 1,
+		},
+		nil,
+		nil,
+		{
+			LocationID:   5,
+			DocumentID:   sql.NullInt32{1102021811, true},
+			KeySymbol:    sql.NullString{"lffi", true},
+			MepsLanguage: 2,
+			LocationType: 0,
 		},
 	},
 	Note: []*model.Note{
@@ -541,6 +629,24 @@ var rightDB = &model.Database{
 			BlockIdentifier:       sql.NullInt32{1, true},
 		},
 	},
+	InputField: []*model.InputField{
+		nil,
+		{
+			LocationID: 4,
+			TextTag:    "a1",
+			Value:      "different",
+		},
+		{
+			LocationID: 4,
+			TextTag:    "a2",
+			Value:      "a2",
+		},
+		{
+			LocationID: 4,
+			TextTag:    "b1",
+			Value:      "b1",
+		},
+	},
 	Location: []*model.Location{
 		nil,
 		{
@@ -566,6 +672,13 @@ var rightDB = &model.Database{
 			MepsLanguage:  2,
 			LocationType:  0,
 			Title:         sql.NullString{"1. Mose 1", true},
+		},
+		{
+			LocationID:   4,
+			DocumentID:   sql.NullInt32{1102021811, true},
+			KeySymbol:    sql.NullString{"lffi", true},
+			MepsLanguage: 2,
+			LocationType: 0,
 		},
 	},
 	Note: []*model.Note{
@@ -694,6 +807,24 @@ var mergedAllLeftDB = &model.Database{
 			BlockIdentifier:       sql.NullInt32{1, true},
 		},
 	},
+	InputField: []*model.InputField{
+		nil,
+		{
+			LocationID: 4,
+			TextTag:    "a1",
+			Value:      "a1",
+		},
+		{
+			LocationID: 4,
+			TextTag:    "a2",
+			Value:      "a2",
+		},
+		{
+			LocationID: 4,
+			TextTag:    "b1",
+			Value:      "b1",
+		},
+	},
 	Location: []*model.Location{
 		nil,
 		{
@@ -719,6 +850,13 @@ var mergedAllLeftDB = &model.Database{
 			MepsLanguage:  2,
 			LocationType:  0,
 			Title:         sql.NullString{"1. Mose 2", true},
+		},
+		{
+			LocationID:   4,
+			DocumentID:   sql.NullInt32{1102021811, true},
+			KeySymbol:    sql.NullString{"lffi", true},
+			MepsLanguage: 2,
+			LocationType: 0,
 		},
 	},
 	Note: []*model.Note{
@@ -875,6 +1013,24 @@ var mergedAllRightDB = &model.Database{
 			BlockIdentifier:       sql.NullInt32{1, true},
 		},
 	},
+	InputField: []*model.InputField{
+		nil,
+		{
+			LocationID: 4,
+			TextTag:    "a1",
+			Value:      "different",
+		},
+		{
+			LocationID: 4,
+			TextTag:    "a2",
+			Value:      "a2",
+		},
+		{
+			LocationID: 4,
+			TextTag:    "b1",
+			Value:      "b1",
+		},
+	},
 	Location: []*model.Location{
 		nil,
 		{
@@ -900,6 +1056,13 @@ var mergedAllRightDB = &model.Database{
 			MepsLanguage:  2,
 			LocationType:  0,
 			Title:         sql.NullString{"1. Mose 2", true},
+		},
+		{
+			LocationID:   4,
+			DocumentID:   sql.NullInt32{1102021811, true},
+			KeySymbol:    sql.NullString{"lffi", true},
+			MepsLanguage: 2,
+			LocationType: 0,
 		},
 	},
 	Note: []*model.Note{

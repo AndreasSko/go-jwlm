@@ -11,7 +11,7 @@ import (
 
 	"github.com/AlecAivazis/survey/v2/terminal"
 	expect "github.com/Netflix/go-expect"
-	"github.com/tj/assert"
+	"github.com/stretchr/testify/assert"
 )
 
 func Test_compare(t *testing.T) {

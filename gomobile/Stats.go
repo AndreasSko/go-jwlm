@@ -12,6 +12,7 @@ import (
 type DatabaseStats struct {
 	BlockRange int
 	Bookmark   int
+	InputField int
 	Location   int
 	Note       int
 	Tag        int
@@ -41,6 +42,7 @@ func (dbw *DatabaseWrapper) Stats(side string) *DatabaseStats {
 	return &DatabaseStats{
 		BlockRange: countSliceEntries(db.BlockRange),
 		Bookmark:   countSliceEntries(db.Bookmark),
+		InputField: countSliceEntries(db.InputField),
 		Location:   countSliceEntries(db.Location),
 		Note:       countSliceEntries(db.Note),
 		Tag:        countSliceEntries(db.Tag),

@@ -7,14 +7,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/tj/assert"
+	"github.com/stretchr/testify/assert"
 )
 
 var exampleManifest = &manifest{
 	CreationDate: time.Now().Format("2006-01-02"),
 	UserDataBackup: userDataBackup{
 		LastModifiedDate: time.Now().Format("2006-01-02T15:04:05-07:00"),
-		Hash:             "f57aabf8f375aa5469e3aea2292f89d2f624b8b2d70e0e0688f9ffbd44f0cf2b",
+		Hash:             "55e87dda924edb6a6c93871ee3c642119da4ade73fab05049bbd32ee5411dfeb",
 		DatabaseName:     "user_data.db",
 		SchemaVersion:    8,
 		DeviceName:       "go-jwlm",

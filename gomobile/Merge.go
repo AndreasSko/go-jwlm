@@ -14,6 +14,7 @@ func (dbw *DatabaseWrapper) MergeLocations() error {
 	dbw.merged.Location = mergedLocations
 	merger.UpdateLRIDs(dbw.leftTmp.Bookmark, dbw.rightTmp.Bookmark, "LocationID", locationIDChanges)
 	merger.UpdateLRIDs(dbw.leftTmp.Bookmark, dbw.rightTmp.Bookmark, "PublicationLocationID", locationIDChanges)
+	merger.UpdateLRIDs(dbw.leftTmp.InputField, dbw.rightTmp.InputField, "LocationID", locationIDChanges)
 	merger.UpdateLRIDs(dbw.leftTmp.Note, dbw.rightTmp.Note, "LocationID", locationIDChanges)
 	merger.UpdateLRIDs(dbw.leftTmp.TagMap, dbw.rightTmp.TagMap, "LocationID", locationIDChanges)
 	merger.UpdateLRIDs(dbw.leftTmp.UserMark, dbw.rightTmp.UserMark, "LocationID", locationIDChanges)
@@ -47,6 +48,38 @@ func (dbw *DatabaseWrapper) MergeBookmarks(conflictSolver string, mcw *MergeConf
 			addToSolutions(conflictSolution, newSolutions)
 		default:
 			return errors.Wrap(err, "Could not merge bookmarks")
+		}
+	}
+
+	return nil
+}
+
+// MergeInputField merges inputFields
+func (dbw *DatabaseWrapper) MergeInputFields(conflictSolver string, mcw *MergeConflictsWrapper) error {
+	var conflictSolution = mcw.solutions
+	if conflictSolution == nil {
+		conflictSolution = map[string]merger.MergeSolution{}
+	}
+	for {
+		merged, _, err := merger.MergeInputFields(dbw.leftTmp.InputField, dbw.rightTmp.InputField, conflictSolution)
+		if err == nil {
+			dbw.merged.InputField = merged
+			break
+		}
+		switch err := err.(type) {
+		case merger.MergeConflictError:
+			if conflictSolver == "" {
+				mcw.addConflicts(err.Conflicts)
+				return MergeConflictError{}
+			}
+			var resErr error
+			newSolutions, resErr := merger.AutoResolveConflicts(err.Conflicts, conflictSolver)
+			if resErr != nil {
+				return errors.Wrap(err, "Could not automatically solve conflicts for inputFields")
+			}
+			addToSolutions(conflictSolution, newSolutions)
+		default:
+			return errors.Wrap(err, "Could not merge inputFields")
 		}
 	}
 

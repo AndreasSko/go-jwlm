@@ -38,6 +38,18 @@ func TestMakeModelCopy(t *testing.T) {
 	bm.SetID(5)
 	assert.Equal(t, 1, bmCp.ID())
 
+	impf := &InputField{
+		LocationID: 1,
+		TextTag:    "2",
+		Value:      "3",
+		pseudoID:   4,
+	}
+	impfCp := MakeModelCopy(impf)
+	assert.Equal(t, impf, impfCp)
+	assert.NotSame(t, impf, impfCp)
+	impf.SetID(1)
+	assert.Equal(t, 4, impfCp.ID())
+
 	loc := &Location{
 		LocationID:     1,
 		BookNumber:     sql.NullInt32{Int32: 2, Valid: true},
@@ -242,11 +254,11 @@ func Test_sortByUniqueKey(t *testing.T) {
 		3: 1,
 	}
 
-	locIDChanges := sortByUniqueKey(&locations)
+	locIDChanges := SortByUniqueKey(&locations)
 	assert.Equal(t, expectedLocations, locations)
 	assert.Equal(t, expectedLocIDChanges, locIDChanges)
 
-	noteIDChanges := sortByUniqueKey(&notes)
+	noteIDChanges := SortByUniqueKey(&notes)
 	assert.Equal(t, expectedNotes, notes)
 	assert.Equal(t, expectedNoteIDChanges, noteIDChanges)
 }

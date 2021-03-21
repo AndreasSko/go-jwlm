@@ -14,8 +14,8 @@ import (
 	"github.com/AndreasSko/go-jwlm/model"
 	expect "github.com/Netflix/go-expect"
 	"github.com/hinshun/vt10x"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/tj/assert"
 )
 
 func Test_merge(t *testing.T) {
@@ -59,6 +59,9 @@ func Test_merge(t *testing.T) {
 			c.ExpectString("📑 Merging Bookmarks")
 			c.SendLine(string(terminal.KeyArrowDown))
 
+			c.ExpectString("✍️  Merging InputFields")
+			c.SendLine(string(terminal.KeyArrowDown))
+
 			c.ExpectString("🖍  Merging Markings")
 			c.SendLine(string(terminal.KeyArrowDown))
 
@@ -79,6 +82,9 @@ func Test_merge(t *testing.T) {
 	RunCmdTest(t,
 		func(t *testing.T, c *expect.Console) {
 			c.ExpectString("📑 Merging Bookmarks")
+			c.SendLine("")
+
+			c.ExpectString("✍️  Merging InputFields")
 			c.SendLine("")
 
 			c.ExpectString("🖍  Merging Markings")
@@ -108,6 +114,7 @@ func Test_merge(t *testing.T) {
 			BookmarkResolver = "chooseRight"
 			MarkingResolver = "chooseRight"
 			NoteResolver = "chooseNewest"
+			InputFieldResolver = "chooseRight"
 			merge(leftFilename, rightFilename, mergedFilename,
 				terminal.Stdio{In: c.Tty(), Out: c.Tty(), Err: c.Tty()})
 			merged := &model.Database{}
@@ -197,6 +204,19 @@ var leftMultiCollision = &model.Database{
 		},
 	},
 	Bookmark: []*model.Bookmark{nil},
+	InputField: []*model.InputField{
+		nil,
+		{
+			LocationID: 1,
+			TextTag:    "a1",
+			Value:      "a1",
+		},
+		{
+			LocationID: 1,
+			TextTag:    "a2",
+			Value:      "a2",
+		},
+	},
 	Location: []*model.Location{
 		nil,
 		{
@@ -258,6 +278,24 @@ var rightMultiCollision = &model.Database{
 		},
 	},
 	Bookmark: []*model.Bookmark{nil},
+	InputField: []*model.InputField{
+		nil,
+		{
+			LocationID: 1,
+			TextTag:    "a1",
+			Value:      "different",
+		},
+		{
+			LocationID: 1,
+			TextTag:    "a2",
+			Value:      "a2",
+		},
+		{
+			LocationID: 1,
+			TextTag:    "b1",
+			Value:      "b1",
+		},
+	},
 	Location: []*model.Location{
 		nil,
 		{
@@ -311,6 +349,19 @@ var leftDB = &model.Database{
 			BlockIdentifier:       sql.NullInt32{1, true},
 		},
 	},
+	InputField: []*model.InputField{
+		nil,
+		{
+			LocationID: 5,
+			TextTag:    "a1",
+			Value:      "a1",
+		},
+		{
+			LocationID: 5,
+			TextTag:    "a2",
+			Value:      "a2",
+		},
+	},
 	Location: []*model.Location{
 		nil,
 		{
@@ -327,6 +378,15 @@ var leftDB = &model.Database{
 			KeySymbol:    sql.NullString{"nwtsty", true},
 			MepsLanguage: 2,
 			LocationType: 1,
+		},
+		nil,
+		nil,
+		{
+			LocationID:   5,
+			DocumentID:   sql.NullInt32{1102021811, true},
+			KeySymbol:    sql.NullString{"lffi", true},
+			MepsLanguage: 2,
+			LocationType: 0,
 		},
 	},
 	Note: []*model.Note{
@@ -445,6 +505,24 @@ var rightDB = &model.Database{
 			BlockIdentifier:       sql.NullInt32{1, true},
 		},
 	},
+	InputField: []*model.InputField{
+		nil,
+		{
+			LocationID: 4,
+			TextTag:    "a1",
+			Value:      "different",
+		},
+		{
+			LocationID: 4,
+			TextTag:    "a2",
+			Value:      "a2",
+		},
+		{
+			LocationID: 4,
+			TextTag:    "b1",
+			Value:      "b1",
+		},
+	},
 	Location: []*model.Location{
 		nil,
 		{
@@ -470,6 +548,13 @@ var rightDB = &model.Database{
 			MepsLanguage:  2,
 			LocationType:  0,
 			Title:         sql.NullString{"1. Mose 1", true},
+		},
+		{
+			LocationID:   4,
+			DocumentID:   sql.NullInt32{1102021811, true},
+			KeySymbol:    sql.NullString{"lffi", true},
+			MepsLanguage: 2,
+			LocationType: 0,
 		},
 	},
 	Note: []*model.Note{
@@ -558,7 +643,7 @@ var rightDB = &model.Database{
 	},
 }
 
-var mergedAllLeftDB = model.Database{
+var mergedAllLeftDB = &model.Database{
 	BlockRange: []*model.BlockRange{
 		nil,
 		{
@@ -598,6 +683,24 @@ var mergedAllLeftDB = model.Database{
 			BlockIdentifier:       sql.NullInt32{1, true},
 		},
 	},
+	InputField: []*model.InputField{
+		nil,
+		{
+			LocationID: 4,
+			TextTag:    "a1",
+			Value:      "a1",
+		},
+		{
+			LocationID: 4,
+			TextTag:    "a2",
+			Value:      "a2",
+		},
+		{
+			LocationID: 4,
+			TextTag:    "b1",
+			Value:      "b1",
+		},
+	},
 	Location: []*model.Location{
 		nil,
 		{
@@ -623,6 +726,13 @@ var mergedAllLeftDB = model.Database{
 			MepsLanguage:  2,
 			LocationType:  0,
 			Title:         sql.NullString{"1. Mose 2", true},
+		},
+		{
+			LocationID:   4,
+			DocumentID:   sql.NullInt32{1102021811, true},
+			KeySymbol:    sql.NullString{"lffi", true},
+			MepsLanguage: 2,
+			LocationType: 0,
 		},
 	},
 	Note: []*model.Note{
@@ -731,7 +841,7 @@ var mergedAllLeftDB = model.Database{
 	},
 }
 
-var mergedAllRightDB = model.Database{
+var mergedAllRightDB = &model.Database{
 	BlockRange: []*model.BlockRange{
 		nil,
 		{
@@ -779,6 +889,24 @@ var mergedAllRightDB = model.Database{
 			BlockIdentifier:       sql.NullInt32{1, true},
 		},
 	},
+	InputField: []*model.InputField{
+		nil,
+		{
+			LocationID: 4,
+			TextTag:    "a1",
+			Value:      "different",
+		},
+		{
+			LocationID: 4,
+			TextTag:    "a2",
+			Value:      "a2",
+		},
+		{
+			LocationID: 4,
+			TextTag:    "b1",
+			Value:      "b1",
+		},
+	},
 	Location: []*model.Location{
 		nil,
 		{
@@ -804,6 +932,13 @@ var mergedAllRightDB = model.Database{
 			MepsLanguage:  2,
 			LocationType:  0,
 			Title:         sql.NullString{"1. Mose 2", true},
+		},
+		{
+			LocationID:   4,
+			DocumentID:   sql.NullInt32{1102021811, true},
+			KeySymbol:    sql.NullString{"lffi", true},
+			MepsLanguage: 2,
+			LocationType: 0,
 		},
 	},
 	Note: []*model.Note{

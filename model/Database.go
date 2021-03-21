@@ -25,6 +25,7 @@ const manifestFilename = "manifest.json"
 type Database struct {
 	BlockRange []*BlockRange
 	Bookmark   []*Bookmark
+	InputField []*InputField
 	Location   []*Location
 	Note       []*Note
 	Tag        []*Tag
@@ -103,28 +104,30 @@ func (db *Database) Equals(other *Database) bool {
 
 	// Sort all tables by UniqueKey and update IDs in other tables
 	for _, db := range []*Database{dbCp, otherCp} {
-		locIDChanges := sortByUniqueKey(&db.Location)
+		locIDChanges := SortByUniqueKey(&db.Location)
 		UpdateIDs(db.Bookmark, "LocationID", locIDChanges)
 		UpdateIDs(db.Bookmark, "PublicationLocationID", locIDChanges)
+		UpdateIDs(db.InputField, "LocationID", locIDChanges)
 		UpdateIDs(db.Note, "LocationID", locIDChanges)
 		UpdateIDs(db.TagMap, "LocationID", locIDChanges)
 		UpdateIDs(db.UserMark, "LocationID", locIDChanges)
 
-		sortByUniqueKey(&db.Bookmark)
+		SortByUniqueKey(&db.Bookmark)
+		SortByUniqueKey(&db.InputField)
 
-		tagIDChanges := sortByUniqueKey(&db.Tag)
+		tagIDChanges := SortByUniqueKey(&db.Tag)
 		UpdateIDs(db.TagMap, "TagID", tagIDChanges)
 
-		umIDChanges := sortByUniqueKey(&db.UserMark)
+		umIDChanges := SortByUniqueKey(&db.UserMark)
 		UpdateIDs(db.BlockRange, "UserMarkID", umIDChanges)
 		UpdateIDs(db.Note, "UserMarkID", umIDChanges)
 
-		sortByUniqueKey(&db.BlockRange)
+		SortByUniqueKey(&db.BlockRange)
 
-		noteIDChanges := sortByUniqueKey(&db.Note)
+		noteIDChanges := SortByUniqueKey(&db.Note)
 		UpdateIDs(db.TagMap, "NoteID", noteIDChanges)
 
-		sortByUniqueKey(&db.TagMap)
+		SortByUniqueKey(&db.TagMap)
 	}
 
 	// Check if all entries are equal.
@@ -234,7 +237,7 @@ func (db *Database) importSQLite(filename string) error {
 
 	// Make sure these tables are empty as we are not able to merge them yet.
 	// Better to fail, than to risk losing data..
-	emptyTables := []string{"InputField", "PlaylistItem", "PlaylistItemChild", "PlaylistMedia"}
+	emptyTables := []string{"PlaylistItem", "PlaylistItemChild", "PlaylistMedia"}
 	for _, table := range emptyTables {
 		count, err := getTableEntryCount(sqlite, table)
 		if err != nil {
@@ -257,6 +260,12 @@ func (db *Database) importSQLite(filename string) error {
 		return err
 	}
 	db.Bookmark = Bookmark{}.MakeSlice(mdl)
+
+	mdl, err = fetchFromSQLite(sqlite, &InputField{})
+	if err != nil {
+		return err
+	}
+	db.InputField = InputField{}.MakeSlice(mdl)
 
 	mdl, err = fetchFromSQLite(sqlite, &Location{})
 	if err != nil {
@@ -305,12 +314,13 @@ func fetchFromSQLite(sqlite *sql.DB, modelType Model) ([]Model, error) {
 	}
 	result := make([]Model, capacity)
 
-	rows, err := sqlite.Query(fmt.Sprintf("SELECT * FROM %s ORDER BY %s", modelType.tableName(), modelType.idName()))
+	rows, err := sqlite.Query(fmt.Sprintf("SELECT * FROM %s", modelType.tableName()))
 	if err != nil {
 		return nil, errors.Wrap(err, "Error while querying SQLite database")
 	}
 
 	// Put entries in slice with the index coresponding to the ID in the SQLite DB
+	i := 1
 	defer rows.Close()
 	for rows.Next() {
 		var m Model
@@ -319,6 +329,8 @@ func fetchFromSQLite(sqlite *sql.DB, modelType Model) ([]Model, error) {
 			m = &BlockRange{}
 		case *Bookmark:
 			m = &Bookmark{}
+		case *InputField:
+			m = &InputField{pseudoID: i}
 		case *Location:
 			m = &Location{}
 		case *Note:
@@ -337,6 +349,7 @@ func fetchFromSQLite(sqlite *sql.DB, modelType Model) ([]Model, error) {
 			return nil, errors.Wrap(err, "Error while scanning results from SQLite database")
 		}
 		result[mn.ID()] = mn
+		i++
 	}
 	err = rows.Err()
 	if err != nil {
@@ -358,10 +371,17 @@ func getTableEntryCount(sqlite *sql.DB, tableName string) (int, error) {
 }
 
 // getSliceCapacity determines the needed capacity for a slice from a table
-// by looking at the highest ID in the DB
+// by looking at the highest ID in the DB. If the table does not have a ID
+// column, it will simply count the number of entries.
 func getSliceCapacity(sqlite *sql.DB, modelType Model) (int, error) {
-	row, err := sqlite.Query(fmt.Sprintf("SELECT %s FROM %s ORDER BY %s DESC LIMIT 1",
-		modelType.idName(), modelType.tableName(), modelType.idName()))
+	var query string
+	if modelType.idName() != "" {
+		query = fmt.Sprintf("SELECT %s FROM %s ORDER BY %s DESC LIMIT 1",
+			modelType.idName(), modelType.tableName(), modelType.idName())
+	} else {
+		query = fmt.Sprintf("SELECT COUNT(*) FROM %s", modelType.tableName())
+	}
+	row, err := sqlite.Query(query)
 	if err != nil {
 		return 0, err
 	}
@@ -472,8 +492,16 @@ func insertEntries(sqlite *sql.DB, m []Model) error {
 	for _, mdl := range m {
 		if reflect.ValueOf(mdl).Elem().IsValid() {
 			tableName = mdl.tableName()
-			rowCount = reflect.ValueOf(mdl).Elem().NumField()
 			foundEntry = true
+
+			// Count number of fields that don't have the "ignore" tag set
+			reflTypes := reflect.TypeOf(mdl).Elem()
+			for j := 0; j < reflTypes.NumField(); j++ {
+				if _, ignore := reflTypes.Field(j).Tag.Lookup("ignore"); ignore {
+					continue
+				}
+				rowCount++
+			}
 			break
 		}
 	}
@@ -507,6 +535,7 @@ func insertEntries(sqlite *sql.DB, m []Model) error {
 		// Prepare struct for ingestion with stmt.Exec
 		values := make([]interface{}, rowCount)
 		reflValues := reflect.ValueOf(entry).Elem()
+		reflTypes := reflect.TypeOf(entry).Elem()
 
 		// Check if entry is actually a nil-pointer and shouldn't be considered
 		if !reflValues.IsValid() {
@@ -515,6 +544,10 @@ func insertEntries(sqlite *sql.DB, m []Model) error {
 
 		// Add all fields of the struct to the values slice, so we can ingest them later
 		for j := 0; j < reflValues.NumField(); j++ {
+			// If struct field has `ignore` tag then skip it
+			if _, ignore := reflTypes.Field(j).Tag.Lookup("ignore"); ignore {
+				continue
+			}
 			v := reflValues.Field(j).Interface()
 			values[j] = v
 		}

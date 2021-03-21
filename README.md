@@ -44,11 +44,11 @@ is only usable for Notes). As their names suggest, `chooseLeft` and
 `chooseRight` will always choose the same side if a conflict occurs, while
 `chooseNewest` always chooses the newest entry. 
 
-You can enable these solvers with the `--bookmarks`, `--markings`, and
-`--notes` flags:
+You can enable these solvers with the `--bookmarks`, `--markings`,
+`--notes`, and `--inputFields` flags:
 
 ```shell
-go-jwlm merge <left-backup> <right-backup> <merged-backup> --bookmarks chooseLeft --markings chooseRight --notes chooseNewest
+go-jwlm merge <left-backup> <right-backup> <merged-backup> --bookmarks chooseLeft --markings chooseRight --notes chooseNewest --inputFields chooseLef
 ```
 
 The conflict resolvers are helpful for regular merging when you are 
@@ -77,8 +77,8 @@ See the instructions on how to install Homebrew at https://brew.sh
 ## Mobile version
 If you want to merge backups using your iPhone or iPad, have a look at
 [JWLM](https://github.com/AndreasSko/ios-jwlm). It uses the whole merge
-logic of go-jwlm, but wraps it in a nice and easy to use iOS app. It is still
-in beta, but volunteers for testing are always welcome! 
+logic of go-jwlm, but wraps it in a nice and easy to use iOS app. It is 
+already available on the [App Store](https://apps.apple.com/us/app/jwlm-jw-library-merger/id1539780103).
 
 There might come an Android version at some point, but as I personally
 don't use any Android devices, it is - unfortunately - not the highest

@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	"github.com/AndreasSko/go-jwlm/model"
-	"github.com/tj/assert"
+	"github.com/stretchr/testify/assert"
 )
 
 var backupFile = filepath.Join("..", "model", "testdata", "backup.jwlibrary")
@@ -24,7 +24,7 @@ func TestDatabaseWrapper_ImportJWLBackup(t *testing.T) {
 
 	assert.Len(t, dbw.left.BlockRange, 5)
 	assert.Len(t, dbw.left.Bookmark, 3)
-	assert.Len(t, dbw.left.Location, 8)
+	assert.Len(t, dbw.left.Location, 9)
 	assert.Len(t, dbw.left.Note, 3)
 	assert.Len(t, dbw.left.Tag, 3)
 	assert.Len(t, dbw.left.TagMap, 3)

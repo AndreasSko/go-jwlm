@@ -26,6 +26,9 @@ func mergeConflictHelp(name string) string {
 		"*model.Note": `A note collides if it exists on both sides (so they must have been synced at least once) 
 		and it differers in the title or content. It generally makes sense to choose the note 
 		with the newest date.`,
+
+		"*model.InputField": `InputFields are used in interactive publications where you can enter custom notes, 
+		tick boxes, etc. An example would be the "Enjoy Life Forever!" brochure.`,
 	}
 
 	if text, ok := helpTexts[name]; ok {
