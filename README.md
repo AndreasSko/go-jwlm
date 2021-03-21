@@ -77,8 +77,8 @@ See the instructions on how to install Homebrew at https://brew.sh
 ## Mobile version
 If you want to merge backups using your iPhone or iPad, have a look at
 [JWLM](https://github.com/AndreasSko/ios-jwlm). It uses the whole merge
-logic of go-jwlm, but wraps it in a nice and easy to use iOS app. It is still
-in beta, but volunteers for testing are always welcome! 
+logic of go-jwlm, but wraps it in a nice and easy to use iOS app. It is 
+already available on the [App Store](https://apps.apple.com/us/app/jwlm-jw-library-merger/id1539780103).
 
 There might come an Android version at some point, but as I personally
 don't use any Android devices, it is - unfortunately - not the highest
