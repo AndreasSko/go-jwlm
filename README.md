@@ -44,11 +44,11 @@ is only usable for Notes). As their names suggest, `chooseLeft` and
 `chooseRight` will always choose the same side if a conflict occurs, while
 `chooseNewest` always chooses the newest entry. 
 
-You can enable these solvers with the `--bookmarks`, `--markings`, and
-`--notes` flags:
+You can enable these solvers with the `--bookmarks`, `--markings`,
+`--notes`, and `--inputFields` flags:
 
 ```shell
-go-jwlm merge <left-backup> <right-backup> <merged-backup> --bookmarks chooseLeft --markings chooseRight --notes chooseNewest
+go-jwlm merge <left-backup> <right-backup> <merged-backup> --bookmarks chooseLeft --markings chooseRight --notes chooseNewest --inputFields chooseLef
 ```
 
 The conflict resolvers are helpful for regular merging when you are 
