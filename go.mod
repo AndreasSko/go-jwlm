@@ -19,6 +19,7 @@ require (
 	github.com/h2non/filetype v1.1.1 // indirect
 	github.com/hinshun/vt10x v0.0.0-20180809195222-d55458df857c
 	github.com/jedib0t/go-pretty v4.3.0+incompatible
+	github.com/jedib0t/go-pretty/v6 v6.1.0
 	github.com/juju/errors v0.0.0-20200330140219-3fe23663418f // indirect
 	github.com/magiconair/properties v1.8.4 // indirect
 	github.com/mattn/go-colorable v0.1.8 // indirect
