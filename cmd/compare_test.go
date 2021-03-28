@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/AlecAivazis/survey/v2/terminal"
+	"github.com/AndreasSko/go-jwlm/storage"
 	expect "github.com/Netflix/go-expect"
 	"github.com/stretchr/testify/assert"
 )
@@ -24,9 +25,9 @@ func Test_compare(t *testing.T) {
 	emptyFilename := filepath.Join(tmp, "empty.jwlibrary")
 	leftFilename := filepath.Join(tmp, "left.jwlibrary")
 	rightFilename := filepath.Join(tmp, "right.jwlibrary")
-	assert.NoError(t, emptyDB.ExportJWLBackup(emptyFilename))
-	assert.NoError(t, leftDB.ExportJWLBackup(leftFilename))
-	assert.NoError(t, rightDB.ExportJWLBackup(rightFilename))
+	assert.NoError(t, storage.ExportJWLBackup(emptyDB, emptyFilename))
+	assert.NoError(t, storage.ExportJWLBackup(leftDB, leftFilename))
+	assert.NoError(t, storage.ExportJWLBackup(rightDB, rightFilename))
 
 	RunCmdTest(t,
 		func(t *testing.T, c *expect.Console) {

@@ -5,7 +5,7 @@ import (
 	"os"
 
 	"github.com/AlecAivazis/survey/v2/terminal"
-	"github.com/AndreasSko/go-jwlm/model"
+	"github.com/AndreasSko/go-jwlm/storage"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -24,15 +24,13 @@ var compareCmd = &cobra.Command{
 
 func compare(leftFilename string, rightFilename string, stdio terminal.Stdio) {
 	fmt.Fprintln(stdio.Out, "Importing left backup")
-	left := &model.Database{}
-	err := left.ImportJWLBackup(leftFilename)
+	left, err := storage.ImportJWLBackup(leftFilename)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	fmt.Fprintln(stdio.Out, "Importing right backup")
-	right := &model.Database{}
-	err = right.ImportJWLBackup(rightFilename)
+	right, err := storage.ImportJWLBackup(rightFilename)
 	if err != nil {
 		log.Fatal(err)
 	}

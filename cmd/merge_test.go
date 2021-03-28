@@ -12,6 +12,7 @@ import (
 
 	"github.com/AlecAivazis/survey/v2/terminal"
 	"github.com/AndreasSko/go-jwlm/model"
+	"github.com/AndreasSko/go-jwlm/storage"
 	expect "github.com/Netflix/go-expect"
 	"github.com/hinshun/vt10x"
 	"github.com/stretchr/testify/assert"
@@ -31,11 +32,11 @@ func Test_merge(t *testing.T) {
 	mergedFilename := filepath.Join(tmp, "merged.jwlibrary")
 	leftMultiCollisionFilename := filepath.Join(tmp, "leftMultiCollision.jwlibrary")
 	rightMultiCollisionFilename := filepath.Join(tmp, "rightMultiCollision.jwlibrary")
-	assert.NoError(t, emptyDB.ExportJWLBackup(emptyFilename))
-	assert.NoError(t, leftDB.ExportJWLBackup(leftFilename))
-	assert.NoError(t, rightDB.ExportJWLBackup(rightFilename))
-	assert.NoError(t, leftMultiCollision.ExportJWLBackup(leftMultiCollisionFilename))
-	assert.NoError(t, rightMultiCollision.ExportJWLBackup(rightMultiCollisionFilename))
+	assert.NoError(t, storage.ExportJWLBackup(emptyDB, emptyFilename))
+	assert.NoError(t, storage.ExportJWLBackup(leftDB, leftFilename))
+	assert.NoError(t, storage.ExportJWLBackup(rightDB, rightFilename))
+	assert.NoError(t, storage.ExportJWLBackup(leftMultiCollision, leftMultiCollisionFilename))
+	assert.NoError(t, storage.ExportJWLBackup(rightMultiCollision, rightMultiCollisionFilename))
 
 	// Merge against empty DB and see if result is still the same
 	RunCmdTest(t,
@@ -48,8 +49,8 @@ func Test_merge(t *testing.T) {
 		func(t *testing.T, c *expect.Console) {
 			merge(leftFilename, emptyFilename, mergedFilename,
 				terminal.Stdio{In: c.Tty(), Out: c.Tty(), Err: c.Tty()})
-			merged := &model.Database{}
-			merged.ImportJWLBackup(mergedFilename)
+			merged, err := storage.ImportJWLBackup(mergedFilename)
+			assert.NoError(t, err)
 			assert.True(t, leftDB.Equals(merged))
 		})
 
@@ -73,8 +74,8 @@ func Test_merge(t *testing.T) {
 		func(t *testing.T, c *expect.Console) {
 			merge(leftFilename, rightFilename, mergedFilename,
 				terminal.Stdio{In: c.Tty(), Out: c.Tty(), Err: c.Tty()})
-			merged := &model.Database{}
-			merged.ImportJWLBackup(mergedFilename)
+			merged, err := storage.ImportJWLBackup(mergedFilename)
+			assert.NoError(t, err)
 			assert.True(t, mergedAllRightDB.Equals(merged))
 		})
 
@@ -98,8 +99,8 @@ func Test_merge(t *testing.T) {
 		func(t *testing.T, c *expect.Console) {
 			merge(leftFilename, rightFilename, mergedFilename,
 				terminal.Stdio{In: c.Tty(), Out: c.Tty(), Err: c.Tty()})
-			merged := &model.Database{}
-			merged.ImportJWLBackup(mergedFilename)
+			merged, err := storage.ImportJWLBackup(mergedFilename)
+			assert.NoError(t, err)
 			assert.True(t, mergedAllLeftDB.Equals(merged))
 		})
 
@@ -117,8 +118,8 @@ func Test_merge(t *testing.T) {
 			InputFieldResolver = "chooseRight"
 			merge(leftFilename, rightFilename, mergedFilename,
 				terminal.Stdio{In: c.Tty(), Out: c.Tty(), Err: c.Tty()})
-			merged := &model.Database{}
-			merged.ImportJWLBackup(mergedFilename)
+			merged, err := storage.ImportJWLBackup(mergedFilename)
+			assert.NoError(t, err)
 			assert.True(t, mergedAllRightDB.Equals(merged))
 		})
 
@@ -135,8 +136,8 @@ func Test_merge(t *testing.T) {
 				rightMultiCollisionFilename,
 				mergedFilename,
 				terminal.Stdio{In: c.Tty(), Out: c.Tty(), Err: c.Tty()})
-			merged := &model.Database{}
-			merged.ImportJWLBackup(mergedFilename)
+			merged, err := storage.ImportJWLBackup(mergedFilename)
+			assert.NoError(t, err)
 			assert.True(t, rightMultiCollision.Equals(merged))
 		})
 }

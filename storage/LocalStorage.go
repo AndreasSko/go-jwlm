@@ -2,7 +2,9 @@ package storage
 
 import (
 	"archive/zip"
+	"crypto/sha256"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -53,20 +55,32 @@ func ImportJWLBackup(filename string) (*model.Database, error) {
 
 	// Read manifest
 	path := filepath.Join(tmp, manifestFilename)
-	mfstByte, err := readFile(path)
+	mfstBytes, err := readFile(path)
 	if err != nil {
 		return nil, errors.Wrap(err, "Error while reading manifest")
 	}
+	// Parse manifest
+	mfst := model.Manifest{}
+	err = json.Unmarshal([]byte(mfstBytes), &mfst) // TODO: Is []byte() needed??
+	if err != nil {
+		return nil, errors.Wrap(err, "Could not unmarshall backup manifest file")
+	}
+
+	// Make sure that we support this backup version
+	if err := mfst.ValidateManifest(); err != nil {
+		return nil, err
+	}
 
 	// Open SQLite
-	sqlite, err := sql.Open("sqlite3", filename+"?immutable=1")
+	dbFilename := filepath.Join(tmp, mfst.UserDataBackup.DatabaseName)
+	sqlite, err := sql.Open("sqlite3", dbFilename+"?immutable=1")
 	if err != nil {
 		return nil, errors.Wrap(err, "Error while opening SQLite database")
 	}
 	defer sqlite.Close()
 
 	db := &model.Database{}
-	err = db.Import(mfstByte, sqlite)
+	err = db.Import(sqlite)
 	return db, err
 }
 
@@ -76,15 +90,15 @@ func ExportJWLBackup(db *model.Database, filename string) error {
 	if err != nil {
 		return errors.Wrap(err, "Error while creating temporary directory")
 	}
-	defer os.RemoveAll(tmp)
+	//defer os.RemoveAll(tmp)
 
 	// Create user_data.db
 	dbPath := filepath.Join(tmp, "user_data.db")
-	if err := createEmptySQLiteDB(filename); err != nil {
+	if err := createEmptySQLiteDB(dbPath); err != nil {
 		return errors.Wrap(err, "Error while creating new empty SQLite database")
 	}
 
-	sqlite, err := sql.Open("sqlite3", filename)
+	sqlite, err := sql.Open("sqlite3", dbPath)
 	if err != nil {
 		return errors.Wrap(err, "Error while opening SQLite database")
 	}
@@ -92,8 +106,23 @@ func ExportJWLBackup(db *model.Database, filename string) error {
 
 	db.Export(sqlite)
 
+	mfstHash, err := hashOfFile(dbPath)
+	if err != nil {
+		return err
+	}
+
+	mfst := model.GenerateManifest("go-jwlm", "user_data.db", mfstHash)
+	bytes, err := json.Marshal(mfst)
+	if err != nil {
+		return errors.Wrap(err, "Error while marshalling manifest")
+	}
+	mfstPath := filepath.Join(tmp, "manifest.json")
+	if err := ioutil.WriteFile(mfstPath, bytes, 0644); err != nil {
+		return errors.Wrap(err, fmt.Sprintf("Error while saving manifest file at %v", mfstPath))
+	}
+
 	// Store files in .jwlibrary (zip)-file
-	files := []string{dbPath, manifestPath}
+	files := []string{dbPath, mfstPath}
 	if err := zipFiles(filename, files); err != nil {
 		return errors.Wrap(err, fmt.Sprintf("Error while storing files in zip archive %s", filename))
 	}
@@ -128,4 +157,18 @@ func createEmptySQLiteDB(filename string) error {
 	}
 
 	return nil
+}
+
+func hashOfFile(path string) (string, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return "", errors.Wrapf(err, "Error while opening file %s to calculate hash", path)
+	}
+	defer f.Close()
+	hasher := sha256.New()
+	if _, err := io.Copy(hasher, f); err != nil {
+		return "", err
+	}
+
+	return fmt.Sprintf("%x", hasher.Sum(nil)), nil
 }

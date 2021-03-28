@@ -2,7 +2,6 @@ package model
 
 import (
 	"database/sql"
-	"encoding/json"
 	"fmt"
 	"reflect"
 	"time"
@@ -170,20 +169,7 @@ func (db *Database) Equals(other *Database) bool {
 	return true
 }
 
-func (db *Database) Import(manifestBytes []byte, sqlDB *sql.DB) error {
-	// Parse manifest
-	mfst := manifest{}
-	err := json.Unmarshal([]byte(manifestBytes), &mfst) // TODO: Is []byte() needed??
-	if err != nil {
-		return errors.Wrap(err, "Could not unmarshall backup manifest file")
-	}
-
-	// Make sure that we support this backup version
-	if err := mfst.validateManifest(); err != nil {
-		return err
-	}
-
-	// Fill the Database with actual data
+func (db *Database) Import(sqlDB *sql.DB) error {
 	return db.importSQLite(sqlDB)
 }
 
@@ -352,24 +338,11 @@ func getSliceCapacity(sqlite *sql.DB, modelType Model) (int, error) {
 	return capacity + 1, nil
 }
 
-// ExportJWLBackup creates a .jwlibrary backup file out of a Database{} struct
-func (db *Database) ExportJWLBackup(filename string) error {
-
-}
-
-func (db *Database) Export(sqlDB *sql.DB) ([]byte, error) {
+func (db *Database) Export(sqlDB *sql.DB) error {
 	if err := db.saveToSQLite(sqlDB); err != nil {
-		return nil, errors.Wrap(err, "Error while saving to SQLiteDB")
+		return errors.Wrap(err, "Error while saving to SQLiteDB")
 	}
-
-	// Create manifest.json
-	mfst, err := generateManifest("go-jwlm", dbPath)
-	if err != nil {
-		return errors.Wrap(err, "Error while generating manifest")
-	}
-	if err := mfst.exportManifest(manifestPath); err != nil {
-		return errors.Wrap(err, "Error while creating manifest.json")
-	}
+	return nil
 }
 
 // SaveToNewSQLite creates a new SQLite database with the JW Library scheme
