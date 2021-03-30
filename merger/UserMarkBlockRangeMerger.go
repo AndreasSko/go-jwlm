@@ -339,27 +339,38 @@ func replaceUMBRConflictsWithSolution(left *[]*model.UserMarkBlockRange, right *
 // where the keys are sorted by the first number-part of a key (i.e.
 // 12345_uniqueKey would be sorted according to 12345).
 func sortedSolutionKeys(conflictSolution map[string]MergeSolution) []string {
-	orderedKeys := make([]string, len(conflictSolution))
+	orderedKeys := make([]struct {
+		number int64
+		key    string
+	}, len(conflictSolution))
+
+	// Extract first part of key, which is a monotonically increasing number,
+	// afterwards sort it. Ignore errors and in these cases just set the number
+	// to 0.
+	re := regexp.MustCompile(`^(\d*)`)
 	i := 0
 	for key := range conflictSolution {
-		orderedKeys[i] = key
+		match := re.FindStringSubmatch(key)
+		number, _ := strconv.ParseInt(match[0], 0, 64)
+		orderedKeys[i] = struct {
+			number int64
+			key    string
+		}{
+			number: number,
+			key:    key,
+		}
 		i++
 	}
-	// Sort by first part of key, which is a monotonically increasing number.
-	// If that fails, just ignore it..
-	re := regexp.MustCompile(`^(\d*)`)
 	sort.Slice(orderedKeys, func(i int, j int) bool {
-		matchI := re.FindStringSubmatch(orderedKeys[i])
-		matchJ := re.FindStringSubmatch(orderedKeys[j])
-		if len(matchI) != 2 || len(matchJ) != 2 {
-			return false
-		}
-		countI, _ := strconv.ParseInt(matchI[0], 0, 64)
-		countJ, _ := strconv.ParseInt(matchJ[0], 0, 64)
-		return countI < countJ
+		return orderedKeys[i].number < orderedKeys[j].number
 	})
 
-	return orderedKeys
+	result := make([]string, len(orderedKeys))
+	for i, ordered := range orderedKeys {
+		result[i] = ordered.key
+	}
+
+	return result
 }
 
 // ingestUMBR ingest UserMarks & BlockRanges in a Map[LocationID]map[Identifier][]*model.BlockRange
