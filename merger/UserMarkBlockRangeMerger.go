@@ -335,6 +335,8 @@ func replaceUMBRConflictsWithSolution(left *[]*model.UserMarkBlockRange, right *
 	return changes, invertedChanges
 }
 
+var extractKeyNumber = regexp.MustCompile(`^(\d*)`)
+
 // sortedSolutionKeys returns a list of keys from the conflictSolution map,
 // where the keys are sorted by the first number-part of a key (i.e.
 // 12345_uniqueKey would be sorted according to 12345).
@@ -347,10 +349,9 @@ func sortedSolutionKeys(conflictSolution map[string]MergeSolution) []string {
 	// Extract first part of key, which is a monotonically increasing number,
 	// afterwards sort it. Ignore errors and in these cases just set the number
 	// to 0.
-	re := regexp.MustCompile(`^(\d*)`)
 	i := 0
 	for key := range conflictSolution {
-		match := re.FindStringSubmatch(key)
+		match := extractKeyNumber.FindStringSubmatch(key)
 		number, _ := strconv.ParseInt(match[0], 0, 64)
 		orderedKeys[i] = struct {
 			number int64

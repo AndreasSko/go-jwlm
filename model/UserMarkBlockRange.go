@@ -42,22 +42,22 @@ func (m *UserMarkBlockRange) UniqueKey() string {
 	return sb.String()
 }
 
+var rmUID = regexp.MustCompile(`^(\d*_\d*_\d*_\d*)(_\d*)`)
+
 // Equals checks if the UserMarkBlockRange is equal to the given one.
 // It will both check its UserMark and all BlockRanges.
 func (m *UserMarkBlockRange) Equals(m2 Model) bool {
 	// Remove UserMarkID from UniqueKey, as BlockRanges have already
-	// been joined with UserMark
-	re := regexp.MustCompile(`^(\d*_\d*_\d*_\d*)(_\d*)`)
-
+	// been joined with UserMark.
 	// Compare UniqueKeys of both BlockRanges to check if they are the same
 	mBRKeys := make(map[string]bool, len(m.BlockRanges))
 	m2BRKeys := make(map[string]bool, len(m2.(*UserMarkBlockRange).BlockRanges))
 	for _, br := range m.BlockRanges {
-		uq := re.ReplaceAllString(br.UniqueKey(), "$1")
+		uq := rmUID.ReplaceAllString(br.UniqueKey(), "$1")
 		mBRKeys[uq] = true
 	}
 	for _, br := range m2.(*UserMarkBlockRange).BlockRanges {
-		uq := re.ReplaceAllString(br.UniqueKey(), "$1")
+		uq := rmUID.ReplaceAllString(br.UniqueKey(), "$1")
 		m2BRKeys[uq] = true
 	}
 
