@@ -1,12 +1,8 @@
 package model
 
 import (
-	"archive/zip"
 	"database/sql"
 	"fmt"
-	"io"
-	"io/ioutil"
-	"os"
 	"path/filepath"
 	"reflect"
 	"time"
@@ -14,9 +10,6 @@ import (
 	"github.com/davecgh/go-spew/spew"
 	"github.com/pkg/errors"
 	"github.com/sergi/go-diff/diffmatchpatch"
-
-	// Register SQLite driver
-	_ "github.com/mattn/go-sqlite3"
 )
 
 const manifestFilename = "manifest.json"
@@ -177,36 +170,17 @@ func (db *Database) Equals(other *Database) bool {
 // ImportJWLBackup unzips a given JW Library Backup file and imports the
 // included SQLite DB to the Database struct
 func (db *Database) ImportJWLBackup(filename string) error {
+	pers := GetPersistence()
 	// Create tmp folder and place all files there
-	tmp, err := ioutil.TempDir("", "go-jwlm")
+	tmp, err := pers.CreateTempStorage("go-jwlm")
 	if err != nil {
-		return errors.Wrap(err, "Error while creating temporary directory")
+		return errors.Wrap(err, "Error while creating temp storage")
 	}
-	defer os.RemoveAll(tmp)
+	defer pers.CleanupPath(tmp)
 
-	r, err := zip.OpenReader(filename)
+	err = pers.ProcessJWLBackup(filename, tmp)
 	if err != nil {
-		return err
-	}
-	defer r.Close()
-
-	for _, file := range r.File {
-		fileReader, err := file.Open()
-		if err != nil {
-			return err
-		}
-		defer fileReader.Close()
-
-		path := filepath.Join(tmp, file.Name)
-		targetFile, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, file.Mode())
-		if err != nil {
-			return err
-		}
-		defer targetFile.Close()
-
-		if _, err := io.Copy(targetFile, fileReader); err != nil {
-			return errors.Wrap(err, "Error while copying files from backup to temporary folder")
-		}
+		return errors.Wrap(err, "Error while processing JW Library backup")
 	}
 
 	// Import manifest
@@ -229,7 +203,7 @@ func (db *Database) ImportJWLBackup(filename string) error {
 // importSQLite imports a given SQLite DB into the Database struct
 func (db *Database) importSQLite(filename string) error {
 	// Open SQLite file as immutable to avoid locks (and therefore speed up import)
-	sqlite, err := sql.Open("sqlite3", filename+"?immutable=1")
+	sqlite, err := GetPersistence().OpenSQLiteDB(filename + "?immutable=1")
 	if err != nil {
 		return errors.Wrap(err, "Error while opening SQLite database")
 	}
@@ -401,11 +375,12 @@ func getSliceCapacity(sqlite *sql.DB, modelType Model) (int, error) {
 // ExportJWLBackup creates a .jwlibrary backup file out of a Database{} struct
 func (db *Database) ExportJWLBackup(filename string) error {
 	// Create tmp folder and place all files there
-	tmp, err := ioutil.TempDir("", "go-jwlm")
+	pers := GetPersistence()
+	tmp, err := pers.CreateTempStorage("go-jwlm")
 	if err != nil {
-		return errors.Wrap(err, "Error while creating temporary directory")
+		return errors.Wrap(err, "Error while creating temp storage")
 	}
-	defer os.RemoveAll(tmp)
+	defer pers.CleanupPath(tmp)
 
 	// Create user_data.db
 	dbPath := filepath.Join(tmp, "user_data.db")
@@ -439,7 +414,7 @@ func (db *Database) saveToNewSQLite(filename string) error {
 		return errors.Wrap(err, "Error while creating new empty SQLite database")
 	}
 
-	sqlite, err := sql.Open("sqlite3", filename)
+	sqlite, err := GetPersistence().OpenSQLiteDB(filename)
 	if err != nil {
 		return errors.Wrap(err, "Error while opening SQLite database")
 	}
@@ -449,6 +424,7 @@ func (db *Database) saveToNewSQLite(filename string) error {
 	// and use it to insert its entries to the new SQLite DB
 	dbFields := reflect.ValueOf(db).Elem()
 	for j := 0; j < dbFields.NumField(); j++ {
+		fmt.Printf("Inserting %ss\n", dbFields.Type().Field(j).Name)
 		slice := dbFields.Field(j).Interface()
 		mdl, err := MakeModelSlice(slice)
 		if err != nil {
@@ -571,7 +547,7 @@ func createEmptySQLiteDB(filename string) error {
 		return errors.Wrap(err, "Error while fetching user_data.db")
 	}
 
-	if err := ioutil.WriteFile(filename, userData, 0644); err != nil {
+	if err := GetPersistence().WriteFile(filename, userData); err != nil {
 		return errors.Wrap(err, fmt.Sprintf("Error while saving new SQLite database at %s", filename))
 	}
 
