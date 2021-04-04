@@ -1,15 +1,15 @@
 package model
 
 import (
-	"archive/zip"
 	"io"
 	"os"
 	"path/filepath"
+
+	"github.com/klauspost/compress/zip"
 )
 
 // https://golangcode.com/create-zip-files-in-go/
 func zipFiles(filename string, files []string) error {
-
 	newZipFile, err := os.Create(filename)
 	if err != nil {
 		return err
@@ -29,7 +29,6 @@ func zipFiles(filename string, files []string) error {
 }
 
 func addFileToZip(zipWriter *zip.Writer, filename string) error {
-
 	fileToZip, err := os.Open(filename)
 	if err != nil {
 		return err
