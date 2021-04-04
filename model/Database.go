@@ -495,16 +495,31 @@ func (db *Database) saveToNewSQLite(filename string) error {
 
 	// For every field of the Database{} struct, create a []model slice
 	// and use it to insert its entries to the new SQLite DB
+	var wg sync.WaitGroup
+	errorChan := make(chan error, 10)
+
 	dbFields := reflect.ValueOf(db).Elem()
 	for j := 0; j < dbFields.NumField(); j++ {
-		slice := dbFields.Field(j).Interface()
-		mdl, err := MakeModelSlice(slice)
-		if err != nil {
-			return err
-		}
-		if err := insertEntries(sqlite, mdl); err != nil {
-			return errors.Wrapf(err, "Error while inserting entries of field %d", j)
-		}
+		wg.Add(1)
+		go func(j int) {
+			slice := dbFields.Field(j).Interface()
+			mdl, err := MakeModelSlice(slice)
+			if err != nil {
+				errorChan <- err
+				wg.Done()
+				return
+			}
+			if err := insertEntries(sqlite, mdl); err != nil {
+				errorChan <- errors.Wrapf(err, "Error while inserting entries of field %d", j)
+			}
+			wg.Done()
+		}(j)
+	}
+	wg.Wait()
+	select {
+	case err := <-errorChan:
+		return err
+	default:
 	}
 
 	// Update LastModified
