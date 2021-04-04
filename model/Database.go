@@ -487,7 +487,7 @@ func (db *Database) saveToNewSQLite(filename string) error {
 		return errors.Wrap(err, "Error while creating new empty SQLite database")
 	}
 
-	sqlite, err := sql.Open("sqlite3", filename)
+	sqlite, err := sql.Open("sqlite3", filename+"?_journal=OFF&_sync=OFF&cache=shared&_cache_size=10000K")
 	if err != nil {
 		return errors.Wrap(err, "Error while opening SQLite database")
 	}
@@ -502,6 +502,14 @@ func (db *Database) saveToNewSQLite(filename string) error {
 	for j := 0; j < dbFields.NumField(); j++ {
 		wg.Add(1)
 		go func(j int) {
+			sqlite, err := sql.Open("sqlite3", filename+"?_journal=OFF&_sync=OFF&cache=shared&_cache_size=10000K")
+			if err != nil {
+				errorChan <- err
+				wg.Done()
+				return
+			}
+			defer sqlite.Close()
+
 			slice := dbFields.Field(j).Interface()
 			mdl, err := MakeModelSlice(slice)
 			if err != nil {
