@@ -516,8 +516,11 @@ func insertEntries(sqlite *sql.DB, m []Model) error {
 		return nil
 	}
 
-	tx, err := sqlite.Begin()
-	if err != nil {
+	// tx, err := sqlite.Begin()
+	// if err != nil {
+	// 	return err
+	// }
+	if _, err := sqlite.Exec("BEGIN TRANSACTION;"); err != nil {
 		return err
 	}
 	batchSize := 99
@@ -525,22 +528,25 @@ func insertEntries(sqlite *sql.DB, m []Model) error {
 	for i, mdl := range m {
 		batch = append(batch, mdl)
 		if len(batch) >= batchSize || i >= len(m)-1 {
-			err := batchInsert(tx, batch, tableName, rowCount)
+			err := batchInsert(sqlite, batch, tableName, rowCount)
 			if err != nil {
 				return errors.Wrap(err, "Error while running batch insert")
 			}
 			batch = make([]Model, 0, batchSize)
 		}
 	}
-
-	if err := tx.Commit(); err != nil {
-		return errors.Wrap(err, "Error while commiting entries")
+	if _, err := sqlite.Exec("END TRANSACTION;"); err != nil {
+		return err
 	}
+
+	// if err := tx.Commit(); err != nil {
+	// 	return errors.Wrap(err, "Error while commiting entries")
+	// }
 
 	return nil
 }
 
-func batchInsert(tx *sql.Tx, m []Model, tableName string, rowCount int) error {
+func batchInsert(sqlite *sql.DB, m []Model, tableName string, rowCount int) error {
 	query := fmt.Sprintf("INSERT INTO %s VALUES", tableName)
 	valuesTemplate := " ("
 	for i := 0; i < rowCount; i++ {
@@ -576,13 +582,7 @@ func batchInsert(tx *sql.Tx, m []Model, tableName string, rowCount int) error {
 
 	query = strings.TrimSuffix(query, ",")
 
-	stmt, err := tx.Prepare(query)
-	if err != nil {
-		return errors.Wrapf(err, "Error while preparing query %s", query)
-	}
-	defer stmt.Close()
-
-	if _, err := stmt.Exec(valuesNew...); err != nil {
+	if _, err := sqlite.Exec(query, valuesNew...); err != nil {
 		return errors.Wrap(err, fmt.Sprintf("Could not insert %v", valuesNew))
 	}
 
