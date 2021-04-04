@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"time"
 
 	"github.com/davecgh/go-spew/spew"
@@ -445,6 +446,11 @@ func (db *Database) saveToNewSQLite(filename string) error {
 	}
 	defer sqlite.Close()
 
+	_, err = sqlite.Exec("PRAGMA synchronous = OFF; PRAGMA journal_mode = MEMORY;")
+	if err != nil {
+		return errors.Wrap(err, "Error while vacuuming SQLite DB")
+	}
+
 	// For every field of the Database{} struct, create a []model slice
 	// and use it to insert its entries to the new SQLite DB
 	dbFields := reflect.ValueOf(db).Elem()
@@ -514,26 +520,40 @@ func insertEntries(sqlite *sql.DB, m []Model) error {
 	if err != nil {
 		return err
 	}
-
-	// Dynamically add all column-names of the struct to the query
-	query := fmt.Sprintf("INSERT INTO %s VALUES (", tableName)
-	for i := 0; i < rowCount; i++ {
-		query += "?"
-		if i+1 < rowCount {
-			query += ", "
+	batchSize := 99
+	batch := make([]Model, 0, batchSize)
+	for i, mdl := range m {
+		batch = append(batch, mdl)
+		if len(batch) >= batchSize || i >= len(m)-1 {
+			err := batchInsert(tx, batch, tableName, rowCount)
+			if err != nil {
+				return errors.Wrap(err, "Error while running batch insert")
+			}
+			batch = make([]Model, 0, batchSize)
 		}
 	}
-	query += ")"
 
-	stmt, err := tx.Prepare(query)
-	if err != nil {
-		return errors.Wrapf(err, "Error while preparing query %s", query)
+	if err := tx.Commit(); err != nil {
+		return errors.Wrap(err, "Error while commiting entries")
 	}
-	defer stmt.Close()
 
+	return nil
+}
+
+func batchInsert(tx *sql.Tx, m []Model, tableName string, rowCount int) error {
+	query := fmt.Sprintf("INSERT INTO %s VALUES", tableName)
+	valuesTemplate := " ("
+	for i := 0; i < rowCount; i++ {
+		valuesTemplate += "?"
+		if i+1 < rowCount {
+			valuesTemplate += ", "
+		}
+	}
+	valuesTemplate += "),"
+
+	valuesNew := make([]interface{}, 0, rowCount*len(m))
 	for _, entry := range m {
 		// Prepare struct for ingestion with stmt.Exec
-		values := make([]interface{}, rowCount)
 		reflValues := reflect.ValueOf(entry).Elem()
 		reflTypes := reflect.TypeOf(entry).Elem()
 
@@ -549,16 +569,21 @@ func insertEntries(sqlite *sql.DB, m []Model) error {
 				continue
 			}
 			v := reflValues.Field(j).Interface()
-			values[j] = v
+			valuesNew = append(valuesNew, v)
 		}
-
-		if _, err := stmt.Exec(values...); err != nil {
-			return errors.Wrap(err, fmt.Sprintf("Could not insert entry %v", entry))
-		}
+		query += valuesTemplate
 	}
 
-	if err := tx.Commit(); err != nil {
-		return errors.Wrap(err, "Error while commiting entries")
+	query = strings.TrimSuffix(query, ",")
+
+	stmt, err := tx.Prepare(query)
+	if err != nil {
+		return errors.Wrapf(err, "Error while preparing query %s", query)
+	}
+	defer stmt.Close()
+
+	if _, err := stmt.Exec(valuesNew...); err != nil {
+		return errors.Wrap(err, fmt.Sprintf("Could not insert %v", valuesNew))
 	}
 
 	return nil
