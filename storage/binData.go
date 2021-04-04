@@ -6,7 +6,7 @@
 // sources:
 // user_data.db (159.744kB)
 
-package model
+package storage
 
 import (
 	"bytes"

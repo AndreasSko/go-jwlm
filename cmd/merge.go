@@ -9,6 +9,7 @@ import (
 	"github.com/AlecAivazis/survey/v2/terminal"
 	"github.com/AndreasSko/go-jwlm/merger"
 	"github.com/AndreasSko/go-jwlm/model"
+	"github.com/AndreasSko/go-jwlm/storage"
 	"github.com/buger/goterm"
 	"github.com/jedib0t/go-pretty/table"
 	"github.com/spf13/cobra"
@@ -51,15 +52,13 @@ var InputFieldResolver string
 
 func merge(leftFilename string, rightFilename string, mergedFilename string, stdio terminal.Stdio) {
 	fmt.Fprintln(stdio.Out, "Importing left backup")
-	left := model.Database{}
-	err := left.ImportJWLBackup(leftFilename)
+	left, err := storage.ImportJWLBackup(leftFilename)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	fmt.Fprintln(stdio.Out, "Importing right backup")
-	right := model.Database{}
-	err = right.ImportJWLBackup(rightFilename)
+	right, err := storage.ImportJWLBackup(rightFilename)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -229,7 +228,7 @@ func merge(leftFilename string, rightFilename string, mergedFilename string, std
 	fmt.Fprintln(stdio.Out, "🎉 Finished merging!")
 
 	fmt.Fprintln(stdio.Out, "Exporting merged database")
-	if err = merged.ExportJWLBackup(mergedFilename); err != nil {
+	if err = storage.ExportJWLBackup(&merged, mergedFilename); err != nil {
 		log.Fatal(err)
 	}
 
