@@ -251,13 +251,13 @@ func (db *Database) importSQLite(filename string) error {
 
 	var wg sync.WaitGroup
 	wg.Add(8)
-	errors := make(chan error, 10)
+	errorChan := make(chan error, 10)
 
 	// Fill each table struct separately (did not find a DRYer solution yet..)
 	go func() {
 		mdl, err := fetchFromSQLite(sqlite, &BlockRange{})
 		if err != nil {
-			errors <- err
+			errorChan <- err
 			wg.Done()
 			return
 		}
@@ -268,7 +268,7 @@ func (db *Database) importSQLite(filename string) error {
 	go func() {
 		mdl, err := fetchFromSQLite(sqlite, &Bookmark{})
 		if err != nil {
-			errors <- err
+			errorChan <- err
 			wg.Done()
 			return
 		}
@@ -279,7 +279,7 @@ func (db *Database) importSQLite(filename string) error {
 	go func() {
 		mdl, err := fetchFromSQLite(sqlite, &InputField{})
 		if err != nil {
-			errors <- err
+			errorChan <- err
 			wg.Done()
 			return
 		}
@@ -290,7 +290,7 @@ func (db *Database) importSQLite(filename string) error {
 	go func() {
 		mdl, err := fetchFromSQLite(sqlite, &Location{})
 		if err != nil {
-			errors <- err
+			errorChan <- err
 			wg.Done()
 			return
 		}
@@ -301,7 +301,7 @@ func (db *Database) importSQLite(filename string) error {
 	go func() {
 		mdl, err := fetchFromSQLite(sqlite, &Note{})
 		if err != nil {
-			errors <- err
+			errorChan <- err
 			wg.Done()
 			return
 		}
@@ -312,7 +312,7 @@ func (db *Database) importSQLite(filename string) error {
 	go func() {
 		mdl, err := fetchFromSQLite(sqlite, &Tag{})
 		if err != nil {
-			errors <- err
+			errorChan <- err
 			wg.Done()
 			return
 		}
@@ -323,7 +323,7 @@ func (db *Database) importSQLite(filename string) error {
 	go func() {
 		mdl, err := fetchFromSQLite(sqlite, &TagMap{})
 		if err != nil {
-			errors <- err
+			errorChan <- err
 			wg.Done()
 			return
 		}
@@ -334,7 +334,7 @@ func (db *Database) importSQLite(filename string) error {
 	go func() {
 		mdl, err := fetchFromSQLite(sqlite, &UserMark{})
 		if err != nil {
-			errors <- err
+			errorChan <- err
 			wg.Done()
 			return
 		}
@@ -345,7 +345,7 @@ func (db *Database) importSQLite(filename string) error {
 	wg.Wait()
 
 	select {
-	case err := <-errors:
+	case err := <-errorChan:
 		return err
 	default:
 		return nil
