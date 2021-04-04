@@ -123,6 +123,7 @@ func mergeUMBR(left []*model.UserMarkBlockRange, right []*model.UserMarkBlockRan
 						second = right[br.br.UserMarkID]
 					}
 					var conflictKey strings.Builder
+					conflictKey.Grow(160)
 					// Use UnixNano as a monotonically increasing number, so we
 					// are able to apply conflict solutions in the right order later
 					conflictKey.WriteString(fmt.Sprint(time.Now().UnixNano()))

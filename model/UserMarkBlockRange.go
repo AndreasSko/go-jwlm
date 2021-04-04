@@ -30,6 +30,7 @@ func (m *UserMarkBlockRange) SetID(id int) {
 // so it can be used as a key in a map.
 func (m *UserMarkBlockRange) UniqueKey() string {
 	var sb strings.Builder
+	sb.Grow(70)
 	sb.WriteString(m.UserMark.UniqueKey())
 	sb.WriteString("_")
 	for i, br := range m.BlockRanges {
@@ -53,11 +54,11 @@ func (m *UserMarkBlockRange) Equals(m2 Model) bool {
 	mBRKeys := make(map[string]bool, len(m.BlockRanges))
 	m2BRKeys := make(map[string]bool, len(m2.(*UserMarkBlockRange).BlockRanges))
 	for _, br := range m.BlockRanges {
-		uq := rmUID.ReplaceAllString(br.UniqueKey(), "$1")
+		uq := rmUID.FindStringSubmatch(br.UniqueKey())[1]
 		mBRKeys[uq] = true
 	}
 	for _, br := range m2.(*UserMarkBlockRange).BlockRanges {
-		uq := rmUID.ReplaceAllString(br.UniqueKey(), "$1")
+		uq := rmUID.FindStringSubmatch(br.UniqueKey())[1]
 		m2BRKeys[uq] = true
 	}
 
