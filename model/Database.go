@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"sync"
 	"time"
 
 	"github.com/davecgh/go-spew/spew"
@@ -248,60 +249,107 @@ func (db *Database) importSQLite(filename string) error {
 		}
 	}
 
+	var wg sync.WaitGroup
+	wg.Add(8)
+	errors := make(chan error, 10)
+
 	// Fill each table struct separately (did not find a DRYer solution yet..)
-	mdl, err := fetchFromSQLite(sqlite, &BlockRange{})
-	if err != nil {
-		return err
-	}
-	db.BlockRange = BlockRange{}.MakeSlice(mdl)
+	go func() {
+		mdl, err := fetchFromSQLite(sqlite, &BlockRange{})
+		if err != nil {
+			errors <- err
+			wg.Done()
+			return
+		}
+		db.BlockRange = BlockRange{}.MakeSlice(mdl)
+		wg.Done()
+	}()
 
-	mdl, err = fetchFromSQLite(sqlite, &Bookmark{})
-	if err != nil {
-		return err
-	}
-	db.Bookmark = Bookmark{}.MakeSlice(mdl)
+	go func() {
+		mdl, err := fetchFromSQLite(sqlite, &Bookmark{})
+		if err != nil {
+			errors <- err
+			wg.Done()
+			return
+		}
+		db.Bookmark = Bookmark{}.MakeSlice(mdl)
+		wg.Done()
+	}()
 
-	mdl, err = fetchFromSQLite(sqlite, &InputField{})
-	if err != nil {
-		return err
-	}
-	db.InputField = InputField{}.MakeSlice(mdl)
+	go func() {
+		mdl, err := fetchFromSQLite(sqlite, &InputField{})
+		if err != nil {
+			errors <- err
+			wg.Done()
+			return
+		}
+		db.InputField = InputField{}.MakeSlice(mdl)
+		wg.Done()
+	}()
 
-	mdl, err = fetchFromSQLite(sqlite, &Location{})
-	if err != nil {
-		return err
-	}
-	db.Location = Location{}.MakeSlice(mdl)
+	go func() {
+		mdl, err := fetchFromSQLite(sqlite, &Location{})
+		if err != nil {
+			errors <- err
+			wg.Done()
+			return
+		}
+		db.Location = Location{}.MakeSlice(mdl)
+		wg.Done()
+	}()
 
-	mdl, err = fetchFromSQLite(sqlite, &Note{})
-	if err != nil {
-		return err
-	}
-	db.Note = Note{}.MakeSlice(mdl)
+	go func() {
+		mdl, err := fetchFromSQLite(sqlite, &Note{})
+		if err != nil {
+			errors <- err
+			wg.Done()
+			return
+		}
+		db.Note = Note{}.MakeSlice(mdl)
+		wg.Done()
+	}()
 
-	mdl, err = fetchFromSQLite(sqlite, &Tag{})
-	if err != nil {
-		return err
-	}
-	db.Tag = Tag{}.MakeSlice(mdl)
+	go func() {
+		mdl, err := fetchFromSQLite(sqlite, &Tag{})
+		if err != nil {
+			errors <- err
+			wg.Done()
+			return
+		}
+		db.Tag = Tag{}.MakeSlice(mdl)
+		wg.Done()
+	}()
 
-	mdl, err = fetchFromSQLite(sqlite, &TagMap{})
-	if err != nil {
-		return err
-	}
-	db.TagMap = TagMap{}.MakeSlice(mdl)
+	go func() {
+		mdl, err := fetchFromSQLite(sqlite, &TagMap{})
+		if err != nil {
+			errors <- err
+			wg.Done()
+			return
+		}
+		db.TagMap = TagMap{}.MakeSlice(mdl)
+		wg.Done()
+	}()
 
-	mdl, err = fetchFromSQLite(sqlite, &UserMark{})
-	if err != nil {
-		return err
-	}
+	go func() {
+		mdl, err := fetchFromSQLite(sqlite, &UserMark{})
+		if err != nil {
+			errors <- err
+			wg.Done()
+			return
+		}
+		db.UserMark = UserMark{}.MakeSlice(mdl)
+		wg.Done()
+	}()
 
-	db.UserMark = UserMark{}.MakeSlice(mdl)
-	if err != nil {
-		return err
-	}
+	wg.Wait()
 
-	return nil
+	select {
+	case err := <-errors:
+		return err
+	default:
+		return nil
+	}
 }
 
 // fetchFromSQLite fetches the entries for a given modelType and returns a slice
