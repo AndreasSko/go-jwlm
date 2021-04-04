@@ -30,6 +30,7 @@ func (m *UserMarkBlockRange) SetID(id int) {
 // so it can be used as a key in a map.
 func (m *UserMarkBlockRange) UniqueKey() string {
 	var sb strings.Builder
+	sb.Grow(70)
 	sb.WriteString(m.UserMark.UniqueKey())
 	sb.WriteString("_")
 	for i, br := range m.BlockRanges {
