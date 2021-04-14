@@ -19,7 +19,7 @@ require (
 	github.com/hinshun/vt10x v0.0.0-20180809195222-d55458df857c
 	github.com/jedib0t/go-pretty v4.3.0+incompatible
 	github.com/juju/errors v0.0.0-20200330140219-3fe23663418f // indirect
-	github.com/klauspost/compress v1.11.13
+	github.com/klauspost/compress v1.12.1
 	github.com/magiconair/properties v1.8.4 // indirect
 	github.com/mattn/go-colorable v0.1.8 // indirect
 	github.com/mattn/go-runewidth v0.0.10 // indirect
