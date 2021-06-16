@@ -20,7 +20,6 @@ require (
 	github.com/jedib0t/go-pretty v4.3.0+incompatible
 	github.com/juju/errors v0.0.0-20200330140219-3fe23663418f // indirect
 	github.com/klauspost/compress v1.13.1
-	github.com/magiconair/properties v1.8.4 // indirect
 	github.com/mattn/go-colorable v0.1.8 // indirect
 	github.com/mattn/go-runewidth v0.0.10 // indirect
 	github.com/mattn/go-sqlite3 v1.14.7
@@ -28,18 +27,16 @@ require (
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/mitchellh/go-wordwrap v1.0.1
 	github.com/mitchellh/mapstructure v1.4.1 // indirect
-	github.com/pelletier/go-toml v1.8.1 // indirect
 	github.com/pkg/errors v0.9.1
 	github.com/rivo/uniseg v0.2.0 // indirect
 	github.com/sergi/go-diff v1.2.0
 	github.com/sirupsen/logrus v1.8.1
 	github.com/smartystreets/assertions v1.2.0 // indirect
-	github.com/spf13/afero v1.5.1 // indirect
 	github.com/spf13/cast v1.3.1 // indirect
 	github.com/spf13/cobra v1.1.1
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
-	github.com/spf13/viper v1.7.1
-	github.com/stretchr/testify v1.6.1
+	github.com/spf13/viper v1.8.0
+	github.com/stretchr/testify v1.7.0
 	go.mongodb.org/mongo-driver v1.5.0 // indirect
 	golang.org/x/crypto v0.0.0-20210317152858-513c2a44f670 // indirect
 	golang.org/x/term v0.0.0-20210317153231-de623e64d2a6 // indirect
