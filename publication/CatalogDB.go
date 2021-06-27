@@ -10,7 +10,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/cavaliercoder/grab"
 	"github.com/codeclysm/extract/v3"
 	"github.com/pkg/errors"
 )
@@ -20,17 +19,6 @@ var ManifestURL = "https://app.jw-cdn.org/catalogs/publications/v4/manifest.json
 
 // CatalogURL is the URL to the publication catalog
 var CatalogURL = "https://app.jw-cdn.org/catalogs/publications/v4/%s/catalog.db.gz"
-
-// Progress represents the progress of a running download
-type Progress struct {
-	Size           int64
-	BytesComplete  int64
-	BytesPerSecond float64
-	Progress       float64
-	Duration       time.Duration
-	ETA            time.Time
-	Done           bool
-}
 
 type catalogManifest struct {
 	Version int    `json:"version"`
@@ -88,52 +76,13 @@ func DownloadCatalog(ctx context.Context, prgrs chan Progress, dst string) error
 	}
 	url := fmt.Sprintf(CatalogURL, mfst.Current)
 
-	client := grab.NewClient()
-	req, err := grab.NewRequest(tmp, url)
+	filename, err := download(ctx, prgrs, url, tmp)
 	if err != nil {
-		return errors.Wrapf(err, "Error while creating request for %s", url)
-	}
-	req = req.WithContext(ctx)
-	resp := client.Do(req)
-
-	progress := Progress{}
-
-	// Send a progress over the prgrsChan every 250 milliseconds
-	t := time.NewTicker(250 * time.Millisecond)
-	defer t.Stop()
-Loop:
-	for {
-		progress := Progress{
-			Size:           resp.Size(),
-			BytesComplete:  resp.BytesComplete(),
-			BytesPerSecond: resp.BytesPerSecond(),
-			Progress:       resp.Progress(),
-			Duration:       resp.Duration(),
-			ETA:            resp.ETA(),
-		}
-		select {
-		case <-t.C:
-			select {
-			case prgrs <- progress:
-				continue
-			default:
-				continue
-			}
-		case <-resp.Done:
-			break Loop
-		}
-	}
-	if err := resp.Err(); err != nil {
-		progress.Done = true
-		select {
-		case prgrs <- progress:
-		default:
-		}
-		return errors.Wrapf(err, "Error while downloading catalog from %s", url)
+		return fmt.Errorf("failed to download catalog: %w", err)
 	}
 
 	// Extract and save at dst
-	data, err := ioutil.ReadFile(resp.Filename)
+	data, err := ioutil.ReadFile(filename)
 	if err != nil {
 		return errors.Wrap(err, "Error while reading catalog.db.gz")
 	}
@@ -143,9 +92,8 @@ Loop:
 		return errors.Wrap(err, "Error while extracting catalog.db")
 	}
 
-	progress.Done = true
 	select {
-	case prgrs <- progress:
+	case prgrs <- Progress{Done: true}:
 	default:
 	}
 
@@ -158,7 +106,7 @@ func fetchManifest(ctx context.Context) (catalogManifest, error) {
 	if err != nil {
 		return catalogManifest{}, errors.Wrapf(err, "Error while creating new request for %s", ManifestURL)
 	}
-	req.WithContext(ctx)
+	req = req.WithContext(ctx)
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
