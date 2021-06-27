@@ -20,7 +20,7 @@ jobs:
       - name: Install Go
         uses: actions/setup-go@v2
         with:
-          go-version: '1.14'
+          go-version: '1.16'
       - name: Checkout code
         uses: actions/checkout@v2
       - name: Run tests
@@ -32,13 +32,13 @@ jobs:
       - name: Install Go
         uses: actions/setup-go@v2
         with:
-          go-version: '1.14'
+          go-version: '1.16'
       - name: Install Gomobile
         run: go get golang.org/x/mobile/cmd/gomobile
       - name: Checkout code
         uses: actions/checkout@v2
       - name: Initialize Gomobile
-        run: gomobile init
+        run: go mod download golang.org/x/mobile && gomobile init
         working-directory: gomobile
       - name: Build for iOS
         run: gomobile bind -target ios -v
