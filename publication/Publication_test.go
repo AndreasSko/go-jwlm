@@ -3,7 +3,9 @@ package publication
 import (
 	"database/sql"
 	"encoding/json"
+	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
@@ -322,4 +324,11 @@ func TestPublication_MarshalJSON(t *testing.T) {
 	jsn, err := json.Marshal(publ)
 	assert.NoError(t, err)
 	assert.Equal(t, expected, string(jsn))
+}
+
+func Test_checkJWPubSnippetsFakeImplementation(t *testing.T) {
+	// Make sure we are using real implementation in GitHub Actions
+	if strings.ToLower(os.Getenv("GITHUB_REPOSITORY")) == "andreassko/go-jwlm" {
+		assert.False(t, checkJWPubSnippetsFakeImplementation())
+	}
 }

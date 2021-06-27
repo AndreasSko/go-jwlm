@@ -63,7 +63,18 @@ func TestDownloadPublication(t *testing.T) {
 				},
 			},
 			filename:    "w_PJ_202107.db",
-			minFileSize: 600000, // > 400kB
+			minFileSize: 600000, // > 600kB
+		},
+		{
+			name: "Wrong download",
+			args: args{
+				publ: Publication{
+					ID:                   12345678910,
+					PublicationRootKeyID: 12345678910,
+					MepsLanguageID:       12345678910,
+				},
+			},
+			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
@@ -79,6 +90,7 @@ func TestDownloadPublication(t *testing.T) {
 				path, err = DownloadPublication(context.Background(), prgrs, tt.args.publ, tmp)
 				if tt.wantErr {
 					assert.Error(t, err)
+					done <- struct{}{}
 					return
 				}
 				assert.NoError(t, err)
@@ -91,6 +103,10 @@ func TestDownloadPublication(t *testing.T) {
 			<-done
 
 			info, err := os.Stat(path)
+			if tt.wantErr {
+				assert.Error(t, err)
+				return
+			}
 			assert.NoError(t, err)
 			assert.Greater(t, info.Size(), int64(tt.minFileSize))
 

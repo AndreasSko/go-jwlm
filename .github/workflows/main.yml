@@ -23,6 +23,23 @@ jobs:
           go-version: '1.16'
       - name: Checkout code
         uses: actions/checkout@v2
+
+      - name: Use github.com/AndreasSko/jwpub-snippets instead of fake implementation
+        uses: AndreasSko/find-and-replace-action@main
+        with:
+          from: ^replace github.com\/AndreasSko\/jwpub-snippets.*$
+          to: ""
+          files: go.mod
+
+      - name: Inject insteadOf config for private repo
+        env:
+          JWPUB_SNIPPET_GITHUB_TOKEN: ${{ secrets.JWPUB_SNIPPET_GITHUB_TOKEN }}
+        run: git config --global url."https://${JWPUB_SNIPPET_GITHUB_TOKEN}:x-oauth-basic@github.com".insteadOf "https://github.com"
+
+      - run: go get
+        env:
+          GOPRIVATE: github.com/AndreasSko
+
       - name: Run tests
         run: go test ./...
     
@@ -33,13 +50,33 @@ jobs:
         uses: actions/setup-go@v2
         with:
           go-version: '1.16'
+
       - name: Install Gomobile
         run: go get golang.org/x/mobile/cmd/gomobile
+
       - name: Checkout code
         uses: actions/checkout@v2
+
+      - name: Use github.com/AndreasSko/jwpub-snippets instead of fake implementation
+        uses: AndreasSko/find-and-replace-action@main
+        with:
+          from: ^replace github.com\/AndreasSko\/jwpub-snippets.*$
+          to: ""
+          files: go.mod
+
+      - name: Inject insteadOf config for private repo
+        env:
+          JWPUB_SNIPPET_GITHUB_TOKEN: ${{ secrets.JWPUB_SNIPPET_GITHUB_TOKEN }}
+        run: git config --global url."https://${JWPUB_SNIPPET_GITHUB_TOKEN}:x-oauth-basic@github.com".insteadOf "https://github.com"
+
+      - run: go get
+        env:
+          GOPRIVATE: github.com/AndreasSko
+        
       - name: Initialize Gomobile
         run: go mod download golang.org/x/mobile && gomobile init
         working-directory: gomobile
+
       - name: Build for iOS
         run: gomobile bind -target ios -v
         working-directory: gomobile
