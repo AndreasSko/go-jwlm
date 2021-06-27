@@ -207,6 +207,97 @@ func Test_lookupPublication(t *testing.T) {
 	assert.Equal(t, publication, res)
 }
 
+func TestGetPublicationPath(t *testing.T) {
+	type args struct {
+		publ    Publication
+		publDir string
+	}
+	tests := []struct {
+		name         string
+		args         args
+		wantContains string
+		wantErr      bool
+	}{
+		{
+			name: "WT Chinese - exists",
+			args: args{
+				publ: Publication{
+					ID:                    305097,
+					PublicationRootKeyID:  780,
+					MepsLanguageID:        43,
+					PublicationTypeID:     14,
+					IssueTagNumber:        20210200,
+					Title:                 "The Watchtower Announcing Jehovah’s Kingdom (Study)—2021",
+					IssueTitle:            sql.NullString{"The Watchtower, February 2021", true},
+					ShortTitle:            "The Watchtower (Study) (2021)",
+					CoverTitle:            sql.NullString{"Study Articles for April 5 to May 2", true},
+					UndatedTitle:          sql.NullString{"The Watchtower—Study Edition", true},
+					UndatedReferenceTitle: sql.NullString{"The Watchtower (Study)", true},
+					Year:                  2021,
+					Symbol:                "w21",
+					KeySymbol:             sql.NullString{"w", true},
+				},
+				publDir: "./testdata",
+			},
+			wantContains: "testdata/w_CH_202102.db",
+		},
+		{
+			name: "WT German - does not exist",
+			args: args{
+				publ: Publication{
+					ID:                    305097,
+					PublicationRootKeyID:  780,
+					MepsLanguageID:        2,
+					PublicationTypeID:     14,
+					IssueTagNumber:        20210200,
+					Title:                 "The Watchtower Announcing Jehovah’s Kingdom (Study)—2021",
+					IssueTitle:            sql.NullString{"The Watchtower, February 2021", true},
+					ShortTitle:            "The Watchtower (Study) (2021)",
+					CoverTitle:            sql.NullString{"Study Articles for April 5 to May 2", true},
+					UndatedTitle:          sql.NullString{"The Watchtower—Study Edition", true},
+					UndatedReferenceTitle: sql.NullString{"The Watchtower (Study)", true},
+					Year:                  2021,
+					Symbol:                "w21",
+					KeySymbol:             sql.NullString{"w", true},
+				},
+				publDir: "./testdata",
+			},
+			wantErr: true,
+		},
+		{
+			name: "Enjoy Life Forever Brochure",
+			args: args{
+				publ: Publication{
+					ID:                    336509,
+					PublicationRootKeyID:  795,
+					MepsLanguageID:        0,
+					PublicationTypeID:     4,
+					IssueTagNumber:        0,
+					Title:                 "Enjoy Life Forever!—Introductory Bible Lessons",
+					ShortTitle:            "Enjoy Life Forever!—Brochure",
+					UndatedReferenceTitle: sql.NullString{"Enjoy Life Forever!—Brochure", true},
+					Year:                  2020,
+					Symbol:                "lffi",
+					KeySymbol:             sql.NullString{"lffi", true},
+				},
+				publDir: "./testdata",
+			},
+			wantContains: "testdata/lffi_E.db",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := GetPublicationPath(tt.args.publ, tt.args.publDir)
+			if tt.wantErr {
+				assert.Error(t, err)
+				return
+			}
+			assert.NoError(t, err)
+			assert.Contains(t, got, filepath.Clean(tt.wantContains))
+		})
+	}
+}
+
 func TestPublication_MarshalJSON(t *testing.T) {
 	publ := Publication{
 		ID:                    1,

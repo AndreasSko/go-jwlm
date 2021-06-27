@@ -5,7 +5,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
+	"strings"
 
+	"github.com/AndreasSko/go-jwlm/model"
+	snippets "github.com/AndreasSko/jwpub-snippets"
 	"github.com/pkg/errors"
 
 	// Register SQLite driver
@@ -96,6 +100,29 @@ func lookupPublication(db *sql.DB, query Lookup) (Publication, error) {
 	}
 
 	return publ, nil
+}
+
+// GetPublicationPath generates the filename of the publication and checks if it
+// exists in the publDir
+func GetPublicationPath(publ Publication, publDir string) (string, error) {
+	language, err := lookupMepsLanguage(publ.MepsLanguageID)
+	if err != nil {
+		return "", err
+	}
+
+	filename := fmt.Sprintf("%s_%s_%d", publ.KeySymbol.String, language.Symbol, publ.IssueTagNumber)
+	for strings.HasSuffix(filename, "0") {
+		filename = strings.TrimSuffix(filename, "0")
+	}
+	filename = strings.TrimSuffix(filename, "_")
+	filename += ".db"
+
+	path := filepath.Join(publDir, filename)
+	if _, err := os.Stat(path); err != nil {
+		return "", fmt.Errorf("did not find publication: %w", err)
+	}
+
+	return filepath.Clean(path), nil
 }
 
 // MarshalJSON returns the JSON encoding of the entry
