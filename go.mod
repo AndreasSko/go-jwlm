@@ -3,7 +3,7 @@ module github.com/AndreasSko/go-jwlm
 go 1.14
 
 require (
-	github.com/AlecAivazis/survey/v2 v2.2.13
+	github.com/AlecAivazis/survey/v2 v2.2.14
 	github.com/DATA-DOG/go-sqlmock v1.5.0
 	github.com/MakeNowJust/heredoc v1.0.0
 	github.com/Netflix/go-expect v0.0.0-20200312175327-da48e75238e2
