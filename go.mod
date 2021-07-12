@@ -8,7 +8,7 @@ require (
 	github.com/MakeNowJust/heredoc v1.0.0
 	github.com/Netflix/go-expect v0.0.0-20200312175327-da48e75238e2
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d // indirect
-	github.com/buger/goterm v1.0.0
+	github.com/buger/goterm v1.0.1
 	github.com/cavaliercoder/grab v1.0.1-0.20201108051000-98a5bfe305ec
 	github.com/codeclysm/extract/v3 v3.0.2
 	github.com/davecgh/go-spew v1.1.1
