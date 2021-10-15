@@ -4,6 +4,9 @@ package gomobile
 
 import (
 	"database/sql"
+	"io/ioutil"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/AndreasSko/go-jwlm/model"
@@ -156,6 +159,38 @@ func Test_MergeNwt(t *testing.T) {
 
 	assert.True(t, dbw.merged.Equals(mergedAllLeftNwtDB))
 }
+
+func Test_MergeNwtDifferentDocID(t *testing.T) {
+	// As the cleanup happens in the PostMerge hook, which is called on export,
+	// we also need to export the merged DB
+	tmp, err := ioutil.TempDir("", "go-jwlm")
+	assert.NoError(t, err)
+	defer os.RemoveAll(tmp)
+
+	dbw := DatabaseWrapper{
+		left:  model.MakeDatabaseCopy(leftDBNwtWithDifferentDocID),
+		right: model.MakeDatabaseCopy(rightDBNwtWithDifferentDocID),
+	}
+	dbw.Init()
+
+	mcw := &MergeConflictsWrapper{}
+	assert.NoError(t, dbw.MergeLocations())
+	assert.NoError(t, dbw.MergeInputFields("chooseLeft", mcw))
+	assert.NoError(t, dbw.MergeBookmarks("chooseLeft", mcw))
+	assert.NoError(t, dbw.MergeTags())
+	assert.NoError(t, dbw.MergeUserMarkAndBlockRange("chooseLeft", mcw))
+	assert.NoError(t, dbw.MergeNotes("chooseLeft", mcw))
+	assert.NoError(t, dbw.MergeTagMaps())
+
+	newBackup := filepath.Join(tmp, "test.jwlibrary")
+	assert.NoError(t, dbw.ExportMerged(newBackup))
+
+	newDB := &model.Database{}
+	assert.NoError(t, newDB.ImportJWLBackup(newBackup))
+
+	assert.True(t, newDB.Equals(mergedDBNwtWithDifferentDocID))
+}
+
 var leftMultiCollision = &model.Database{
 	BlockRange: []*model.BlockRange{
 		nil,
@@ -1423,6 +1458,255 @@ var mergedAllLeftNwtDB = &model.Database{
 			LocationID:   1,
 			StyleIndex:   0,
 			UserMarkGUID: "2",
+			Version:      1,
+		},
+	},
+}
+
+var leftDBNwtWithDifferentDocID = &model.Database{
+	BlockRange: []*model.BlockRange{
+		nil,
+		{
+			BlockRangeID: 1,
+			BlockType:    2,
+			Identifier:   1,
+			StartToken:   sql.NullInt32{0, true},
+			EndToken:     sql.NullInt32{7, true},
+			UserMarkID:   2,
+		},
+		{
+			BlockRangeID: 2,
+			BlockType:    2,
+			Identifier:   5,
+			StartToken:   sql.NullInt32{0, true},
+			EndToken:     sql.NullInt32{20, true},
+			UserMarkID:   3,
+		},
+		{
+			BlockRangeID: 3,
+			BlockType:    2,
+			Identifier:   2,
+			StartToken:   sql.NullInt32{0, true},
+			EndToken:     sql.NullInt32{5, true},
+			UserMarkID:   2,
+		},
+	},
+	Bookmark:   []*model.Bookmark{nil},
+	InputField: []*model.InputField{nil},
+	Location: []*model.Location{
+		nil,
+		{
+			LocationID:   1,
+			DocumentID:   sql.NullInt32{1102021811, true},
+			KeySymbol:    sql.NullString{"lffi", true},
+			MepsLanguage: 2,
+		},
+		{
+			LocationID:   2,
+			DocumentID:   sql.NullInt32{123456789, true},
+			KeySymbol:    sql.NullString{"nwtsty", true},
+			MepsLanguage: 2,
+		},
+		// Make sure that when migrating to nwtsty we don't have duplicate locations
+		// in case the nwtsty-location already exists on the other side
+		{
+			LocationID:    3,
+			BookNumber:    sql.NullInt32{1, true},
+			ChapterNumber: sql.NullInt32{1, true},
+			KeySymbol:     sql.NullString{"nwtsty", true},
+			MepsLanguage:  2,
+		},
+	},
+	Note:   []*model.Note{nil},
+	Tag:    []*model.Tag{nil},
+	TagMap: []*model.TagMap{nil},
+	UserMark: []*model.UserMark{
+		nil,
+		nil,
+		{
+			UserMarkID:   2,
+			ColorIndex:   1,
+			LocationID:   2,
+			StyleIndex:   0,
+			UserMarkGUID: "This marking has a different location depending on nwt/nwtsty",
+			Version:      1,
+		},
+		{
+			UserMarkID:   3,
+			ColorIndex:   1,
+			LocationID:   1,
+			StyleIndex:   0,
+			UserMarkGUID: "SomeGUID",
+			Version:      1,
+		},
+	},
+}
+
+var rightDBNwtWithDifferentDocID = &model.Database{
+	BlockRange: []*model.BlockRange{
+		nil,
+		{
+			BlockRangeID: 1,
+			BlockType:    2,
+			Identifier:   1,
+			StartToken:   sql.NullInt32{0, true},
+			EndToken:     sql.NullInt32{7, true},
+			UserMarkID:   1,
+		},
+		{
+			BlockRangeID: 2,
+			BlockType:    2,
+			Identifier:   2,
+			StartToken:   sql.NullInt32{0, true},
+			EndToken:     sql.NullInt32{5, true},
+			UserMarkID:   1,
+		},
+		{
+			BlockRangeID: 3,
+			BlockType:    2,
+			Identifier:   3,
+			StartToken:   sql.NullInt32{0, true},
+			EndToken:     sql.NullInt32{5, true},
+			UserMarkID:   2,
+		},
+	},
+	Bookmark:   []*model.Bookmark{nil},
+	InputField: []*model.InputField{nil},
+	Location: []*model.Location{
+		nil,
+		{
+			LocationID:   1,
+			DocumentID:   sql.NullInt32{987654332, true},
+			KeySymbol:    sql.NullString{"nwt", true},
+			MepsLanguage: 2,
+		},
+		// Make sure that when migrating to nwtsty we don't have duplicate locations
+		// in case the nwtsty-location already exists on the other side
+		{
+			LocationID:    2,
+			BookNumber:    sql.NullInt32{1, true},
+			ChapterNumber: sql.NullInt32{1, true},
+			KeySymbol:     sql.NullString{"nwt", true},
+			MepsLanguage:  2,
+		},
+	},
+	Note:   []*model.Note{nil},
+	Tag:    []*model.Tag{nil},
+	TagMap: []*model.TagMap{nil},
+	UserMark: []*model.UserMark{
+		nil,
+		{
+			UserMarkID:   1,
+			ColorIndex:   1,
+			LocationID:   1,
+			StyleIndex:   0,
+			UserMarkGUID: "This marking has a different location depending on nwt/nwtsty",
+			Version:      1,
+		},
+		{
+			UserMarkID:   2,
+			ColorIndex:   1,
+			LocationID:   1,
+			StyleIndex:   0,
+			UserMarkGUID: "This should stay in nwt because of different DocumentIDs",
+			Version:      1,
+		},
+	},
+}
+
+var mergedDBNwtWithDifferentDocID = &model.Database{
+	BlockRange: []*model.BlockRange{
+		nil,
+		{
+			BlockRangeID: 1,
+			BlockType:    2,
+			Identifier:   1,
+			StartToken:   sql.NullInt32{0, true},
+			EndToken:     sql.NullInt32{7, true},
+			UserMarkID:   1,
+		},
+		{
+			BlockRangeID: 2,
+			BlockType:    2,
+			Identifier:   5,
+			StartToken:   sql.NullInt32{0, true},
+			EndToken:     sql.NullInt32{20, true},
+			UserMarkID:   2,
+		},
+		{
+			BlockRangeID: 3,
+			BlockType:    2,
+			Identifier:   2,
+			StartToken:   sql.NullInt32{0, true},
+			EndToken:     sql.NullInt32{5, true},
+			UserMarkID:   1,
+		},
+		{
+			BlockRangeID: 4,
+			BlockType:    2,
+			Identifier:   3,
+			StartToken:   sql.NullInt32{0, true},
+			EndToken:     sql.NullInt32{5, true},
+			UserMarkID:   3,
+		},
+	},
+	Bookmark:   []*model.Bookmark{nil},
+	InputField: []*model.InputField{nil},
+	Location: []*model.Location{
+		nil,
+		{
+			LocationID:   1,
+			DocumentID:   sql.NullInt32{1102021811, true},
+			KeySymbol:    sql.NullString{"lffi", true},
+			MepsLanguage: 2,
+		},
+		{
+			LocationID:   2,
+			DocumentID:   sql.NullInt32{123456789, true},
+			KeySymbol:    sql.NullString{"nwtsty", true},
+			MepsLanguage: 2,
+		},
+		{
+			LocationID:   3,
+			DocumentID:   sql.NullInt32{987654332, true},
+			KeySymbol:    sql.NullString{"nwt", true},
+			MepsLanguage: 2,
+		},
+		{
+			LocationID:    4,
+			BookNumber:    sql.NullInt32{1, true},
+			ChapterNumber: sql.NullInt32{1, true},
+			KeySymbol:     sql.NullString{"nwtsty", true},
+			MepsLanguage:  2,
+		},
+	},
+	Note:   []*model.Note{nil},
+	Tag:    []*model.Tag{nil},
+	TagMap: []*model.TagMap{nil},
+	UserMark: []*model.UserMark{
+		nil,
+		{
+			UserMarkID:   1,
+			ColorIndex:   1,
+			LocationID:   2,
+			StyleIndex:   0,
+			UserMarkGUID: "This marking has a different location depending on nwt/nwtsty",
+			Version:      1,
+		},
+		{
+			UserMarkID:   2,
+			ColorIndex:   1,
+			LocationID:   1,
+			StyleIndex:   0,
+			UserMarkGUID: "SomeGUID",
+			Version:      1,
+		},
+		{
+			UserMarkID:   3,
+			ColorIndex:   1,
+			LocationID:   3,
+			StyleIndex:   0,
+			UserMarkGUID: "This should stay in nwt because of different DocumentIDs",
 			Version:      1,
 		},
 	},

@@ -2,6 +2,8 @@ package merger
 
 import (
 	"database/sql"
+	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/AndreasSko/go-jwlm/model"
@@ -1876,5 +1878,525 @@ func Test_cleanupDuplicateLocations(t *testing.T) {
 			assert.Equal(t, tt.wantLocations, locations)
 			assert.Equal(t, tt.wantChanges, changes)
 		})
+	}
+}
+
+func Test_detectDuplicateUserMarks(t *testing.T) {
+	type args struct {
+		userMarks []*model.UserMark
+	}
+	tests := []struct {
+		name string
+		args args
+		want map[string][]*model.UserMark
+	}{
+		{
+			name: "No duplicates",
+			args: args{
+				userMarks: []*model.UserMark{
+					nil,
+					{
+						UserMarkGUID: "A",
+					},
+					nil,
+					nil,
+					{
+						UserMarkGUID: "B",
+					},
+					{
+						UserMarkGUID: "C",
+					},
+					nil,
+				},
+			},
+			want: map[string][]*model.UserMark{},
+		},
+		{
+			name: "Duplicates",
+			args: args{
+				userMarks: []*model.UserMark{
+					nil,
+					{
+						UserMarkID:   1,
+						UserMarkGUID: "A",
+					},
+					nil,
+					{
+						UserMarkID:   3,
+						UserMarkGUID: "A",
+					},
+					{
+						UserMarkID:   4,
+						UserMarkGUID: "B",
+					},
+					{
+						UserMarkID:   5,
+						UserMarkGUID: "A",
+					},
+					{
+						UserMarkID:   6,
+						UserMarkGUID: "B",
+					},
+					{
+						UserMarkID:   7,
+						UserMarkGUID: "C",
+					},
+				},
+			},
+			want: map[string][]*model.UserMark{
+				"A": {
+					&model.UserMark{
+						UserMarkID:   1,
+						UserMarkGUID: "A",
+					},
+					&model.UserMark{
+						UserMarkID:   3,
+						UserMarkGUID: "A",
+					},
+					&model.UserMark{
+						UserMarkID:   5,
+						UserMarkGUID: "A",
+					},
+				},
+				"B": {
+					&model.UserMark{
+						UserMarkID:   4,
+						UserMarkGUID: "B",
+					},
+					&model.UserMark{
+						UserMarkID:   6,
+						UserMarkGUID: "B",
+					},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		assert.Equal(t, tt.want, detectDuplicateUserMarks(tt.args.userMarks))
+	}
+}
+
+func Test_deleteUserMark(t *testing.T) {
+	type args struct {
+		db *model.Database
+		um *model.UserMark
+	}
+	tests := []struct {
+		name   string
+		args   args
+		result *model.Database
+	}{
+		{
+			args: args{
+				db: &model.Database{
+					BlockRange: []*model.BlockRange{
+						nil,
+						{
+							BlockRangeID: 1,
+							UserMarkID:   1,
+						},
+						nil,
+						{
+							BlockRangeID: 3,
+							UserMarkID:   1,
+						},
+						{
+							BlockRangeID: 4,
+							UserMarkID:   2,
+						},
+						{
+							BlockRangeID: 5,
+							UserMarkID:   10,
+						},
+					},
+					UserMark: []*model.UserMark{
+						nil,
+						{
+							UserMarkID: 1,
+						},
+						{
+							UserMarkID: 2,
+						},
+						{
+							UserMarkID: 10,
+						},
+					},
+				},
+				um: &model.UserMark{UserMarkID: 1},
+			},
+			result: &model.Database{
+				BlockRange: []*model.BlockRange{
+					nil,
+					nil,
+					nil,
+					nil,
+					{
+						BlockRangeID: 4,
+						UserMarkID:   2,
+					},
+					{
+						BlockRangeID: 5,
+						UserMarkID:   10,
+					},
+				},
+				UserMark: []*model.UserMark{
+					nil,
+					nil,
+					{
+						UserMarkID: 2,
+					},
+					{
+						UserMarkID: 10,
+					},
+				},
+			},
+		},
+		{
+			name: "nil",
+			args: args{
+				db: &model.Database{},
+				um: nil,
+			},
+			result: &model.Database{},
+		},
+	}
+	for _, tt := range tests {
+		deleteUserMark(tt.args.db, tt.args.um)
+		assert.True(t, tt.result.Equals(tt.args.db))
+	}
+}
+
+func Test_tryDuplicateUserMarkCleanup(t *testing.T) {
+	type args struct {
+		db         *model.Database
+		duplicates map[string][]*model.UserMark
+	}
+	tests := []struct {
+		name        string
+		args        args
+		errContains string
+		wantResult  *model.Database
+	}{
+		{
+			name: "Too many duplicates",
+			args: args{
+				duplicates: map[string][]*model.UserMark{
+					"A": {nil, nil, nil},
+				},
+			},
+			errContains: "there are more than two 2 userMarks with the same GUID",
+		},
+		{
+			name: "Too few duplicates",
+			args: args{
+				duplicates: map[string][]*model.UserMark{
+					"A": {nil},
+				},
+			},
+			errContains: "there are more than two 2 userMarks with the same GUID",
+		},
+		{
+			name: "Location #1 missing",
+			args: args{
+				db: &model.Database{
+					Location: []*model.Location{},
+				},
+				duplicates: map[string][]*model.UserMark{
+					"A": {
+						{
+							LocationID: 1,
+						},
+						{
+							LocationID: 2,
+						},
+					},
+				},
+			},
+			errContains: "could not fetch location for duplicate userMark #1",
+		},
+		{
+			name: "Location #2 missing",
+			args: args{
+				db: &model.Database{
+					Location: []*model.Location{
+						nil,
+						{
+							LocationID: 1,
+						},
+					},
+				},
+				duplicates: map[string][]*model.UserMark{
+					"A": {
+						{
+							LocationID: 1,
+						},
+						{
+							LocationID: 2,
+						},
+					},
+				},
+			},
+			errContains: "could not fetch location for duplicate userMark #2",
+		},
+		{
+			name: "Success",
+			args: args{
+				db: &model.Database{
+					BlockRange: []*model.BlockRange{
+						nil,
+						{
+							BlockRangeID: 1,
+							Identifier:   1,
+							UserMarkID:   1,
+						},
+						{
+							BlockRangeID: 2,
+							Identifier:   1,
+							UserMarkID:   2,
+						},
+						nil,
+						{
+							BlockRangeID: 4,
+							Identifier:   2,
+							UserMarkID:   1,
+						},
+						{
+							BlockRangeID: 5,
+							Identifier:   3,
+							UserMarkID:   1,
+						},
+						{
+							BlockRangeID: 6,
+							Identifier:   1,
+							UserMarkID:   3,
+						},
+					},
+					Location: []*model.Location{
+						nil,
+						{
+							LocationID: 1,
+							KeySymbol:  sql.NullString{String: "nwt", Valid: true},
+						},
+						nil,
+						{
+							LocationID: 3,
+							KeySymbol:  sql.NullString{String: "something", Valid: true},
+						},
+						{
+							LocationID: 4,
+							KeySymbol:  sql.NullString{String: "nwtsty", Valid: true},
+						},
+					},
+					UserMark: []*model.UserMark{
+						nil,
+						{
+							UserMarkID:   1,
+							LocationID:   1,
+							UserMarkGUID: "Duplicate",
+						},
+						nil,
+						{
+							UserMarkID:   3,
+							LocationID:   3,
+							UserMarkGUID: "Something",
+						},
+						{
+							UserMarkID:   4,
+							LocationID:   4,
+							UserMarkGUID: "Duplicate",
+						},
+					},
+				},
+				duplicates: map[string][]*model.UserMark{
+					"Duplicate": {
+						{
+							UserMarkID:   1,
+							LocationID:   1,
+							UserMarkGUID: "Duplicate",
+						},
+						{
+							UserMarkID:   4,
+							LocationID:   4,
+							UserMarkGUID: "Duplicate",
+						},
+					},
+				},
+			},
+			wantResult: &model.Database{
+				BlockRange: []*model.BlockRange{
+					nil,
+					nil,
+					{
+						BlockRangeID: 2,
+						Identifier:   1,
+						UserMarkID:   2,
+					},
+					nil,
+					nil,
+					nil,
+					{
+						BlockRangeID: 6,
+						Identifier:   1,
+						UserMarkID:   3,
+					},
+				},
+				Location: []*model.Location{
+					nil,
+					{
+						LocationID: 1,
+						KeySymbol:  sql.NullString{String: "nwt", Valid: true},
+					},
+					nil,
+					{
+						LocationID: 3,
+						KeySymbol:  sql.NullString{String: "something", Valid: true},
+					},
+					{
+						LocationID: 4,
+						KeySymbol:  sql.NullString{String: "nwtsty", Valid: true},
+					},
+				},
+				UserMark: []*model.UserMark{
+					nil,
+					nil,
+					nil,
+					{
+						UserMarkID:   3,
+						LocationID:   3,
+						UserMarkGUID: "Something",
+					},
+					{
+						UserMarkID:   4,
+						LocationID:   4,
+						UserMarkGUID: "Duplicate",
+					},
+				},
+			},
+		},
+		{
+			name: "Fail because both are nwtsty",
+			args: args{
+				db: &model.Database{
+					Location: []*model.Location{
+						nil,
+						{
+							LocationID: 1,
+							KeySymbol:  sql.NullString{String: "nwtsty", Valid: true},
+						},
+						nil,
+						{
+							LocationID: 3,
+							KeySymbol:  sql.NullString{String: "something", Valid: true},
+						},
+						{
+							LocationID: 4,
+							KeySymbol:  sql.NullString{String: "nwtsty", Valid: true},
+						},
+					},
+					UserMark: []*model.UserMark{
+						nil,
+						{
+							UserMarkID:   1,
+							LocationID:   1,
+							UserMarkGUID: "Duplicate",
+						},
+						nil,
+						{
+							UserMarkID:   3,
+							LocationID:   3,
+							UserMarkGUID: "Something",
+						},
+						{
+							UserMarkID:   4,
+							LocationID:   4,
+							UserMarkGUID: "Duplicate",
+						},
+					},
+				},
+				duplicates: map[string][]*model.UserMark{
+					"Duplicate": {
+						{
+							UserMarkID:   1,
+							LocationID:   1,
+							UserMarkGUID: "Duplicate",
+						},
+						{
+							UserMarkID:   4,
+							LocationID:   4,
+							UserMarkGUID: "Duplicate",
+						},
+					},
+				},
+			},
+			errContains: "there are two userMarks with the same GUID that were not caused by migrating from nwt to nwtsty",
+		},
+		{
+			name: "Fail because both are nwt",
+			args: args{
+				db: &model.Database{
+					Location: []*model.Location{
+						nil,
+						{
+							LocationID: 1,
+							KeySymbol:  sql.NullString{String: "nwt", Valid: true},
+						},
+						nil,
+						{
+							LocationID: 3,
+							KeySymbol:  sql.NullString{String: "something", Valid: true},
+						},
+						{
+							LocationID: 4,
+							KeySymbol:  sql.NullString{String: "nwt", Valid: true},
+						},
+					},
+					UserMark: []*model.UserMark{
+						nil,
+						{
+							UserMarkID:   1,
+							LocationID:   1,
+							UserMarkGUID: "Duplicate",
+						},
+						nil,
+						{
+							UserMarkID:   3,
+							LocationID:   3,
+							UserMarkGUID: "Something",
+						},
+						{
+							UserMarkID:   4,
+							LocationID:   4,
+							UserMarkGUID: "Duplicate",
+						},
+					},
+				},
+				duplicates: map[string][]*model.UserMark{
+					"Duplicate": {
+						{
+							UserMarkID:   1,
+							LocationID:   1,
+							UserMarkGUID: "Duplicate",
+						},
+						{
+							UserMarkID:   4,
+							LocationID:   4,
+							UserMarkGUID: "Duplicate",
+						},
+					},
+				},
+			},
+			errContains: "there are two userMarks with the same GUID that were not caused by migrating from nwt to nwtsty",
+		},
+	}
+	for _, tt := range tests {
+		err := tryDuplicateUserMarkCleanup(tt.args.db, tt.args.duplicates)
+		if tt.errContains != "" {
+			assert.Error(t, err, tt.name)
+			assert.True(t, strings.Contains(err.Error(), tt.errContains), tt.name)
+			continue
+		}
+		assert.NoError(t, err, tt.name)
+		fmt.Println(tt.args.db.BlockRange)
+		assert.True(t, tt.wantResult.Equals(tt.args.db), tt.name)
 	}
 }

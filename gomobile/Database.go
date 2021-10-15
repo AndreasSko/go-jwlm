@@ -66,5 +66,6 @@ func (dbw *DatabaseWrapper) DBIsLoaded(side string) bool {
 
 // ExportMerged exports the merged database to filename.
 func (dbw *DatabaseWrapper) ExportMerged(filename string) error {
+	merger.PrepareDatabasesPostMerge(dbw.merged)
 	return dbw.merged.ExportJWLBackup(filename)
 }

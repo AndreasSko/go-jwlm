@@ -29,6 +29,17 @@ func PrepareDatabasesPreMerge(left *model.Database, right *model.Database) {
 	UpdateLRIDs(left.UserMark, right.UserMark, "LocationID", locationIDChanges)
 }
 
+// PrepareDatabasesPostMerge bundles function calls that check the integrity of the
+// merged database and does some post-cleanup
+func PrepareDatabasesPostMerge(merged *model.Database) error {
+	duplicateUMs := detectDuplicateUserMarks(merged.UserMark)
+	err := tryDuplicateUserMarkCleanup(merged, duplicateUMs)
+	if err != nil {
+		return fmt.Errorf("could not clean up userMark duplicates. This should not happen. Please report this issue: %w", err)
+	}
+
+	return nil
+}
 
 // needsNwtstyMigration checks if one of the sides have been migrated from the
 // Standard Bible (nwt) to the Study Edition (nwtsty), while the other one hasn't
@@ -166,4 +177,78 @@ func cleanupDuplicateLocations(entries []*model.Location) ([]*model.Location, ma
 	}
 
 	return result, changes
+}
+
+// detectDuplicateUserMarks checks if there are any UserMarks having the same
+// GUID. For each duplicate GUID, a slice of UserMarks are returned
+func detectDuplicateUserMarks(userMarks []*model.UserMark) map[string][]*model.UserMark {
+	result := map[string][]*model.UserMark{}
+	duplicateCheck := make(map[string]*model.UserMark, len(userMarks))
+
+	for _, um := range userMarks {
+		if um == nil {
+			continue
+		}
+		duplicate, ok := duplicateCheck[um.UserMarkGUID]
+		if !ok {
+			duplicateCheck[um.UserMarkGUID] = um
+			continue
+		}
+		if _, ok := result[um.UserMarkGUID]; !ok {
+			result[um.UserMarkGUID] = make([]*model.UserMark, 0, 2)
+			result[um.UserMarkGUID] = append(result[um.UserMarkGUID], duplicate)
+		}
+		result[um.UserMarkGUID] = append(result[um.UserMarkGUID], um)
+	}
+
+	return result
+}
+
+// tryDuplicateUserMarkCleanup tries to clean up duplicate userMarks. Duplicates should only
+// happen for locations that have been previosuly upgrade from nwt to nwtsty. For other cases
+// it will return an error, indicating that the merge process obviously has failed.
+func tryDuplicateUserMarkCleanup(db *model.Database, duplicates map[string][]*model.UserMark) error {
+	for _, dupls := range duplicates {
+		if len(dupls) != 2 {
+			return fmt.Errorf("there are more than two 2 userMarks with the same GUID: %v", dupls)
+		}
+
+		// Choose userMark belonging to nwtsty
+		loc1, ok := db.FetchFromTable("Location", dupls[0].LocationID).(*model.Location)
+		if !ok || loc1 == nil {
+			return fmt.Errorf("could not fetch location for duplicate userMark #1")
+		}
+		loc2, ok := db.FetchFromTable("Location", dupls[1].LocationID).(*model.Location)
+		if !ok || loc2 == nil {
+			return fmt.Errorf("could not fetch location for duplicate userMark #2")
+		}
+		if loc1.KeySymbol.String == "nwt" && loc2.KeySymbol.String == "nwtsty" {
+			deleteUserMark(db, dupls[0])
+			continue
+		}
+		if loc1.KeySymbol.String == "nwtsty" && loc2.KeySymbol.String == "nwt" {
+			deleteUserMark(db, dupls[1])
+			continue
+		}
+
+		return fmt.Errorf("there are two userMarks with the same GUID that were not caused by migrating from nwt to nwtsty")
+	}
+
+	return nil
+}
+
+// deleteUserMark deletes a given UserMark together with its BlockRanges from the given Database
+func deleteUserMark(db *model.Database, um *model.UserMark) {
+	if um == nil {
+		return
+	}
+	for i, br := range db.BlockRange {
+		if br == nil {
+			continue
+		}
+		if br.UserMarkID == um.UserMarkID {
+			db.BlockRange[i] = nil
+		}
+	}
+	db.UserMark[um.UserMarkID] = nil
 }
