@@ -3,6 +3,7 @@ package gomobile
 import (
 	"errors"
 
+	"github.com/AndreasSko/go-jwlm/merger"
 	"github.com/AndreasSko/go-jwlm/model"
 )
 
@@ -46,6 +47,7 @@ func (dbw *DatabaseWrapper) Init() {
 	dbw.leftTmp = model.MakeDatabaseCopy(dbw.left)
 	dbw.rightTmp = model.MakeDatabaseCopy(dbw.right)
 	dbw.merged = &model.Database{}
+	merger.PrepareDatabasesPreMerge(dbw.leftTmp, dbw.rightTmp)
 }
 
 // DBIsLoaded indicates if a DB on the given side has been loaded.

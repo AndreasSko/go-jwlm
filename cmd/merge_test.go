@@ -139,6 +139,36 @@ func Test_merge(t *testing.T) {
 			merged.ImportJWLBackup(mergedFilename)
 			assert.True(t, rightMultiCollision.Equals(merged))
 		})
+
+	// Merge while selecting all left and also migrate left to nwtsty
+	RunCmdTest(t,
+		func(t *testing.T, c *expect.Console) {
+			c.ExpectString("📑 Merging Bookmarks")
+			c.SendLine("")
+
+			c.ExpectString("✍️  Merging InputFields")
+			c.SendLine("")
+
+			c.ExpectString("🖍  Merging Markings")
+			c.SendLine("")
+
+			c.ExpectString("📝 Merging Notes")
+			c.SendLine("")
+
+			c.ExpectEOF()
+		},
+		func(t *testing.T, c *expect.Console) {
+			leftNwtFilename := filepath.Join(tmp, "leftNwt.jwlibrary")
+			rightNwtFilename := filepath.Join(tmp, "rightNwt.jwlibrary")
+			assert.NoError(t, leftNwtDB.ExportJWLBackup(leftNwtFilename))
+			assert.NoError(t, rightNwtDB.ExportJWLBackup(rightNwtFilename))
+
+			merge(leftNwtFilename, rightNwtFilename, mergedFilename,
+				terminal.Stdio{In: c.Tty(), Out: c.Tty(), Err: c.Tty()})
+			merged := &model.Database{}
+			merged.ImportJWLBackup(mergedFilename)
+			assert.True(t, mergedAllLeftNwtDB.Equals(merged))
+		})
 }
 
 // https://github.com/AlecAivazis/survey/blob/master/survey_posix_test.go
@@ -1041,6 +1071,246 @@ var mergedAllRightDB = &model.Database{
 			LocationID:   1, // 1. Mose 1
 			StyleIndex:   0,
 			UserMarkGUID: "A86DECC8-69B1-4A43-A3A1-F1CA7B8E8388",
+			Version:      1,
+		},
+	},
+}
+
+var leftNwtDB = &model.Database{
+	BlockRange: []*model.BlockRange{
+		nil,
+		{
+			BlockRangeID: 1,
+			BlockType:    1,
+			Identifier:   1,
+			StartToken:   sql.NullInt32{0, true},
+			EndToken:     sql.NullInt32{7, true},
+			UserMarkID:   1,
+		},
+		{
+			BlockRangeID: 2,
+			BlockType:    1,
+			Identifier:   2,
+			StartToken:   sql.NullInt32{20, true},
+			EndToken:     sql.NullInt32{30, true},
+			UserMarkID:   3,
+		},
+	},
+	Location: []*model.Location{
+		nil,
+		{
+			LocationID:    1,
+			BookNumber:    sql.NullInt32{1, true},
+			ChapterNumber: sql.NullInt32{1, true},
+			KeySymbol:     sql.NullString{"nwt", true},
+			MepsLanguage:  2,
+			LocationType:  0,
+			Title:         sql.NullString{"1. Mose 1", true},
+		},
+		{
+			LocationID:   2,
+			KeySymbol:    sql.NullString{"nwt", true},
+			MepsLanguage: 2,
+			LocationType: 1,
+		},
+		nil,
+		nil,
+		{
+			LocationID:   5,
+			DocumentID:   sql.NullInt32{1102021811, true},
+			KeySymbol:    sql.NullString{"lffi", true},
+			MepsLanguage: 2,
+			LocationType: 0,
+		},
+	},
+	UserMark: []*model.UserMark{
+		nil,
+		{
+			UserMarkID:   1,
+			ColorIndex:   1,
+			LocationID:   1,
+			StyleIndex:   0,
+			UserMarkGUID: "1",
+			Version:      1,
+		},
+		nil,
+		{
+			UserMarkID:   3,
+			ColorIndex:   1,
+			LocationID:   1,
+			StyleIndex:   0,
+			UserMarkGUID: "3",
+			Version:      1,
+		},
+	},
+}
+
+var rightNwtDB = &model.Database{
+	BlockRange: []*model.BlockRange{
+		nil,
+		{
+			BlockRangeID: 1,
+			BlockType:    1,
+			Identifier:   1,
+			StartToken:   sql.NullInt32{0, true},
+			EndToken:     sql.NullInt32{7, true},
+			UserMarkID:   1,
+		},
+		{
+			BlockRangeID: 2,
+			BlockType:    1,
+			Identifier:   20,
+			StartToken:   sql.NullInt32{5, true},
+			EndToken:     sql.NullInt32{10, true},
+			UserMarkID:   2,
+		},
+	},
+	Location: []*model.Location{
+		nil,
+		{
+			LocationID:    1,
+			BookNumber:    sql.NullInt32{1, true},
+			ChapterNumber: sql.NullInt32{2, true},
+			KeySymbol:     sql.NullString{"nwtsty", true},
+			MepsLanguage:  2,
+			LocationType:  0,
+			Title:         sql.NullString{"1. Mose 2", true},
+		},
+		{
+			LocationID:   2,
+			KeySymbol:    sql.NullString{"nwtsty", true},
+			MepsLanguage: 2,
+			LocationType: 1,
+		},
+		{
+			LocationID:    3,
+			BookNumber:    sql.NullInt32{1, true},
+			ChapterNumber: sql.NullInt32{1, true},
+			KeySymbol:     sql.NullString{"nwtsty", true},
+			MepsLanguage:  2,
+			LocationType:  0,
+			Title:         sql.NullString{"1. Mose 1", true},
+		},
+		{
+			LocationID:   4,
+			DocumentID:   sql.NullInt32{1102021811, true},
+			KeySymbol:    sql.NullString{"lffi", true},
+			MepsLanguage: 2,
+			LocationType: 0,
+		},
+	},
+	UserMark: []*model.UserMark{
+		nil,
+		{
+			UserMarkID:   1,
+			ColorIndex:   1,
+			LocationID:   3,
+			StyleIndex:   0,
+			UserMarkGUID: "1",
+			Version:      1,
+		},
+		{
+			UserMarkID:   2,
+			ColorIndex:   1,
+			LocationID:   3,
+			StyleIndex:   0,
+			UserMarkGUID: "2",
+			Version:      1,
+		},
+	},
+}
+
+var mergedAllLeftNwtDB = &model.Database{
+	BlockRange: []*model.BlockRange{
+		nil,
+		{
+			BlockRangeID: 1,
+			BlockType:    1,
+			Identifier:   1,
+			StartToken:   sql.NullInt32{0, true},
+			EndToken:     sql.NullInt32{7, true},
+			UserMarkID:   1,
+		},
+		{
+			BlockRangeID: 2,
+			BlockType:    1,
+			Identifier:   2,
+			StartToken:   sql.NullInt32{20, true},
+			EndToken:     sql.NullInt32{30, true},
+			UserMarkID:   2,
+		},
+		{
+			BlockRangeID: 3,
+			BlockType:    1,
+			Identifier:   20,
+			StartToken:   sql.NullInt32{5, true},
+			EndToken:     sql.NullInt32{10, true},
+			UserMarkID:   3,
+		},
+	},
+	Bookmark:   []*model.Bookmark{nil},
+	InputField: []*model.InputField{nil},
+	Location: []*model.Location{
+		nil,
+		{
+			LocationID:    1,
+			BookNumber:    sql.NullInt32{1, true},
+			ChapterNumber: sql.NullInt32{1, true},
+			KeySymbol:     sql.NullString{"nwtsty", true},
+			MepsLanguage:  2,
+			LocationType:  0,
+			Title:         sql.NullString{"1. Mose 1", true},
+		},
+		{
+			LocationID:   2,
+			KeySymbol:    sql.NullString{"nwtsty", true},
+			MepsLanguage: 2,
+			LocationType: 1,
+		},
+		{
+			LocationID:   3,
+			DocumentID:   sql.NullInt32{1102021811, true},
+			KeySymbol:    sql.NullString{"lffi", true},
+			MepsLanguage: 2,
+			LocationType: 0,
+		},
+		{
+			LocationID:    4,
+			BookNumber:    sql.NullInt32{1, true},
+			ChapterNumber: sql.NullInt32{2, true},
+			KeySymbol:     sql.NullString{"nwtsty", true},
+			MepsLanguage:  2,
+			LocationType:  0,
+			Title:         sql.NullString{"1. Mose 2", true},
+		},
+	},
+	Note:   []*model.Note{nil},
+	Tag:    []*model.Tag{nil},
+	TagMap: []*model.TagMap{nil},
+	UserMark: []*model.UserMark{
+		nil,
+		{
+			UserMarkID:   1,
+			ColorIndex:   1,
+			LocationID:   1,
+			StyleIndex:   0,
+			UserMarkGUID: "1",
+			Version:      1,
+		},
+		{
+			UserMarkID:   2,
+			ColorIndex:   1,
+			LocationID:   1,
+			StyleIndex:   0,
+			UserMarkGUID: "3",
+			Version:      1,
+		},
+		{
+			UserMarkID:   3,
+			ColorIndex:   1,
+			LocationID:   1,
+			StyleIndex:   0,
+			UserMarkGUID: "2",
 			Version:      1,
 		},
 	},

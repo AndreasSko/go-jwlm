@@ -64,6 +64,9 @@ func merge(leftFilename string, rightFilename string, mergedFilename string, std
 		log.Fatal(err)
 	}
 
+	fmt.Fprintln(stdio.Out, "⌛ Preparing Databases")
+	merger.PrepareDatabasesPreMerge(&left, &right)
+
 	merged := model.Database{}
 
 	fmt.Fprintln(stdio.Out, "🧭 Merging Locations")
