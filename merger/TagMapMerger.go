@@ -11,7 +11,7 @@ import (
 // stays similar.
 func MergeTagMaps(left []*model.TagMap, right []*model.TagMap, conflictSolution map[string]MergeSolution) ([]*model.TagMap, IDChanges, error) {
 	if len(left)+len(right) == 0 {
-		return nil, IDChanges{}, nil
+		return []*model.TagMap{nil}, IDChanges{}, nil
 	}
 
 	// map[TagID]map[UniqueKey]TagMap

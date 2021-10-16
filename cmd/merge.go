@@ -64,6 +64,9 @@ func merge(leftFilename string, rightFilename string, mergedFilename string, std
 		log.Fatal(err)
 	}
 
+	fmt.Fprintln(stdio.Out, "⌛ Preparing Databases")
+	merger.PrepareDatabasesPreMerge(&left, &right)
+
 	merged := model.Database{}
 
 	fmt.Fprintln(stdio.Out, "🧭 Merging Locations")
@@ -227,6 +230,9 @@ func merge(leftFilename string, rightFilename string, mergedFilename string, std
 	fmt.Fprintln(stdio.Out, "Done.")
 
 	fmt.Fprintln(stdio.Out, "🎉 Finished merging!")
+
+	fmt.Fprintln(stdio.Out, "⌛ Preparing merged database for exporting")
+	merger.PrepareDatabasesPostMerge(&merged)
 
 	fmt.Fprintln(stdio.Out, "Exporting merged database")
 	if err = merged.ExportJWLBackup(mergedFilename); err != nil {

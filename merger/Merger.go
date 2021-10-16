@@ -161,7 +161,7 @@ Loop:
 	return result, changes, err
 }
 
-// prepareMergeSolution creates are sorted slice of the solutions given in the solutionMap
+// prepareMergeSolution creates a sorted slice of the solutions given in the solutionMap
 // and updates the IDs of the entries if necessary. IDChanges will track changed IDs.
 func prepareMergeSolution(solutionMap *map[string]MergeSolution) ([]model.Model, IDChanges) {
 	// Convert map to slice and sort it so we have a deterministic output
