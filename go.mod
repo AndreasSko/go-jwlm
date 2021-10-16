@@ -31,8 +31,7 @@ require (
 	github.com/sirupsen/logrus v1.8.1
 	github.com/smartystreets/assertions v1.2.0 // indirect
 	github.com/spf13/cobra v1.2.1
-	github.com/spf13/viper v1.8.1
+	github.com/spf13/viper v1.9.0
 	github.com/stretchr/testify v1.7.0
 	go.mongodb.org/mongo-driver v1.5.0 // indirect
-	golang.org/x/crypto v0.0.0-20210317152858-513c2a44f670 // indirect
 )
