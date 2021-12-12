@@ -19,7 +19,6 @@ require (
 	github.com/jedib0t/go-pretty v4.3.0+incompatible
 	github.com/juju/errors v0.0.0-20200330140219-3fe23663418f // indirect
 	github.com/klauspost/compress v1.13.6
-	github.com/mattn/go-colorable v0.1.8 // indirect
 	github.com/mattn/go-runewidth v0.0.10 // indirect
 	github.com/mattn/go-sqlite3 v1.14.8
 	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d // indirect
@@ -31,7 +30,7 @@ require (
 	github.com/sirupsen/logrus v1.8.1
 	github.com/smartystreets/assertions v1.2.0 // indirect
 	github.com/spf13/cobra v1.2.1
-	github.com/spf13/viper v1.9.0
+	github.com/spf13/viper v1.10.0
 	github.com/stretchr/testify v1.7.0
 	go.mongodb.org/mongo-driver v1.5.0 // indirect
 )
