@@ -14,7 +14,7 @@ var exampleManifest = &manifest{
 	CreationDate: time.Now().Format("2006-01-02"),
 	UserDataBackup: userDataBackup{
 		LastModifiedDate: time.Now().Format("2006-01-02T15:04:05-07:00"),
-		Hash:             "55e87dda924edb6a6c93871ee3c642119da4ade73fab05049bbd32ee5411dfeb",
+		Hash:             "19f994bb2fcda04e213920ddee729337296d90cad108bf281c6f6bbf9f2e5fce",
 		DatabaseName:     "user_data.db",
 		SchemaVersion:    8,
 		DeviceName:       "go-jwlm",

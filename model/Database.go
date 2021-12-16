@@ -9,12 +9,15 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"regexp"
+	"strconv"
 	"sync"
 	"time"
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/pkg/errors"
 	"github.com/sergi/go-diff/diffmatchpatch"
+	log "github.com/sirupsen/logrus"
 
 	// Register SQLite driver
 	_ "github.com/mattn/go-sqlite3"
@@ -394,7 +397,15 @@ func fetchFromSQLite(sqlite *sql.DB, modelType Model) ([]Model, error) {
 		}
 		mn, err := m.scanRow(rows)
 		if err != nil {
-			return nil, errors.Wrap(err, "Error while scanning results from SQLite database")
+			// For some reason a row might contain NULL entries, even though the schema
+			// shouldn't allow this. Instead of failing the whole import, we can simply skip
+			// this entry as the data anyway wouldn't be valid.
+			if !isNullableMismatch(err, rows) {
+				return nil, errors.Wrap(err, "Error while scanning row")
+			}
+			log.Warnf("Nullable mismatch in %T at index %d detected. Skipping entry", m, i)
+			i++
+			continue
 		}
 		result[mn.ID()] = mn
 		i++
@@ -405,6 +416,53 @@ func fetchFromSQLite(sqlite *sql.DB, modelType Model) ([]Model, error) {
 	}
 
 	return result, nil
+}
+
+// isNullableMismatch checks if a given error is due to a NULL entry in a column that only allows
+// non-NULL entries. If this is the case and no other schema mismatch is detected, true is returned.
+func isNullableMismatch(err error, rows *sql.Rows) bool {
+	if err == nil || rows == nil {
+		return false
+	}
+
+	re := regexp.MustCompile(`Scan error on column index (\d+), name "(\w+)": converting NULL to (\w+) is unsupported`)
+	matches := re.FindStringSubmatch(err.Error())
+	if len(matches) != 4 {
+		return false
+	}
+
+	index, err := strconv.ParseInt(matches[1], 0, 64)
+	if err != nil {
+		return false
+	}
+
+	ct, err := rows.ColumnTypes()
+	if err != nil {
+		return false
+	}
+
+	if len(ct) <= int(index) {
+		return false
+	}
+
+	column := ct[index]
+	if column == nil {
+		return false
+	}
+
+	if column.Name() != matches[2] {
+		return false
+	}
+
+	if typeName, ok := dbTypeToGoType[column.DatabaseTypeName()]; !ok || typeName != matches[3] {
+		return false
+	}
+
+	if n, _ := column.Nullable(); n {
+		return false
+	}
+
+	return true
 }
 
 // getTableEntryCount returns the number of entries in a given table
@@ -624,4 +682,10 @@ func createEmptySQLiteDB(filename string) error {
 	}
 
 	return nil
+}
+
+// maps a DatabaseTypeName to a go type name
+var dbTypeToGoType = map[string]string{
+	"INTEGER": "int",
+	"TEXT":    "string",
 }

@@ -148,7 +148,7 @@ func Test_fetchFromSQLite(t *testing.T) {
 
 	bookmark, err := fetchFromSQLite(sqlite, &Bookmark{})
 	assert.NoError(t, err)
-	assert.Len(t, bookmark, 3)
+	assert.Len(t, bookmark, 4)
 	assert.Equal(t, &Bookmark{2, 3, 7, 4, "Philippians 4", sql.NullString{String: "12 I know how to be low on provisions and how to have an abundance. In everything and in all circumstances I have learned the secret of both how to be full and how to hunger, both how to have an abundance and how to do without. ", Valid: true}, 0, sql.NullInt32{}}, bookmark[2])
 
 	inputField, err := fetchFromSQLite(sqlite, &InputField{})
@@ -173,13 +173,167 @@ func Test_fetchFromSQLite(t *testing.T) {
 
 	tagMap, err := fetchFromSQLite(sqlite, &TagMap{})
 	assert.NoError(t, err)
-	assert.Len(t, tagMap, 3)
+	assert.Len(t, tagMap, 4)
 	assert.Equal(t, &TagMap{2, sql.NullInt32{Int32: 0, Valid: false}, sql.NullInt32{Int32: 0, Valid: false}, sql.NullInt32{Int32: 2, Valid: true}, 2, 1}, tagMap[2])
 
 	userMark, err := fetchFromSQLite(sqlite, &UserMark{})
 	assert.NoError(t, err)
 	assert.Len(t, userMark, 5)
 	assert.Equal(t, &UserMark{2, 1, 2, 0, "2C5E7B4A-4997-4EDA-9CFF-38A7599C487B", 1}, userMark[2])
+}
+
+func Test_isNullableMismatch(t *testing.T) {
+	type args struct {
+		err  error
+		rows func() *sql.Rows
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{
+		{
+			name: "Nullable mismatch with int",
+			args: args{
+				err: fmt.Errorf(`Scan error on column index 2, name "NotNullable": converting NULL to int is unsupported`),
+				rows: func() *sql.Rows {
+					return mockSQLRows(t,
+						sqlmock.NewColumn("ID").OfType("INTEGER", 1),
+						sqlmock.NewColumn("Nullable").OfType("INTEGER", sql.NullInt32{}).Nullable(true),
+						sqlmock.NewColumn("NotNullable").OfType("INTEGER", nil))
+				},
+			},
+			want: true,
+		},
+		{
+			name: "Nullable mismatch with text",
+			args: args{
+				err: fmt.Errorf(`Scan error on column index 1, name "NotNullable": converting NULL to string is unsupported`),
+				rows: func() *sql.Rows {
+					return mockSQLRows(t,
+						sqlmock.NewColumn("ID").OfType("INTEGER", 1),
+						sqlmock.NewColumn("NotNullable").OfType("TEXT", nil),
+						sqlmock.NewColumn("Nullable").OfType("INTEGER", sql.NullInt32{}).Nullable(true))
+				},
+			},
+			want: true,
+		},
+		{
+			name: "No nullable mismatch",
+			args: args{
+				err: fmt.Errorf(`Scan error on column index 1, name "Nullable": converting NULL to int is unsupported`),
+				rows: func() *sql.Rows {
+					return mockSQLRows(t,
+						sqlmock.NewColumn("ID").OfType("INTEGER", 1),
+						sqlmock.NewColumn("Nullable").OfType("INTEGER", sql.NullInt32{}).Nullable(true),
+						sqlmock.NewColumn("NotNullable").OfType("INTEGER", 3))
+				},
+			},
+			want: false,
+		},
+		{
+			name: "Empty",
+		},
+		{
+			name: "Different error",
+			args: args{
+				err: fmt.Errorf(`Scan error on column index 1, name "Nullable": converting mock to int is unsupported`),
+				rows: func() *sql.Rows {
+					return mockSQLRows(t,
+						sqlmock.NewColumn("ID").OfType("INTEGER", 1),
+						sqlmock.NewColumn("Nullable").OfType("INTEGER", sql.NullInt32{}).Nullable(true),
+						sqlmock.NewColumn("NotNullable").OfType("INTEGER", 3))
+				},
+			},
+		},
+		{
+			name: "No error",
+			args: args{
+				rows: func() *sql.Rows {
+					return mockSQLRows(t,
+						sqlmock.NewColumn("ID").OfType("INTEGER", 1),
+						sqlmock.NewColumn("Nullable").OfType("INTEGER", sql.NullInt32{}).Nullable(true),
+						sqlmock.NewColumn("NotNullable").OfType("INTEGER", 3))
+				},
+			},
+		},
+		{
+			name: "No rows",
+			args: args{
+				err: fmt.Errorf(`Scan error on column index 1, name "Nullable": converting NULL to int is unsupported`),
+			},
+		},
+		{
+			name: "Column name not matching column index",
+			args: args{
+				err: fmt.Errorf(`Scan error on column index 2, name "WrongName": converting NULL to int is unsupported`),
+				rows: func() *sql.Rows {
+					return mockSQLRows(t,
+						sqlmock.NewColumn("ID").OfType("INTEGER", 1),
+						sqlmock.NewColumn("Nullable").OfType("INTEGER", sql.NullInt32{}).Nullable(true),
+						sqlmock.NewColumn("NotNullable").OfType("INTEGER", 3))
+				},
+			},
+			want: false,
+		},
+		{
+			name: "Type mismatch",
+			args: args{
+				err: fmt.Errorf(`Scan error on column index 2, name "NotNullable": converting NULL to string is unsupported`),
+				rows: func() *sql.Rows {
+					return mockSQLRows(t,
+						sqlmock.NewColumn("ID").OfType("INTEGER", 1),
+						sqlmock.NewColumn("Nullable").OfType("INTEGER", sql.NullInt32{}).Nullable(true),
+						sqlmock.NewColumn("NotNullable").OfType("INTEGER", 3))
+				},
+			},
+			want: false,
+		},
+		{
+			name: "Negative index",
+			args: args{
+				err: fmt.Errorf(`Scan error on column index -5, name "NotNullable": converting NULL to string is unsupported`),
+				rows: func() *sql.Rows {
+					return mockSQLRows(t,
+						sqlmock.NewColumn("ID").OfType("INTEGER", 1),
+						sqlmock.NewColumn("Nullable").OfType("INTEGER", sql.NullInt32{}).Nullable(true),
+						sqlmock.NewColumn("NotNullable").OfType("TEXT", nil))
+				},
+			},
+			want: false,
+		},
+		{
+			name: "More columns in error than in rows - don't panic with index out of range",
+			args: args{
+				err: fmt.Errorf(`Scan error on column index 2, name "NotNullable": converting NULL to int is unsupported`),
+				rows: func() *sql.Rows {
+					return mockSQLRows(t,
+						sqlmock.NewColumn("ID").OfType("int", 1),
+						sqlmock.NewColumn("Nullable").OfType("int", sql.NullInt32{}).Nullable(true))
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.args.rows == nil {
+				tt.args.rows = func() *sql.Rows { return nil }
+			}
+			got := isNullableMismatch(tt.args.err, tt.args.rows())
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func mockSQLRows(t *testing.T, columns ...*sqlmock.Column) *sql.Rows {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	mock.ExpectQuery("Placeholder").WillReturnRows(mock.NewRowsWithColumnDefinition(columns...))
+	result, err := db.Query("Placeholder")
+	assert.NoError(t, err)
+	return result
 }
 
 func TestDatabase_importSQLite(t *testing.T) {
@@ -191,12 +345,12 @@ func TestDatabase_importSQLite(t *testing.T) {
 	// As we already test the correctness in Test_fetchFromSQLite,
 	// it should be sufficient to just double-check the size of the slices.
 	assert.Len(t, db.BlockRange, 5)
-	assert.Len(t, db.Bookmark, 3)
+	assert.Len(t, db.Bookmark, 4)
 	assert.Len(t, db.InputField, 4)
 	assert.Len(t, db.Location, 9)
 	assert.Len(t, db.Note, 3)
 	assert.Len(t, db.Tag, 3)
-	assert.Len(t, db.TagMap, 3)
+	assert.Len(t, db.TagMap, 4)
 	assert.Len(t, db.UserMark, 5)
 
 	path = filepath.Join("testdata", "error_playlistMedia.db")
