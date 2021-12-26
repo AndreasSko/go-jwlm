@@ -232,7 +232,9 @@ func merge(leftFilename string, rightFilename string, mergedFilename string, std
 	fmt.Fprintln(stdio.Out, "🎉 Finished merging!")
 
 	fmt.Fprintln(stdio.Out, "⌛ Preparing merged database for exporting")
-	merger.PrepareDatabasesPostMerge(&merged)
+	if err := merger.PrepareDatabasesPostMerge(&merged); err != nil {
+		log.Fatal(err)
+	}
 
 	fmt.Fprintln(stdio.Out, "Exporting merged database")
 	if err = merged.ExportJWLBackup(mergedFilename); err != nil {

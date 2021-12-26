@@ -59,6 +59,29 @@ func (db *Database) FetchFromTable(tableName string, id int) Model {
 	return table.Index(id).Interface().(Model)
 }
 
+// PurgeTables removes all entries from the tables mentioned in the tables slice,
+// which are named by the fields of the Database slice. If a table doesn't exist,
+// an error will be returned.
+func (db *Database) PurgeTables(tables []string) error {
+	if db == nil {
+		return fmt.Errorf("can't purge tables. Database is nil")
+	}
+
+	for _, tableName := range tables {
+		if tableName == "" {
+			continue
+		}
+
+		table := reflect.ValueOf(db).Elem().FieldByName(tableName)
+		if !table.IsValid() {
+			return fmt.Errorf("table %s does not exist in database", tableName)
+		}
+		table.Set(reflect.MakeSlice(table.Type(), 1, 1))
+	}
+
+	return nil
+}
+
 // MakeDatabaseCopy creates a deep copy of the given Database, so elements of
 // the copy can be safely updated without affecting the original one.
 func MakeDatabaseCopy(db *Database) *Database {

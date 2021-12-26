@@ -52,6 +52,154 @@ func TestDatabase_Fetch(t *testing.T) {
 	})
 }
 
+func TestDatabase_PurgeTables(t *testing.T) {
+	type args struct {
+		tables []string
+	}
+	tests := []struct {
+		name        string
+		db          *Database
+		args        args
+		errContains string
+		wantDB      *Database
+	}{
+		{
+			name: "No DB",
+			args: args{
+				tables: []string{"Bookmark"},
+			},
+			errContains: "Database is nil",
+		},
+		{
+			name: "One table doesn't exist",
+			db: &Database{
+				Bookmark: []*Bookmark{
+					nil,
+					{BookmarkID: 1},
+					nil,
+					{BookmarkID: 3},
+				},
+			},
+			args: args{
+				tables: []string{"Bookmark", "NonExistent"},
+			},
+			errContains: "table NonExistent does not exist in database",
+		},
+		{
+			name: "Purge two tables, keep rest",
+			db: &Database{
+				BlockRange: []*BlockRange{
+					nil,
+					{BlockRangeID: 1},
+					{BlockRangeID: 2},
+				},
+				Bookmark: []*Bookmark{
+					nil,
+					{BookmarkID: 1},
+					nil,
+					{BookmarkID: 3},
+				},
+				InputField: []*InputField{
+					nil,
+					nil,
+				},
+				Location: []*Location{
+					nil,
+					nil,
+					{LocationID: 2},
+				},
+				Note: []*Note{
+					nil,
+					{NoteID: 1},
+				},
+				Tag: []*Tag{
+					nil,
+					{TagID: 1},
+				},
+				TagMap: []*TagMap{
+					nil,
+					{TagMapID: 1},
+				},
+				UserMark: []*UserMark{
+					nil,
+					{UserMarkID: 1},
+					{UserMarkID: 2},
+					{UserMarkID: 3},
+				},
+			},
+			args: args{
+				tables: []string{"UserMark", "Location", ""},
+			},
+			wantDB: &Database{
+				BlockRange: []*BlockRange{
+					nil,
+					{BlockRangeID: 1},
+					{BlockRangeID: 2},
+				},
+				Bookmark: []*Bookmark{
+					nil,
+					{BookmarkID: 1},
+					nil,
+					{BookmarkID: 3},
+				},
+				InputField: []*InputField{
+					nil,
+					nil,
+				},
+				Location: []*Location{nil},
+				Note: []*Note{
+					nil,
+					{NoteID: 1},
+				},
+				Tag: []*Tag{
+					nil,
+					{TagID: 1},
+				},
+				TagMap: []*TagMap{
+					nil,
+					{TagMapID: 1},
+				},
+				UserMark: []*UserMark{nil},
+			},
+		},
+		{
+			name: "Purge table that's nil in Database",
+			db: &Database{
+				Bookmark: []*Bookmark{
+					nil,
+					{BookmarkID: 1},
+					nil,
+					{BookmarkID: 3},
+				},
+			},
+			args: args{
+				tables: []string{"BlockRange"},
+			},
+			wantDB: &Database{
+				Bookmark: []*Bookmark{
+					nil,
+					{BookmarkID: 1},
+					nil,
+					{BookmarkID: 3},
+				},
+				BlockRange: []*BlockRange{nil},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.db.PurgeTables(tt.args.tables)
+			if tt.errContains != "" {
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), tt.errContains)
+				return
+			}
+			assert.NoError(t, err)
+			assert.True(t, tt.wantDB.Equals(tt.db))
+		})
+	}
+}
+
 func TestMakeDatabaseCopy(t *testing.T) {
 	db := &Database{}
 
