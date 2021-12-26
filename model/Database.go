@@ -401,7 +401,7 @@ func fetchFromSQLite(sqlite *sql.DB, modelType Model) ([]Model, error) {
 			// shouldn't allow this. Instead of failing the whole import, we can simply skip
 			// this entry as the data anyway wouldn't be valid.
 			if !isNullableMismatch(err, rows) {
-				return nil, errors.Wrap(err, "Error while scanning row")
+				return nil, errors.Wrapf(err, "Error while scanning row for %T", modelType)
 			}
 			log.Warnf("Nullable mismatch in %T at index %d detected. Skipping entry", m, i)
 			i++
@@ -412,7 +412,7 @@ func fetchFromSQLite(sqlite *sql.DB, modelType Model) ([]Model, error) {
 	}
 	err = rows.Err()
 	if err != nil {
-		return nil, errors.Wrap(err, "Error while scanning results from SQLite database")
+		return nil, errors.Wrapf(err, "Error while scanning results for %T from SQLite database", modelType)
 	}
 
 	return result, nil
