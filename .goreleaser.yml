@@ -48,7 +48,7 @@ changelog:
       - '^test:'
 brews:
   - name: go-jwlm
-    github:
+    tap:
       owner: andreassko
       name: homebrew-go-jwlm
     homepage: https://github.com/AndreasSko/go-jwlm
