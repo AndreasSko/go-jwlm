@@ -5,3 +5,5 @@ go-jwlm
 2020-08-06.jwlibrary
 2020-03-30.jwlibrary
 dist
+cmd/testdata/left.jwlibrary
+cmd/testdata/right.jwlibrary
