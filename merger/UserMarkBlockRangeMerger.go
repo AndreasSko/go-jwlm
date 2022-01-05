@@ -401,7 +401,8 @@ func ingestUMBR(left []*model.UserMarkBlockRange, right []*model.UserMarkBlockRa
 // joinToUserMarkBlockRange joins entries of UserMark and BlockRange together creating
 // a slice of UserMarkBlockRange for which the index corresponds to the UserMarkID.
 // It expects the IDs of UserMark and BlockRange to correspond to their
-// index within in um and br!
+// index within in um and br! If a UserMark doesn't have BlockRanges, it will
+// be removed from the result.
 func joinToUserMarkBlockRange(um []*model.UserMark, br []*model.BlockRange) []*model.UserMarkBlockRange {
 	result := make([]*model.UserMarkBlockRange, len(um))
 	for i, entry := range um {
@@ -416,6 +417,16 @@ func joinToUserMarkBlockRange(um []*model.UserMark, br []*model.BlockRange) []*m
 			continue
 		}
 		result[entry.UserMarkID].BlockRanges = append(result[entry.UserMarkID].BlockRanges, model.MakeModelCopy(entry).(*model.BlockRange))
+	}
+
+	// Remove UserMarks that don't have BlockRanges attached to them (e.g. "empty" markings)
+	for i, umbr := range result {
+		if umbr == nil {
+			continue
+		}
+		if len(umbr.BlockRanges) == 0 {
+			result[i] = nil
+		}
 	}
 
 	return result
