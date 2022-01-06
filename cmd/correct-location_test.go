@@ -18,16 +18,16 @@ import (
 func Test_correctLocation(t *testing.T) {
 	rand.Seed(time.Now().UnixNano())
 
-	left := &model.Database{}
+	left := model.Database{}
 	err := left.ImportJWLBackup("testdata/left.jwlibrary")
 	assert.NoError(t, err)
 
-	right := &model.Database{}
+	right := model.Database{}
 	err = right.ImportJWLBackup("testdata/right.jwlibrary")
 	assert.NoError(t, err)
 
-	uniqueKeyToLocationPreMerge := getUniqueKeyToLocationMap([]*model.Database{left, right})
-
+	uniqueKeyToLocationPreMerge := getUniqueKeyToLocationMap([]*model.Database{&left, &right})
+	merger.PrepareDatabasesPreMerge(&left, &right)
 	merged := model.Database{}
 
 	// Locations
@@ -143,6 +143,10 @@ func Test_correctLocation(t *testing.T) {
 		default:
 			log.Fatal(err)
 		}
+	}
+
+	if err := merger.PrepareDatabasesPostMerge(&merged); err != nil {
+		log.Fatal(err)
 	}
 
 	uniqueKeyToLocationPostMerge := getUniqueKeyToLocationMap([]*model.Database{&merged})
