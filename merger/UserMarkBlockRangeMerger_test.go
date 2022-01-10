@@ -28,6 +28,11 @@ func TestMergeUserMarkAndBlockRange_without_conflict(t *testing.T) {
 			LocationID: 4,
 		},
 		{},
+		{
+			UserMarkID:   6,
+			LocationID:   1,
+			UserMarkGUID: "No BlockRange",
+		},
 	}
 	leftBR := []*model.BlockRange{
 		nil,
@@ -82,6 +87,11 @@ func TestMergeUserMarkAndBlockRange_without_conflict(t *testing.T) {
 		{
 			UserMarkID: 5,
 			LocationID: 30,
+		},
+		{
+			UserMarkID:   6,
+			LocationID:   1,
+			UserMarkGUID: "No BlockRange",
 		},
 	}
 	rightBR := []*model.BlockRange{
@@ -3009,12 +3019,7 @@ func Test_joinToUserMarkBlockRange(t *testing.T) {
 			},
 		},
 		nil,
-		{
-			UserMark: &model.UserMark{
-				UserMarkID: 4,
-			},
-			BlockRanges: []*model.BlockRange{},
-		},
+		nil,
 		nil,
 	}
 
