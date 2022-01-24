@@ -6,7 +6,7 @@ require (
 	github.com/AlecAivazis/survey/v2 v2.3.2
 	github.com/DATA-DOG/go-sqlmock v1.5.0
 	github.com/MakeNowJust/heredoc v1.0.0
-	github.com/Netflix/go-expect v0.0.0-20210722184520-ef0bf57d82b3
+	github.com/Netflix/go-expect v0.0.0-20220104043353-73e0943537d2
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d // indirect
 	github.com/buger/goterm v1.0.1
 	github.com/cavaliercoder/grab v1.0.1-0.20201108051000-98a5bfe305ec
