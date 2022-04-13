@@ -30,7 +30,7 @@ require (
 	github.com/sirupsen/logrus v1.8.1
 	github.com/smartystreets/assertions v1.2.0 // indirect
 	github.com/spf13/cobra v1.4.0
-	github.com/spf13/viper v1.10.1
+	github.com/spf13/viper v1.11.0
 	github.com/stretchr/testify v1.7.1
 	go.mongodb.org/mongo-driver v1.5.0 // indirect
 )
