@@ -147,20 +147,24 @@ func TestSolveConflictByChoosingNewest(t *testing.T) {
 			Left: &model.Note{
 				GUID:         "Left",
 				LastModified: "2020-09-15T13:00:00+00:00",
+				Created:      "2020-09-15T12:00:00+00:00",
 			},
 			Right: &model.Note{
 				GUID:         "Right",
 				LastModified: "2020-09-15T12:00:00+00:00",
+				Created:      "2020-09-15T12:00:00+00:00",
 			},
 		},
 		"rightNewer": {
 			Left: &model.Note{
 				GUID:         "Left",
 				LastModified: "2020-09-15T13:00:00+00:00",
+				Created:      "2020-09-15T13:00:00+00:00",
 			},
 			Right: &model.Note{
 				GUID:         "Right",
 				LastModified: "2020-09-15T13:01:00+00:00",
+				Created:      "2020-09-15T13:00:00+00:00",
 			},
 		},
 	}
@@ -171,10 +175,12 @@ func TestSolveConflictByChoosingNewest(t *testing.T) {
 			Solution: &model.Note{
 				GUID:         "Left",
 				LastModified: "2020-09-15T13:00:00+00:00",
+				Created:      "2020-09-15T12:00:00+00:00",
 			},
 			Discarded: &model.Note{
 				GUID:         "Right",
 				LastModified: "2020-09-15T12:00:00+00:00",
+				Created:      "2020-09-15T12:00:00+00:00",
 			},
 		},
 		"rightNewer": {
@@ -182,10 +188,12 @@ func TestSolveConflictByChoosingNewest(t *testing.T) {
 			Solution: &model.Note{
 				GUID:         "Right",
 				LastModified: "2020-09-15T13:01:00+00:00",
+				Created:      "2020-09-15T13:00:00+00:00",
 			},
 			Discarded: &model.Note{
 				GUID:         "Left",
 				LastModified: "2020-09-15T13:00:00+00:00",
+				Created:      "2020-09-15T13:00:00+00:00",
 			},
 		},
 	}

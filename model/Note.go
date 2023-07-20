@@ -14,6 +14,7 @@ type Note struct {
 	Title           sql.NullString
 	Content         sql.NullString
 	LastModified    string
+	Created         string
 	BlockType       int
 	BlockIdentifier sql.NullInt32
 }
@@ -63,7 +64,7 @@ func (m *Note) RelatedEntries(db *Database) Related {
 // PrettyPrint prints Note in a human readable format and
 // adds information about related entries if helpful.
 func (m *Note) PrettyPrint(db *Database) string {
-	fields := []string{"Title", "Content", "LastModified"}
+	fields := []string{"Title", "Content", "LastModified", "Created"}
 	result := prettyPrint(m, fields)
 
 	// TODO: Use RelatedEntries
@@ -91,6 +92,7 @@ func (m Note) MarshalJSON() ([]byte, error) {
 		Title           sql.NullString `json:"title"`
 		Content         sql.NullString `json:"content"`
 		LastModified    string         `json:"lastModified"`
+		Created         string         `json:"created"`
 		BlockType       int            `json:"blockType"`
 		BlockIdentifier sql.NullInt32  `json:"blockIdentifier"`
 	}{
@@ -102,6 +104,7 @@ func (m Note) MarshalJSON() ([]byte, error) {
 		Title:           m.Title,
 		Content:         m.Content,
 		LastModified:    m.LastModified,
+		Created:         m.Created,
 		BlockType:       m.BlockType,
 		BlockIdentifier: m.BlockIdentifier,
 	})
@@ -117,7 +120,7 @@ func (m *Note) idName() string {
 
 func (m *Note) scanRow(rows *sql.Rows) (Model, error) {
 	err := rows.Scan(&m.NoteID, &m.GUID, &m.UserMarkID, &m.LocationID, &m.Title, &m.Content,
-		&m.LastModified, &m.BlockType, &m.BlockIdentifier)
+		&m.LastModified, &m.Created, &m.BlockType, &m.BlockIdentifier)
 	return m, err
 }
 

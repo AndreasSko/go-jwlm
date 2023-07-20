@@ -114,6 +114,7 @@ func MakeModelCopy(mdl Model) Model {
 			Title:           sql.NullString{String: mdl.Title.String, Valid: mdl.Title.Valid},
 			Content:         sql.NullString{String: mdl.Content.String, Valid: mdl.Content.Valid},
 			LastModified:    mdl.LastModified,
+			Created:         mdl.Created,
 			BlockType:       mdl.BlockType,
 			BlockIdentifier: sql.NullInt32{Int32: mdl.BlockIdentifier.Int32, Valid: mdl.BlockIdentifier.Valid},
 		}

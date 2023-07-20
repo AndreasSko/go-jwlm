@@ -76,6 +76,7 @@ func TestMakeModelCopy(t *testing.T) {
 		Title:           sql.NullString{String: "A Title", Valid: true},
 		Content:         sql.NullString{String: "The content", Valid: true},
 		LastModified:    "2017-06-01T19:36:28+0200",
+		Created:         "2016-06-01T19:36:28+0200",
 		BlockType:       0,
 		BlockIdentifier: sql.NullInt32{},
 	}
