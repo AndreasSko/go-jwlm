@@ -103,6 +103,7 @@ func MakeDatabaseCopy(db *Database) *Database {
 			continue
 		}
 
+		cpField := reflect.ValueOf(newDB).Elem().Field(i)
 		tp := field.Kind()
 		switch tp {
 		case reflect.Slice:
@@ -122,8 +123,9 @@ func MakeDatabaseCopy(db *Database) *Database {
 					panic(fmt.Sprintf("Element type %T is not supported for copying", t))
 				}
 			}
-			cpField := reflect.ValueOf(newDB).Elem().Field(i)
 			cpField.Set(cpSlice)
+		case reflect.Bool:
+			cpField.SetBool(field.Bool())
 		default:
 			panic(fmt.Sprintf("Field type %T is not supported for copying", tp))
 		}
@@ -170,40 +172,51 @@ func (db *Database) Equals(other *Database) bool {
 	dbFields := reflect.ValueOf(dbCp).Elem()
 	otherFields := reflect.ValueOf(otherCp).Elem()
 	for i := 0; i < dbFields.NumField(); i++ {
-		dbSlice := dbFields.Field(i)
-		otherSlice := otherFields.Field(i)
-		if !dbSlice.CanInterface() || !otherSlice.CanInterface() {
-			continue
-		}
+		dbField := dbFields.Field(i)
+		otherField := otherFields.Field(i)
 
-		if dbSlice.Len() != otherSlice.Len() {
-			fmt.Printf("Length of slices at index %d are not equal: %d vs %d\n", i, dbSlice.Len(), otherSlice.Len())
-			return false
-		}
+		tp := dbField.Kind()
+		switch tp {
+		case reflect.Slice:
+			if !dbField.CanInterface() || !otherField.CanInterface() {
+				continue
+			}
 
-		for j := 0; j < dbSlice.Len(); j++ {
-			dElem := dbSlice.Index(j)
-			oElem := otherSlice.Index(j)
+			if dbField.Len() != otherField.Len() {
+				fmt.Printf("Length of slices at index %d are not equal: %d vs %d\n", i, dbField.Len(), otherField.Len())
+				return false
+			}
 
-			if dElem.IsNil() {
-				if oElem.IsNil() {
-					continue
-				} else {
+			for j := 0; j < dbField.Len(); j++ {
+				dElem := dbField.Index(j)
+				oElem := otherField.Index(j)
+
+				if dElem.IsNil() {
+					if oElem.IsNil() {
+						continue
+					} else {
+						return false
+					}
+				}
+
+				if !dElem.MethodByName("Equals").Call([]reflect.Value{oElem})[0].Bool() {
+					fmt.Println("Found different entries: ")
+					left := spew.Sdump(dElem.Interface())
+					right := spew.Sdump(oElem.Interface())
+					fmt.Printf("%s \nvs\n %s", left, right)
+					dmp := diffmatchpatch.New()
+					diffs := dmp.DiffMain(left, right, true)
+					fmt.Println("Diff:")
+					fmt.Println(dmp.DiffPrettyText(diffs))
 					return false
 				}
 			}
-
-			if !dElem.MethodByName("Equals").Call([]reflect.Value{oElem})[0].Bool() {
-				fmt.Println("Found different entries: ")
-				left := spew.Sdump(dElem.Interface())
-				right := spew.Sdump(oElem.Interface())
-				fmt.Printf("%s \nvs\n %s", left, right)
-				dmp := diffmatchpatch.New()
-				diffs := dmp.DiffMain(left, right, true)
-				fmt.Println("Diff:")
-				fmt.Println(dmp.DiffPrettyText(diffs))
+		case reflect.Bool:
+			if dbFields.Field(i).Bool() != otherFields.Field(i).Bool() {
 				return false
 			}
+		default:
+			panic(fmt.Sprintf("field type %T is not supported for checking equality", tp))
 		}
 	}
 
@@ -592,6 +605,9 @@ func (db *Database) saveToNewSQLite(filename string) error {
 	// and use it to insert its entries to the new SQLite DB
 	dbFields := reflect.ValueOf(db).Elem()
 	for j := 0; j < dbFields.NumField(); j++ {
+		if dbFields.Field(j).Kind() != reflect.Slice {
+			continue
+		}
 		slice := dbFields.Field(j).Interface()
 		mdl, err := MakeModelSlice(slice)
 		if err != nil {
