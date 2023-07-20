@@ -3,6 +3,7 @@ package model
 import (
 	"crypto/sha256"
 	"database/sql"
+	_ "embed"
 	"fmt"
 	"io"
 	"io/ioutil"

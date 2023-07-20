@@ -20,10 +20,19 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	// Register SQLite driver
+	_ "embed"
+
 	_ "github.com/mattn/go-sqlite3"
 )
 
+//go:embed data/userData.db
+var userDataDatabaseFile []byte
+
+//go:embed data/default_thumbnail.png
+var defaultThumbnailFile []byte
+
 const manifestFilename = "manifest.json"
+const userDataFilename = "userData.db"
 
 // Database represents the JW Library database as a struct
 type Database struct {
@@ -536,8 +545,8 @@ func (db *Database) ExportJWLBackup(filename string) error {
 	}
 	defer os.RemoveAll(tmp)
 
-	// Create user_data.db
-	dbPath := filepath.Join(tmp, "user_data.db")
+	// Create userData.db
+	dbPath := filepath.Join(tmp, userDataFilename)
 	if err := db.saveToNewSQLite(dbPath); err != nil {
 		return errors.Wrap(err, "Could not create SQLite database for exporting")
 	}
@@ -693,14 +702,9 @@ func insertEntries(sqlite *sql.DB, m []Model) error {
 	return nil
 }
 
-// createEmptySQLiteDB creates a new SQLite database at filename with the base user_data.db from JWLibrary
+// createEmptySQLiteDB creates a new SQLite database at filename with the base userData.db from JWLibrary
 func createEmptySQLiteDB(filename string) error {
-	userData, err := Asset("user_data.db")
-	if err != nil {
-		return errors.Wrap(err, "Error while fetching user_data.db")
-	}
-
-	if err := ioutil.WriteFile(filename, userData, 0644); err != nil {
+	if err := ioutil.WriteFile(filename, userDataDatabaseFile, 0644); err != nil {
 		return errors.Wrap(err, fmt.Sprintf("Error while saving new SQLite database at %s", filename))
 	}
 
