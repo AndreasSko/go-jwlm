@@ -121,10 +121,9 @@ func MakeModelCopy(mdl Model) Model {
 	case *Tag:
 		mdl := mdl.(*Tag)
 		mdlCopy = &Tag{
-			TagID:         mdl.TagID,
-			TagType:       mdl.TagType,
-			Name:          mdl.Name,
-			ImageFilename: sql.NullString{String: mdl.ImageFilename.String, Valid: mdl.ImageFilename.Valid},
+			TagID:   mdl.TagID,
+			TagType: mdl.TagType,
+			Name:    mdl.Name,
 		}
 	case *TagMap:
 		mdl := mdl.(*TagMap)

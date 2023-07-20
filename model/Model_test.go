@@ -87,10 +87,9 @@ func TestMakeModelCopy(t *testing.T) {
 	assert.Equal(t, 1, noteCp.ID())
 
 	tag := &Tag{
-		TagID:         1,
-		TagType:       1,
-		Name:          "FirstTag",
-		ImageFilename: sql.NullString{},
+		TagID:   1,
+		TagType: 1,
+		Name:    "FirstTag",
 	}
 	tagCp := MakeModelCopy(tag)
 	assert.Equal(t, tag, tagCp)

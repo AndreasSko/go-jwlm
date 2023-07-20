@@ -2,7 +2,6 @@ package model
 
 import (
 	"bytes"
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"testing"
@@ -23,46 +22,40 @@ func TestTag_SetID(t *testing.T) {
 
 func TestTag_UniqueKey(t *testing.T) {
 	m1 := &Tag{
-		TagID:         1,
-		TagType:       1,
-		Name:          "FirstTag",
-		ImageFilename: sql.NullString{},
+		TagID:   1,
+		TagType: 1,
+		Name:    "FirstTag",
 	}
 	assert.Equal(t, "1_FirstTag", m1.UniqueKey())
 
 	m2 := &Tag{
-		TagID:         1,
-		TagType:       2000000000,
-		Name:          "Another Tag with spaces",
-		ImageFilename: sql.NullString{},
+		TagID:   1,
+		TagType: 2000000000,
+		Name:    "Another Tag with spaces",
 	}
 	assert.Equal(t, "2000000000_Another Tag with spaces", m2.UniqueKey())
 }
 
 func TestTag_Equals(t *testing.T) {
 	m1 := &Tag{
-		TagID:         1,
-		TagType:       1,
-		Name:          "FirstTag",
-		ImageFilename: sql.NullString{},
+		TagID:   1,
+		TagType: 1,
+		Name:    "FirstTag",
 	}
 	m1_1 := &Tag{
-		TagID:         100000,
-		TagType:       1,
-		Name:          "FirstTag",
-		ImageFilename: sql.NullString{},
+		TagID:   100000,
+		TagType: 1,
+		Name:    "FirstTag",
 	}
 	m2 := &Tag{
-		TagID:         2,
-		TagType:       1,
-		Name:          "Different Tag",
-		ImageFilename: sql.NullString{},
+		TagID:   2,
+		TagType: 1,
+		Name:    "Different Tag",
 	}
 	m2_1 := &Tag{
-		TagID:         200000,
-		TagType:       1,
-		Name:          "Different Tag",
-		ImageFilename: sql.NullString{},
+		TagID:   200000,
+		TagType: 1,
+		Name:    "Different Tag",
 	}
 	assert.True(t, m1.Equals(m1_1))
 	assert.False(t, m1.Equals(m2))
@@ -72,10 +65,9 @@ func TestTag_Equals(t *testing.T) {
 
 func TestTag_PrettyPrint(t *testing.T) {
 	m1 := &Tag{
-		TagID:         1,
-		TagType:       1,
-		Name:          "First  Tag",
-		ImageFilename: sql.NullString{},
+		TagID:   1,
+		TagType: 1,
+		Name:    "First  Tag",
 	}
 
 	buf := new(bytes.Buffer)
@@ -89,10 +81,9 @@ func TestTag_PrettyPrint(t *testing.T) {
 
 func TestTag_RelatedEntries(t *testing.T) {
 	m1 := &Tag{
-		TagID:         1,
-		TagType:       1,
-		Name:          "FirstTag",
-		ImageFilename: sql.NullString{},
+		TagID:   1,
+		TagType: 1,
+		Name:    "FirstTag",
 	}
 
 	assert.Equal(t, Related{}, m1.RelatedEntries(nil))
@@ -101,15 +92,14 @@ func TestTag_RelatedEntries(t *testing.T) {
 
 func TestTag_MarshalJSON(t *testing.T) {
 	m1 := &Tag{
-		TagID:         1,
-		TagType:       2,
-		Name:          "FirstTag",
-		ImageFilename: sql.NullString{},
+		TagID:   1,
+		TagType: 2,
+		Name:    "FirstTag",
 	}
 
 	result, err := json.Marshal(m1)
 	assert.NoError(t, err)
 	assert.Equal(t,
-		`{"type":"Tag","tagId":1,"tagType":2,"name":"FirstTag","imageFilename":{"String":"","Valid":false}}`,
+		`{"type":"Tag","tagId":1,"tagType":2,"name":"FirstTag"}`,
 		string(result))
 }

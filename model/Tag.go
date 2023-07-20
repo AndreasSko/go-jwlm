@@ -9,10 +9,9 @@ import (
 
 // Tag represents the Tag table inside the JW Library database
 type Tag struct {
-	TagID         int
-	TagType       int
-	Name          string
-	ImageFilename sql.NullString
+	TagID   int
+	TagType int
+	Name    string
 }
 
 // ID returns the ID of the entry
@@ -41,8 +40,7 @@ func (m *Tag) UniqueKey() string {
 func (m *Tag) Equals(m2 Model) bool {
 	if m2, ok := m2.(*Tag); ok {
 		return m.TagType == m2.TagType &&
-			m.Name == m2.Name &&
-			m.ImageFilename == m2.ImageFilename
+			m.Name == m2.Name
 	}
 
 	return false
@@ -63,17 +61,15 @@ func (m *Tag) PrettyPrint(db *Database) string {
 // MarshalJSON returns the JSON encoding of the entry
 func (m Tag) MarshalJSON() ([]byte, error) {
 	return json.Marshal(&struct {
-		Type          string         `json:"type"`
-		TagID         int            `json:"tagId"`
-		TagType       int            `json:"tagType"`
-		Name          string         `json:"name"`
-		ImageFilename sql.NullString `json:"imageFilename"`
+		Type    string `json:"type"`
+		TagID   int    `json:"tagId"`
+		TagType int    `json:"tagType"`
+		Name    string `json:"name"`
 	}{
-		Type:          "Tag",
-		TagID:         m.TagID,
-		TagType:       m.TagType,
-		Name:          m.Name,
-		ImageFilename: m.ImageFilename,
+		Type:    "Tag",
+		TagID:   m.TagID,
+		TagType: m.TagType,
+		Name:    m.Name,
 	})
 }
 
@@ -86,7 +82,7 @@ func (m *Tag) idName() string {
 }
 
 func (m *Tag) scanRow(rows *sql.Rows) (Model, error) {
-	err := rows.Scan(&m.TagID, &m.TagType, &m.Name, &m.ImageFilename)
+	err := rows.Scan(&m.TagID, &m.TagType, &m.Name)
 	return m, err
 }
 
