@@ -1,6 +1,7 @@
 package model
 
 import (
+	"archive/zip"
 	"crypto/sha256"
 	"database/sql"
 	_ "embed"
@@ -204,7 +205,7 @@ func TestDatabase_PurgeTables(t *testing.T) {
 func TestMakeDatabaseCopy(t *testing.T) {
 	db := &Database{}
 
-	path := filepath.Join("testdata", "user_data.db")
+	path := filepath.Join("testdata", userDataFilename)
 	assert.NoError(t, db.importSQLite(path))
 
 	dbCp := MakeDatabaseCopy(db)
@@ -283,7 +284,7 @@ func Test_getSliceCapacity(t *testing.T) {
 }
 
 func Test_fetchFromSQLite(t *testing.T) {
-	path := filepath.Join("testdata", "user_data.db")
+	path := filepath.Join("testdata", userDataFilename)
 	sqlite, err := sql.Open("sqlite3", path+"?immutable=1")
 	if err != nil {
 		t.Fatal(errors.Wrap(err, "Error while opening SQLite database"))
@@ -298,7 +299,7 @@ func Test_fetchFromSQLite(t *testing.T) {
 	bookmark, err := fetchFromSQLite(sqlite, &Bookmark{})
 	assert.NoError(t, err)
 	assert.Len(t, bookmark, 4)
-	assert.Equal(t, &Bookmark{2, 3, 7, 4, "Philippians 4", sql.NullString{String: "12 I know how to be low on provisions and how to have an abundance. In everything and in all circumstances I have learned the secret of both how to be full and how to hunger, both how to have an abundance and how to do without. ", Valid: true}, 0, sql.NullInt32{}}, bookmark[2])
+	assert.Equal(t, &Bookmark{2, 3, 7, 4, "Philippians 4", sql.NullString{String: "12I know how to be low on provisions and how to have an abundance. In everything and in all circumstances I have learned the secret of both how to be full and how to hunger, both how to have an abundance and how to do without. ", Valid: true}, 0, sql.NullInt32{}}, bookmark[2])
 
 	inputField, err := fetchFromSQLite(sqlite, &InputField{})
 	assert.NoError(t, err)
@@ -322,7 +323,7 @@ func Test_fetchFromSQLite(t *testing.T) {
 
 	tagMap, err := fetchFromSQLite(sqlite, &TagMap{})
 	assert.NoError(t, err)
-	assert.Len(t, tagMap, 4)
+	assert.Len(t, tagMap, 3)
 	assert.Equal(t, &TagMap{2, sql.NullInt32{Int32: 0, Valid: false}, sql.NullInt32{Int32: 0, Valid: false}, sql.NullInt32{Int32: 2, Valid: true}, 2, 1}, tagMap[2])
 
 	userMark, err := fetchFromSQLite(sqlite, &UserMark{})
@@ -540,6 +541,13 @@ func TestDatabase_ExportJWLBackup(t *testing.T) {
 	newPath := filepath.Join(testFolder, "backup.jwlibrary")
 	assert.NoError(t, db.ExportJWLBackup(newPath))
 
+	// Make sure all expected files are there
+	filenames, err := filenamesInZip(newPath)
+	assert.NoError(t, err)
+	for _, expected := range []string{"userData.db", "manifest.json", "default_thumbnail.png"} {
+		assert.Contains(t, filenames, expected)
+	}
+
 	db = Database{}
 	assert.NoError(t, db.ImportJWLBackup(newPath))
 
@@ -547,7 +555,7 @@ func TestDatabase_ExportJWLBackup(t *testing.T) {
 	assert.Equal(t, &BlockRange{3, 2, 13, sql.NullInt32{Int32: 0, Valid: true}, sql.NullInt32{Int32: 14, Valid: true}, 3}, db.BlockRange[3])
 
 	assert.Len(t, db.Bookmark, 3)
-	assert.Equal(t, &Bookmark{2, 3, 7, 4, "Philippians 4", sql.NullString{String: "12 I know how to be low on provisions and how to have an abundance. In everything and in all circumstances I have learned the secret of both how to be full and how to hunger, both how to have an abundance and how to do without. ", Valid: true}, 0, sql.NullInt32{}}, db.Bookmark[2])
+	assert.Equal(t, &Bookmark{2, 3, 7, 4, "Philippians 4", sql.NullString{String: "12I know how to be low on provisions and how to have an abundance. In everything and in all circumstances I have learned the secret of both how to be full and how to hunger, both how to have an abundance and how to do without. ", Valid: true}, 0, sql.NullInt32{}}, db.Bookmark[2])
 
 	assert.Len(t, db.InputField, 4)
 	assert.Equal(t, &InputField{8, "tt71", "First other..", 3}, db.InputField[3])
@@ -574,7 +582,7 @@ func Test_createEmptySQLiteDB(t *testing.T) {
 	assert.NoError(t, err)
 	defer os.RemoveAll(tmp)
 
-	path := filepath.Join(tmp, "user_data.db")
+	path := filepath.Join(tmp, userDataFilename)
 	err = createEmptySQLiteDB(path)
 	assert.NoError(t, err)
 
@@ -590,7 +598,7 @@ func Test_createEmptySQLiteDB(t *testing.T) {
 	}
 	hash := fmt.Sprintf("%x", hasher.Sum(nil))
 
-	assert.Equal(t, "3fae739471144fd8815344bf479fc5d8468df9e9d5a27aeae88a144e51c97bdd", hash)
+	assert.Equal(t, "774af7240646c49f6a55e40b6cdf681a6b04fbcf4acebdb19a6e0e2bef53d766", hash)
 }
 
 func TestDatabase_saveToNewSQLite(t *testing.T) {
@@ -609,7 +617,7 @@ func TestDatabase_saveToNewSQLite(t *testing.T) {
 		TagMap:     []*TagMap{{2, sql.NullInt32{Int32: 0, Valid: false}, sql.NullInt32{Int32: 0, Valid: false}, sql.NullInt32{Int32: 2, Valid: true}, 2, 1}},
 		UserMark:   []*UserMark{{2, 1, 2, 0, "2C5E7B4A-4997-4EDA-9CFF-38A7599C487B", 1}},
 	}
-	path := filepath.Join(tmp, "user_data.db")
+	path := filepath.Join(tmp, userDataFilename)
 	assert.NoError(t, db.saveToNewSQLite(path))
 
 	db2 := Database{}
@@ -651,4 +659,20 @@ func TestDatabase_Equals(t *testing.T) {
 	path = filepath.Join("testdata", "backup_shuffled.jwlibrary")
 	assert.NoError(t, db3.ImportJWLBackup(path))
 	assert.True(t, db2.Equals(db3))
+}
+
+// filenamesInZip returns the names of all files contained in a zip file.
+func filenamesInZip(path string) ([]string, error) {
+	r, err := zip.OpenReader(path)
+	if err != nil {
+		return nil, err
+	}
+	defer r.Close()
+
+	filenames := make([]string, len(r.File))
+	for i, f := range r.File {
+		filenames[i] = f.Name
+	}
+
+	return filenames, nil
 }

@@ -12,7 +12,6 @@ import (
 	"regexp"
 	"strconv"
 	"sync"
-	"time"
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/pkg/errors"
@@ -33,6 +32,7 @@ var defaultThumbnailFile []byte
 
 const manifestFilename = "manifest.json"
 const userDataFilename = "userData.db"
+const defaultThumbnailFilename = "default_thumbnail.png"
 
 // Database represents the JW Library database as a struct
 type Database struct {
@@ -229,14 +229,14 @@ func (db *Database) ImportJWLBackup(filename string) error {
 	for _, file := range r.File {
 		fileReader, err := file.Open()
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to open file: %w", err)
 		}
 		defer fileReader.Close()
 
 		path := filepath.Join(tmp, file.Name)
 		targetFile, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, file.Mode())
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to open target file: %w", err)
 		}
 		defer targetFile.Close()
 
@@ -561,8 +561,13 @@ func (db *Database) ExportJWLBackup(filename string) error {
 		return errors.Wrap(err, "Error while creating manifest.json")
 	}
 
+	defaultThumbnailPath := filepath.Join(tmp, defaultThumbnailFilename)
+	if err := os.WriteFile(defaultThumbnailPath, defaultThumbnailFile, 0644); err != nil {
+		return fmt.Errorf("writing default thumbnail to %s: %w", defaultThumbnailPath, err)
+	}
+
 	// Store files in .jwlibrary (zip)-file
-	files := []string{dbPath, manifestPath}
+	files := []string{dbPath, manifestPath, defaultThumbnailPath}
 	if err := zipFiles(filename, files); err != nil {
 		return errors.Wrap(err, fmt.Sprintf("Error while storing files in zip archive %s", filename))
 	}
@@ -595,13 +600,6 @@ func (db *Database) saveToNewSQLite(filename string) error {
 		if err := insertEntries(sqlite, mdl); err != nil {
 			return errors.Wrapf(err, "Error while inserting entries of field %d", j)
 		}
-	}
-
-	// Update LastModified
-	lastModified := time.Now().Format("2006-01-02T15:04:05-07:00")
-	_, err = sqlite.Exec(fmt.Sprintf("UPDATE LastModified SET LastModified = \"%s\" WHERE LastModified = (SELECT * FROM LastModified)", lastModified))
-	if err != nil {
-		return errors.Wrap(err, "Error while updating LastModified")
 	}
 
 	// Vacuum to clean up SQLite DB
