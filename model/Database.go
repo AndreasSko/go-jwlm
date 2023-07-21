@@ -44,6 +44,12 @@ type Database struct {
 	Tag        []*Tag
 	TagMap     []*TagMap
 	UserMark   []*UserMark
+
+	// ContainsPlaylists indicates if the imported backup contains playlists.
+	ContainsPlaylists bool
+	// SkipPlaylists allows to skip prevention of merging if playlists exist in the database.
+	// It is meant as a temporary workaround until merging of playlists is implemented.
+	SkipPlaylists bool
 }
 
 // FetchFromTable tries to fetch a entry with the given ID. If it can't find it
@@ -284,19 +290,6 @@ func (db *Database) importSQLite(filename string) error {
 	}
 	defer sqlite.Close()
 
-	// Make sure these tables are empty as we are not able to merge them yet.
-	// Better to fail, than to risk losing data..
-	emptyTables := []string{"PlaylistItem", "PlaylistItemChild", "PlaylistMedia"}
-	for _, table := range emptyTables {
-		count, err := getTableEntryCount(sqlite, table)
-		if err != nil {
-			return err
-		}
-		if count > 0 {
-			return fmt.Errorf("Table %s is not empty. Merging of these entries are not supported yet", table)
-		}
-	}
-
 	var wg sync.WaitGroup
 	wg.Add(8)
 	errors := make(chan error, 10)
@@ -396,7 +389,54 @@ func (db *Database) importSQLite(filename string) error {
 	case err := <-errors:
 		return err
 	default:
-		return nil
+	}
+
+	// Make sure these tables are empty as we are not able to merge them yet.
+	// Better to fail, than to risk losing data..
+	emptyTables := []string{
+		"IndependentMedia",
+		"PlaylistItem",
+		"PlaylistItemIndependentMediaMap",
+		"PlaylistItemLocationMap",
+		"PlaylistItemMarker",
+		"PlaylistItemMarkerBibleVerseMap",
+		"PlaylistItemMarkerParagraphMap",
+	}
+	for _, table := range emptyTables {
+		count, err := getTableEntryCount(sqlite, table)
+		if err != nil {
+			return err
+		}
+		if count > 0 {
+			db.ContainsPlaylists = true
+		}
+	}
+
+	db.removePlaylists()
+
+	if db.ContainsPlaylists && !db.SkipPlaylists {
+		return fmt.Errorf("merging of playlists is not supported yet. Enable SkipPlaylists flag to skip this safety check")
+	}
+
+	return nil
+}
+
+// removePlaylists removes all playlists (represented as a Tag with type 2)
+// and its items from the database. It indicates that the database contained
+// playlists by setting the ContainedPlaylists field to true.
+func (db *Database) removePlaylists() {
+	for i, t := range db.Tag {
+		if t != nil && t.TagType == 2 {
+			db.ContainsPlaylists = true
+			db.Tag[i] = nil
+		}
+	}
+
+	for i, t := range db.TagMap {
+		if t != nil && t.PlaylistItemID.Valid && t.PlaylistItemID.Int32 != 0 {
+			db.ContainsPlaylists = true
+			db.TagMap[i] = nil
+		}
 	}
 }
 
@@ -588,7 +628,7 @@ func (db *Database) ExportJWLBackup(filename string) error {
 	return nil
 }
 
-// SaveToNewSQLite creates a new SQLite database with the JW Library scheme
+// saveToNewSQLite creates a new SQLite database with the JW Library scheme
 // and saves all entries of the Database{} struct to it
 func (db *Database) saveToNewSQLite(filename string) error {
 	if err := createEmptySQLiteDB(filename); err != nil {
