@@ -14,6 +14,10 @@ type DatabaseWrapper struct {
 	right  *model.Database
 	merged *model.Database
 
+	// skipPlaylists allows to skip prevention of merging if playlists exist in the database.
+	// It is meant as a temporary workaround until merging of playlists is implemented.
+	skipPlaylists bool
+
 	// Temporary databases allow to run a merge function multiple
 	// times without changing the content of the original databases.
 	leftTmp  *model.Database
@@ -23,7 +27,9 @@ type DatabaseWrapper struct {
 // ImportJWLBackup imports a .jwlibrary backup file into the struct
 // on the given side.
 func (dbw *DatabaseWrapper) ImportJWLBackup(filename string, side string) error {
-	db := &model.Database{}
+	db := &model.Database{
+		SkipPlaylists: dbw.skipPlaylists,
+	}
 
 	if err := db.ImportJWLBackup(filename); err != nil {
 		return err
@@ -35,10 +41,16 @@ func (dbw *DatabaseWrapper) ImportJWLBackup(filename string, side string) error 
 	case "rightSide":
 		dbw.right = db
 	default:
-		return errors.New("Only leftSide and rightSide are valid for importing backups")
+		return errors.New("only leftSide and rightSide are valid for importing backups")
 	}
 
 	return nil
+}
+
+// SkipPlaylists allows to skip the check if playlists exist in the database.
+// It is meant as a temporary workaround until merging of playlists is implemented.
+func (dbw *DatabaseWrapper) SkipPlaylists(skipPlaylists bool) {
+	dbw.skipPlaylists = skipPlaylists
 }
 
 // Init initializes the DatabaseWrapper to prepare for subsequent
@@ -59,6 +71,18 @@ func (dbw *DatabaseWrapper) DBIsLoaded(side string) bool {
 		return dbw.right != nil
 	case "mergeSide":
 		return dbw.merged != nil
+	}
+
+	return false
+}
+
+// DBContainsPlaylists indicates if a DB on the given side contains playlists.
+func (dbw *DatabaseWrapper) DBContainsPlaylists(side string) bool {
+	switch side {
+	case "leftSide":
+		return dbw.left.ContainsPlaylists
+	case "rightSide":
+		return dbw.right.ContainsPlaylists
 	}
 
 	return false
