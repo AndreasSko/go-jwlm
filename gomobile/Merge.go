@@ -3,6 +3,7 @@ package gomobile
 import (
 	"github.com/AndreasSko/go-jwlm/merger"
 	"github.com/pkg/errors"
+	_ "golang.org/x/mobile/bind"
 )
 
 // MergeLocations merges locations
