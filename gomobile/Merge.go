@@ -44,7 +44,7 @@ func (dbw *DatabaseWrapper) MergeBookmarks(conflictSolver string, mcw *MergeConf
 			var resErr error
 			newSolutions, resErr := merger.AutoResolveConflicts(err.Conflicts, conflictSolver)
 			if resErr != nil {
-				return errors.Wrap(err, "Could not automatically solve conflicts for bookmarks")
+				return errors.Wrap(resErr, "Could not automatically solve conflicts for bookmarks")
 			}
 			addToSolutions(conflictSolution, newSolutions)
 		default:
@@ -76,7 +76,7 @@ func (dbw *DatabaseWrapper) MergeInputFields(conflictSolver string, mcw *MergeCo
 			var resErr error
 			newSolutions, resErr := merger.AutoResolveConflicts(err.Conflicts, conflictSolver)
 			if resErr != nil {
-				return errors.Wrap(err, "Could not automatically solve conflicts for inputFields")
+				return errors.Wrap(resErr, "Could not automatically solve conflicts for inputFields")
 			}
 			addToSolutions(conflictSolution, newSolutions)
 		default:
@@ -126,7 +126,7 @@ func (dbw *DatabaseWrapper) MergeUserMarkAndBlockRange(conflictSolver string, mc
 			var resErr error
 			newSolutions, resErr := merger.AutoResolveConflicts(err.Conflicts, conflictSolver)
 			if resErr != nil {
-				return errors.Wrap(err, "Could not automatically solve conflicts for markings")
+				return errors.Wrap(resErr, "Could not automatically solve conflicts for markings")
 			}
 			addToSolutions(conflictSolution, newSolutions)
 		default:
@@ -159,7 +159,7 @@ func (dbw *DatabaseWrapper) MergeNotes(conflictSolver string, mcw *MergeConflict
 			var resErr error
 			newSolutions, resErr := merger.AutoResolveConflicts(err.Conflicts, conflictSolver)
 			if resErr != nil {
-				return errors.Wrap(err, "Could not automatically solve conflicts for notes")
+				return errors.Wrap(resErr, "Could not automatically solve conflicts for notes")
 			}
 			addToSolutions(conflictSolution, newSolutions)
 		default:
