@@ -226,6 +226,37 @@ func Test_merge(t *testing.T) {
 			merged.ImportJWLBackup(mergedAllLeftDBEmptyBRFilename)
 			assert.True(t, mergedAllLeftDBEmptyBR.Equals(merged))
 		})
+
+	// Attempt to merge with playlists, while skipPlaylists is set to false
+	RunCmdTest(t,
+		func(t *testing.T, c *expect.Console) {
+			c.ExpectString("Error: failed to import left backup: merging of playlists is not supported yet. " +
+				"Enable SkipPlaylists flag to skip this safety check")
+			c.ExpectEOF()
+		},
+		func(t *testing.T, c *expect.Console) {
+			merge("../model/testdata/backup_withPlaylist.jwlibrary",
+				"../model/testdata/backup_withPlaylist.jwlibrary",
+				mergedFilename,
+				terminal.Stdio{In: c.Tty(), Out: c.Tty(), Err: c.Tty()})
+		},
+	)
+
+	// Merge with playlists and skipPlaylists set to true
+	RunCmdTest(t,
+		func(t *testing.T, c *expect.Console) {
+			c.ExpectString("🎉 Finished merging!")
+			c.ExpectEOF()
+		},
+		func(t *testing.T, c *expect.Console) {
+			SkipPlaylists = true
+			defer func() { SkipPlaylists = false }()
+			merge("../model/testdata/backup_withPlaylist.jwlibrary",
+				"../model/testdata/backup_withPlaylist.jwlibrary",
+				mergedFilename,
+				terminal.Stdio{In: c.Tty(), Out: c.Tty(), Err: c.Tty()})
+		},
+	)
 }
 
 // https://github.com/AlecAivazis/survey/blob/master/survey_posix_test.go

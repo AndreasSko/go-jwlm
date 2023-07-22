@@ -49,16 +49,24 @@ var NoteResolver string
 // InputFieldResolver represents a resolver that should be used for conflicting InputFields
 var InputFieldResolver string
 
-func merge(leftFilename string, rightFilename string, mergedFilename string, stdio terminal.Stdio) {
+// SkipPlaylists indicates if playlists should be skipped when importing backups.
+// It is meant as a temporary workaround until merging of playlists is implemented.
+var SkipPlaylists bool
+
+func merge(leftFilename string, rightFilename string, mergedFilename string, stdio terminal.Stdio) error {
 	fmt.Fprintln(stdio.Out, "Importing left backup")
-	left := model.Database{}
+	left := model.Database{
+		SkipPlaylists: SkipPlaylists,
+	}
 	err := left.ImportJWLBackup(leftFilename)
 	if err != nil {
 		return fmt.Errorf("failed to import left backup: %w", err)
 	}
 
 	fmt.Fprintln(stdio.Out, "Importing right backup")
-	right := model.Database{}
+	right := model.Database{
+		SkipPlaylists: SkipPlaylists,
+	}
 	err = right.ImportJWLBackup(rightFilename)
 	if err != nil {
 		return fmt.Errorf("failed to import right backup: %w", err)
@@ -321,4 +329,5 @@ func init() {
 	mergeCmd.Flags().StringVar(&MarkingResolver, "markings", "", "Resolve conflicting markings with resolver (can be 'chooseLeft' or 'chooseRight')")
 	mergeCmd.Flags().StringVar(&NoteResolver, "notes", "", "Resolve conflicting notes with resolver (can be 'chooseNewest', 'chooseLeft', or 'chooseRight')")
 	mergeCmd.Flags().StringVar(&InputFieldResolver, "inputFields", "", "Resolve conflicting inputFields with resolver (can be 'chooseLeft', or 'chooseRight')")
+	mergeCmd.Flags().BoolVar(&SkipPlaylists, "skipPlaylists", false, "Skip playlists when importing backups. It is meant as a temporary workaround until merging of playlists is implemented.")
 }
