@@ -28,11 +28,11 @@ automatically solve conflicts using the 'chooseLeft', 'chooseRight', and
 'chooseNewest' resolvers (see Flags).`,
 	Example: `go-jwlm merge left.jwlibrary right.jwlibrary merged.jwlibrary
 go-jwlm merge left.jwlibrary right.jwlibrary merged.jwlibrary --bookmarks chooseLeft --markings chooseRight --notes chooseNewest --inputFields chooseRight`,
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		leftFilename := args[0]
 		rightFilename := args[1]
 		mergedFilename := args[2]
-		merge(leftFilename, rightFilename, mergedFilename, terminal.Stdio{In: os.Stdin, Out: os.Stdout, Err: os.Stderr})
+		return merge(leftFilename, rightFilename, mergedFilename, terminal.Stdio{In: os.Stdin, Out: os.Stdout, Err: os.Stderr})
 	},
 	Args: cobra.ExactArgs(3),
 }
@@ -54,14 +54,14 @@ func merge(leftFilename string, rightFilename string, mergedFilename string, std
 	left := model.Database{}
 	err := left.ImportJWLBackup(leftFilename)
 	if err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("failed to import left backup: %w", err)
 	}
 
 	fmt.Fprintln(stdio.Out, "Importing right backup")
 	right := model.Database{}
 	err = right.ImportJWLBackup(rightFilename)
 	if err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("failed to import right backup: %w", err)
 	}
 
 	fmt.Fprintln(stdio.Out, "⌛ Preparing Databases")
@@ -72,7 +72,7 @@ func merge(leftFilename string, rightFilename string, mergedFilename string, std
 	fmt.Fprintln(stdio.Out, "🧭 Merging Locations")
 	mergedLocations, locationIDChanges, err := merger.MergeLocations(left.Location, right.Location)
 	if err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("failed to merge locations: %w", err)
 	}
 	merged.Location = mergedLocations
 	merger.UpdateLRIDs(left.Bookmark, right.Bookmark, "LocationID", locationIDChanges)
@@ -105,7 +105,7 @@ func merge(leftFilename string, rightFilename string, mergedFilename string, std
 				addToSolutions(bookmarksConflictSolution, newSolutions)
 			}
 		default:
-			log.Fatal(err)
+			return fmt.Errorf("failed to merge bookmarks: %w", err)
 		}
 	}
 	fmt.Fprintln(stdio.Out, "Done.")
@@ -132,7 +132,7 @@ func merge(leftFilename string, rightFilename string, mergedFilename string, std
 				addToSolutions(inputFieldConflictSolution, newSolutions)
 			}
 		default:
-			log.Fatal(err)
+			return fmt.Errorf("failed to merge inputFields: %w", err)
 		}
 	}
 	fmt.Fprintln(stdio.Out, "Done.")
@@ -150,7 +150,7 @@ func merge(leftFilename string, rightFilename string, mergedFilename string, std
 		case merger.MergeConflictError:
 			tagsConflictSolution = handleMergeConflict(err.Conflicts, nil, stdio) // TODO
 		default:
-			log.Fatal(err)
+			return fmt.Errorf("failed to merge tags: %w", err)
 		}
 	}
 	fmt.Fprintln(stdio.Out, "Done.")
@@ -179,7 +179,7 @@ func merge(leftFilename string, rightFilename string, mergedFilename string, std
 				addToSolutions(UMBRConflictSolution, newSolutions)
 			}
 		default:
-			log.Fatal(err)
+			return fmt.Errorf("failed to merge markings: %w", err)
 		}
 	}
 	fmt.Fprintln(stdio.Out, "Done.")
@@ -207,7 +207,7 @@ func merge(leftFilename string, rightFilename string, mergedFilename string, std
 				addToSolutions(notesConflictSolution, newSolutions)
 			}
 		default:
-			log.Fatal(err)
+			return fmt.Errorf("failed to merge notes: %w", err)
 		}
 	}
 	fmt.Fprintln(stdio.Out, "Done.")
@@ -224,7 +224,7 @@ func merge(leftFilename string, rightFilename string, mergedFilename string, std
 		case merger.MergeConflictError:
 			tagMapsConflictSolution = handleMergeConflict(err.Conflicts, nil, stdio)
 		default:
-			log.Fatal(err)
+			return fmt.Errorf("failed to merge tagMaps: %w", err)
 		}
 	}
 	fmt.Fprintln(stdio.Out, "Done.")
@@ -233,14 +233,15 @@ func merge(leftFilename string, rightFilename string, mergedFilename string, std
 
 	fmt.Fprintln(stdio.Out, "⌛ Preparing merged database for exporting")
 	if err := merger.PrepareDatabasesPostMerge(&merged); err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("failed to prepare database after merging: %w", err)
 	}
 
 	fmt.Fprintln(stdio.Out, "Exporting merged database")
 	if err = merged.ExportJWLBackup(mergedFilename); err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("failed to export backup: %w", err)
 	}
 
+	return nil
 }
 
 // addToSolutions adds new mergeSolutions to the existing map of mergeSolutions
