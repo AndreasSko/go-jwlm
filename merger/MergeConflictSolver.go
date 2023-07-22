@@ -64,11 +64,11 @@ func SolveConflictByChoosingNewest(conflicts map[string]MergeConflict) (map[stri
 			return nil, fmt.Errorf("Not able to use SolveConflictByChoosingNewest, as %T has no 'LastModified' field", value.Left)
 		}
 
-		leftDate, err := time.Parse("2006-01-02T15:04:05-07:00", leftModified.String())
+		leftDate, err := parseDateTimeString(leftModified.String())
 		if err != nil {
 			return nil, err
 		}
-		rightDate, err := time.Parse("2006-01-02T15:04:05-07:00", rightModified.String())
+		rightDate, err := parseDateTimeString(rightModified.String())
 		if err != nil {
 			return nil, err
 		}
@@ -118,4 +118,22 @@ func solveEqualityMergeConflict(conflicts map[string]MergeConflict) (map[string]
 	}
 
 	return solution, nil
+}
+
+// parseDateTimeString attempts to parse a given string with different layouts and returns the first match.
+// If no layout matches, an error is returned.
+func parseDateTimeString(dateTime string) (time.Time, error) {
+	layouts := []string{
+		"2006-01-02T15:04:05-07:00",
+		"2006-01-02T15:04:05-0700",
+		time.RFC3339,
+	}
+	for _, l := range layouts {
+		dt, err := time.Parse(l, dateTime)
+		if err == nil {
+			return dt, nil
+		}
+	}
+
+	return time.Time{}, fmt.Errorf("failed to parse dateTime %s", dateTime)
 }
