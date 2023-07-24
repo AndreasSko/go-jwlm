@@ -1,3 +1,4 @@
+//go:build !windows
 // +build !windows
 
 package gomobile
@@ -12,25 +13,115 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var backupFile = filepath.Join("..", "model", "testdata", "backup.jwlibrary")
+var testdataDir = filepath.Join("..", "model", "testdata")
+var backupFile = filepath.Join(testdataDir, "backup.jwlibrary")
 
 func TestDatabaseWrapper_ImportJWLBackup(t *testing.T) {
-	dbw := &DatabaseWrapper{}
+	tests := []struct {
+		name       string
+		dbw        *DatabaseWrapper
+		filename   string
+		side       string
+		wantErr    assert.ErrorAssertionFunc
+		assertions func(t *testing.T, dbWrapper *DatabaseWrapper)
+	}{
+		{
+			name:     "import right",
+			dbw:      &DatabaseWrapper{},
+			filename: backupFile,
+			side:     "rightSide",
+			wantErr:  assert.NoError,
+			assertions: func(t *testing.T, dbWrapper *DatabaseWrapper) {
+				assert.Len(t, dbWrapper.right.BlockRange, 5)
+				assert.Len(t, dbWrapper.right.Bookmark, 3)
+				assert.Len(t, dbWrapper.right.Location, 9)
+				assert.Len(t, dbWrapper.right.Note, 3)
+				assert.Len(t, dbWrapper.right.Tag, 3)
+				assert.Len(t, dbWrapper.right.TagMap, 3)
+				assert.Len(t, dbWrapper.right.UserMark, 5)
+			},
+		},
+		{
+			name: "contains playlists, skip playlists set, import left",
+			dbw: &DatabaseWrapper{
+				skipPlaylists: true,
+			},
+			filename: filepath.Join(testdataDir, "backup_withPlaylist.jwlibrary"),
+			side:     "leftSide",
+			wantErr:  assert.NoError,
+			assertions: func(t *testing.T, dbWrapper *DatabaseWrapper) {
+				assert.Len(t, dbWrapper.left.BlockRange, 5)
+				assert.Len(t, dbWrapper.left.Bookmark, 4)
+				assert.Len(t, dbWrapper.left.Location, 9)
+				assert.Len(t, dbWrapper.left.Note, 3)
+				assert.Len(t, dbWrapper.left.Tag, 5)
+				assert.Len(t, dbWrapper.left.TagMap, 5)
+				assert.Len(t, dbWrapper.left.UserMark, 5)
+			},
+		},
+		{
+			name:     "contains playlists, skip playlists not set",
+			dbw:      &DatabaseWrapper{},
+			filename: filepath.Join(testdataDir, "backup_withPlaylist.jwlibrary"),
+			side:     "leftSide",
+			wantErr: func(tt assert.TestingT, err error, i ...interface{}) bool {
+				return assert.ErrorContains(tt, err, "merging of playlists is not supported yet")
+			},
+		},
+		{
+			name:     "wrong file",
+			dbw:      &DatabaseWrapper{},
+			filename: "wrongFile",
+			side:     "leftSide",
+			wantErr: func(tt assert.TestingT, err error, i ...interface{}) bool {
+				return assert.ErrorContains(tt, err, "no such file or directory")
+			},
+		},
+		{
+			name:     "wrong side",
+			dbw:      &DatabaseWrapper{},
+			filename: backupFile,
+			side:     "wrongSide",
+			wantErr: func(tt assert.TestingT, err error, i ...interface{}) bool {
+				return assert.ErrorContains(tt, err, "only leftSide and rightSide are valid for importing backups")
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.dbw.ImportJWLBackup(tt.filename, tt.side)
+			tt.wantErr(t, err)
 
-	assert.Error(t, dbw.ImportJWLBackup("wrongFile", "leftSide"))
-	assert.NoError(t, dbw.ImportJWLBackup(backupFile, "leftSide"))
-	assert.NoError(t, dbw.ImportJWLBackup(backupFile, "rightSide"))
-	assert.EqualError(t, dbw.ImportJWLBackup(backupFile, "wrongSide"), "Only leftSide and rightSide are valid for importing backups")
+			if tt.assertions != nil {
+				tt.assertions(t, tt.dbw)
+			}
+		})
+	}
+}
 
-	assert.Len(t, dbw.left.BlockRange, 5)
-	assert.Len(t, dbw.left.Bookmark, 3)
-	assert.Len(t, dbw.left.Location, 9)
-	assert.Len(t, dbw.left.Note, 3)
-	assert.Len(t, dbw.left.Tag, 3)
-	assert.Len(t, dbw.left.TagMap, 3)
-	assert.Len(t, dbw.left.UserMark, 5)
-
-	assert.True(t, dbw.left.Equals(dbw.right))
+func TestDatabaseWrapper_SkipPlaylists(t *testing.T) {
+	tests := []struct {
+		name         string
+		dbWrapper    *DatabaseWrapper
+		skipPlaylist bool
+	}{
+		{
+			name:         "skipPlaylists is false",
+			dbWrapper:    &DatabaseWrapper{},
+			skipPlaylist: false,
+		},
+		{
+			name:         "skipPlaylists is true",
+			dbWrapper:    &DatabaseWrapper{},
+			skipPlaylist: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.dbWrapper.SkipPlaylists(tt.skipPlaylist)
+			assert.Equal(t, tt.skipPlaylist, tt.dbWrapper.skipPlaylists)
+		})
+	}
 }
 
 func TestDatabaseWrapper_Init(t *testing.T) {
@@ -94,4 +185,72 @@ func TestDatabaseWrapper_ExportMerged(t *testing.T) {
 	newDB := &model.Database{}
 	assert.NoError(t, newDB.ImportJWLBackup(newBackup))
 	assert.True(t, dbw.merged.Equals(newDB))
+}
+
+func TestDatabaseWrapper_DBContainsPlaylists(t *testing.T) {
+	tests := []struct {
+		name      string
+		dbWrapper *DatabaseWrapper
+		side      string
+		want      bool
+	}{
+		{
+			name: "no playlists",
+			dbWrapper: &DatabaseWrapper{
+				left: &model.Database{
+					ContainsPlaylists: false,
+				},
+				right: &model.Database{
+					ContainsPlaylists: false,
+				},
+			},
+			side: "leftSide",
+			want: false,
+		},
+		{
+			name: "Playlists on right side, check left",
+			dbWrapper: &DatabaseWrapper{
+				left: &model.Database{
+					ContainsPlaylists: false,
+				},
+				right: &model.Database{
+					ContainsPlaylists: true,
+				},
+			},
+			side: "leftSide",
+			want: false,
+		},
+		{
+			name: "Playlists on right side, check right",
+			dbWrapper: &DatabaseWrapper{
+				left: &model.Database{
+					ContainsPlaylists: false,
+				},
+				right: &model.Database{
+					ContainsPlaylists: true,
+				},
+			},
+			side: "rightSide",
+			want: true,
+		},
+		{
+			name: "Wrong side",
+			dbWrapper: &DatabaseWrapper{
+				left: &model.Database{
+					ContainsPlaylists: false,
+				},
+				right: &model.Database{
+					ContainsPlaylists: true,
+				},
+			},
+			side: "wrong",
+			want: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := tt.dbWrapper.DBContainsPlaylists(tt.side)
+			assert.Equal(t, tt.want, got)
+		})
+	}
 }

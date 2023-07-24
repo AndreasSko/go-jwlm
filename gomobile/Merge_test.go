@@ -1,3 +1,4 @@
+//go:build !windows
 // +build !windows
 
 package gomobile
@@ -576,6 +577,7 @@ var leftDB = &model.Database{
 			Title:           sql.NullString{"Am Anfang erschuf Gott Himmel und Erde.", true},
 			Content:         sql.NullString{"📝 for left version", true},
 			LastModified:    "2020-09-15T13:45:38+00:00",
+			Created:         "2020-09-15T13:45:38+00:00",
 			BlockType:       2,
 			BlockIdentifier: sql.NullInt32{1, true},
 		},
@@ -585,6 +587,7 @@ var leftDB = &model.Database{
 			Title:        sql.NullString{"Same Note", true},
 			Content:      sql.NullString{"This note is also available on the other side", true},
 			LastModified: "2020-09-15T13:52:25+00:00",
+			Created:      "2020-09-15T13:52:25+00:00",
 			BlockType:    0,
 		},
 	},
@@ -744,6 +747,7 @@ var rightDB = &model.Database{
 			Title:           sql.NullString{"So wurde die Erschaffung von Himmel und Erde und allem, was dazugehört, beendet.", true},
 			Content:         sql.NullString{"📝 on the right side", true},
 			LastModified:    "2020-09-15T13:47:56+00:00",
+			Created:         "2020-09-15T13:47:56+00:00",
 			BlockType:       2,
 			BlockIdentifier: sql.NullInt32{1, true},
 		},
@@ -753,6 +757,7 @@ var rightDB = &model.Database{
 			Title:        sql.NullString{"Same Note", true},
 			Content:      sql.NullString{"This note is also available on the other side. Though this one is newer 😏", true},
 			LastModified: "2020-09-20T13:52:25+00:00",
+			Created:      "2020-09-15T13:52:25+00:00",
 			BlockType:    0,
 		},
 	},
@@ -922,6 +927,7 @@ var mergedAllLeftDB = &model.Database{
 			Title:           sql.NullString{"Am Anfang erschuf Gott Himmel und Erde.", true},
 			Content:         sql.NullString{"📝 for left version", true},
 			LastModified:    "2020-09-15T13:45:38+00:00",
+			Created:         "2020-09-15T13:45:38+00:00",
 			BlockType:       2,
 			BlockIdentifier: sql.NullInt32{1, true},
 		},
@@ -931,6 +937,7 @@ var mergedAllLeftDB = &model.Database{
 			Title:        sql.NullString{"Same Note", true},
 			Content:      sql.NullString{"This note is also available on the other side", true},
 			LastModified: "2020-09-15T13:52:25+00:00",
+			Created:      "2020-09-15T13:52:25+00:00",
 			BlockType:    0,
 		},
 		{
@@ -941,6 +948,7 @@ var mergedAllLeftDB = &model.Database{
 			Title:           sql.NullString{"So wurde die Erschaffung von Himmel und Erde und allem, was dazugehört, beendet.", true},
 			Content:         sql.NullString{"📝 on the right side", true},
 			LastModified:    "2020-09-15T13:47:56+00:00",
+			Created:         "2020-09-15T13:47:56+00:00",
 			BlockType:       2,
 			BlockIdentifier: sql.NullInt32{1, true},
 		},
@@ -1128,6 +1136,7 @@ var mergedAllRightDB = &model.Database{
 			Title:           sql.NullString{"Am Anfang erschuf Gott Himmel und Erde.", true},
 			Content:         sql.NullString{"📝 for left version", true},
 			LastModified:    "2020-09-15T13:45:38+00:00",
+			Created:         "2020-09-15T13:45:38+00:00",
 			BlockType:       2,
 			BlockIdentifier: sql.NullInt32{1, true},
 		},
@@ -1137,6 +1146,7 @@ var mergedAllRightDB = &model.Database{
 			Title:        sql.NullString{"Same Note", true},
 			Content:      sql.NullString{"This note is also available on the other side. Though this one is newer 😏", true},
 			LastModified: "2020-09-20T13:52:25+00:00",
+			Created:      "2020-09-20T13:52:25+00:00",
 			BlockType:    0,
 		},
 		{
@@ -1147,6 +1157,7 @@ var mergedAllRightDB = &model.Database{
 			Title:           sql.NullString{"So wurde die Erschaffung von Himmel und Erde und allem, was dazugehört, beendet.", true},
 			Content:         sql.NullString{"📝 on the right side", true},
 			LastModified:    "2020-09-15T13:47:56+00:00",
+			Created:         "2020-09-15T13:47:56+00:00",
 			BlockType:       2,
 			BlockIdentifier: sql.NullInt32{1, true},
 		},

@@ -35,6 +35,7 @@ func TestNote_Equals(t *testing.T) {
 		Title:           sql.NullString{String: "A Title", Valid: true},
 		Content:         sql.NullString{String: "The content", Valid: true},
 		LastModified:    "2017-06-01T19:36:28+0200",
+		Created:         "2017-06-01T19:36:28+0200",
 		BlockType:       0,
 		BlockIdentifier: sql.NullInt32{},
 	}
@@ -46,6 +47,7 @@ func TestNote_Equals(t *testing.T) {
 		Title:           sql.NullString{String: "A Title", Valid: true},
 		Content:         sql.NullString{String: "The content", Valid: true},
 		LastModified:    "2017-06-01T19:36:28+0200",
+		Created:         "2017-06-01T19:36:27+0200",
 		BlockType:       0,
 		BlockIdentifier: sql.NullInt32{},
 	}
@@ -57,6 +59,7 @@ func TestNote_Equals(t *testing.T) {
 		Title:           sql.NullString{String: "A early Title", Valid: true},
 		Content:         sql.NullString{String: "The early content", Valid: true},
 		LastModified:    "2017-06-01T19:36:28+0200",
+		Created:         "2017-06-01T19:36:28+0200",
 		BlockType:       0,
 		BlockIdentifier: sql.NullInt32{},
 	}
@@ -68,6 +71,7 @@ func TestNote_Equals(t *testing.T) {
 		Title:           sql.NullString{String: "A early Title", Valid: true},
 		Content:         sql.NullString{String: "The early content", Valid: true},
 		LastModified:    "2020-06-01T19:36:28+0200",
+		Created:         "2017-06-01T19:36:28+0200",
 		BlockType:       0,
 		BlockIdentifier: sql.NullInt32{},
 	}
@@ -95,6 +99,7 @@ func TestNote_RelatedEntries(t *testing.T) {
 				Title:           sql.NullString{String: "A Title", Valid: true},
 				Content:         sql.NullString{String: "Content", Valid: true},
 				LastModified:    "2017-06-01T19:36:28+0200",
+				Created:         "2017-06-01T19:36:28+0200",
 				BlockType:       0,
 				BlockIdentifier: sql.NullInt32{},
 			},
@@ -121,6 +126,7 @@ func TestNote_PrettyPrint(t *testing.T) {
 		Title:           sql.NullString{String: "A Title", Valid: true},
 		Content:         sql.NullString{String: "A very long content string that should hopefully result in a line break after max. 80 characters...", Valid: true},
 		LastModified:    "2017-06-01T19:36:28+0200",
+		Created:         "2017-06-01T19:36:28+0200",
 		BlockType:       0,
 		BlockIdentifier: sql.NullInt32{},
 	}
@@ -130,6 +136,7 @@ func TestNote_PrettyPrint(t *testing.T) {
 	fmt.Fprint(w, "\nTitle:\tA Title")
 	fmt.Fprint(w, "\nContent:\tA very long content string that should hopefully result in a line\n\tbreak after max. 80 characters...")
 	fmt.Fprint(w, "\nLastModified:\t2017-06-01T19:36:28+0200")
+	fmt.Fprint(w, "\nCreated:\t2017-06-01T19:36:28+0200")
 	w.Flush()
 	expectedResult := buf.String()
 
@@ -156,6 +163,7 @@ func TestNote_PrettyPrint(t *testing.T) {
 	fmt.Fprint(w, "\nTitle:\tA Title")
 	fmt.Fprint(w, "\nContent:\tA very long content string that should hopefully result in a line\n\tbreak after max. 80 characters...")
 	fmt.Fprint(w, "\nLastModified:\t2017-06-01T19:36:28+0200")
+	fmt.Fprint(w, "\nCreated:\t2017-06-01T19:36:28+0200")
 	fmt.Fprint(w, "\n\n\nRelated Location:\n\nTitle:\tLocation-Title\nIssueTagNumber:\t0\nMepsLanguage:\t0")
 	fmt.Fprint(w, "\n\n\nRelated UserMark:\n\nColorIndex:\t5")
 	w.Flush()
@@ -173,6 +181,7 @@ func TestNote_MarshalJSON(t *testing.T) {
 		Title:           sql.NullString{String: "A Title", Valid: true},
 		Content:         sql.NullString{String: "The content", Valid: true},
 		LastModified:    "2017-06-01T19:36:28+0200",
+		Created:         "2017-06-01T19:36:28+0200",
 		BlockType:       4,
 		BlockIdentifier: sql.NullInt32{},
 	}
@@ -180,6 +189,6 @@ func TestNote_MarshalJSON(t *testing.T) {
 	result, err := json.Marshal(m1)
 	assert.NoError(t, err)
 	assert.Equal(t,
-		`{"type":"Note","noteId":1,"guid":"GUIDFOR1","userMarkId":{"Int32":2,"Valid":true},"locationId":{"Int32":3,"Valid":true},"title":{"String":"A Title","Valid":true},"content":{"String":"The content","Valid":true},"lastModified":"2017-06-01T19:36:28+0200","blockType":4,"blockIdentifier":{"Int32":0,"Valid":false}}`,
+		`{"type":"Note","noteId":1,"guid":"GUIDFOR1","userMarkId":{"Int32":2,"Valid":true},"locationId":{"Int32":3,"Valid":true},"title":{"String":"A Title","Valid":true},"content":{"String":"The content","Valid":true},"lastModified":"2017-06-01T19:36:28+0200","created":"2017-06-01T19:36:28+0200","blockType":4,"blockIdentifier":{"Int32":0,"Valid":false}}`,
 		string(result))
 }

@@ -14,9 +14,9 @@ var exampleManifest = &manifest{
 	CreationDate: time.Now().Format("2006-01-02"),
 	UserDataBackup: userDataBackup{
 		LastModifiedDate: time.Now().Format("2006-01-02T15:04:05-07:00"),
-		Hash:             "19f994bb2fcda04e213920ddee729337296d90cad108bf281c6f6bbf9f2e5fce",
-		DatabaseName:     "user_data.db",
-		SchemaVersion:    8,
+		Hash:             "e2e09ceba668bb1ad093b2db317237451a01ae9ff435b38c840b70dc434f184f",
+		DatabaseName:     userDataFilename,
+		SchemaVersion:    13,
 		DeviceName:       "go-jwlm",
 	},
 	Name:    "test",
@@ -35,8 +35,8 @@ func Test_manifest_importManifest(t *testing.T) {
 		UserDataBackup: userDataBackup{
 			LastModifiedDate: "2020-04-09T05:47:26+02:00",
 			Hash:             "d87a67028133cc4de5536affe1b072841def95899b7f7450a5622112b4b5e63f",
-			DatabaseName:     "user_data.db",
-			SchemaVersion:    8,
+			DatabaseName:     userDataFilename,
+			SchemaVersion:    13,
 			DeviceName:       "iPhone",
 		},
 		Name:    "UserDataBackup_2020-04-11_iPhone",
@@ -62,7 +62,7 @@ func Test_validateManifest(t *testing.T) {
 }
 
 func Test_generateManifest(t *testing.T) {
-	dbPath := filepath.Join("testdata", "user_data.db")
+	dbPath := filepath.Join("testdata", userDataFilename)
 
 	mfst, err := generateManifest("test", dbPath)
 	exampleManifest.UserDataBackup.LastModifiedDate = time.Now().Format("2006-01-02T15:04:05-07:00") // Could have changed in the last second..

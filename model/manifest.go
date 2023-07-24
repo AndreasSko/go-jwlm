@@ -14,6 +14,9 @@ import (
 	"github.com/pkg/errors"
 )
 
+const version = 1
+const schemaVersion = 13
+
 type manifest struct {
 	CreationDate   string         `json:"creationDate"`
 	UserDataBackup userDataBackup `json:"userDataBackup"`
@@ -49,9 +52,6 @@ func (mfst *manifest) importManifest(path string) error {
 
 // validateManifest checks if the backup file is compatible by validating the manifest
 func (mfst *manifest) validateManifest() error {
-	const version = 1
-	const schemaVersion = 8
-
 	if mfst.Version != version {
 		return fmt.Errorf("Manifest version is incompatible. Should be %d is %d. "+
 			"You might need to upgrade to a newer version of JW Library first", version, mfst.Version)
@@ -86,12 +86,12 @@ func generateManifest(backupName string, dbFile string) (*manifest, error) {
 			LastModifiedDate: time.Now().Format("2006-01-02T15:04:05-07:00"),
 			Hash:             hash,
 			DatabaseName:     filepath.Base(dbFile),
-			SchemaVersion:    8,
+			SchemaVersion:    schemaVersion,
 			DeviceName:       "go-jwlm",
 		},
 		Name:    backupName,
 		Type:    0,
-		Version: 1,
+		Version: version,
 	}
 
 	return mfst, nil

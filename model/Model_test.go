@@ -76,6 +76,7 @@ func TestMakeModelCopy(t *testing.T) {
 		Title:           sql.NullString{String: "A Title", Valid: true},
 		Content:         sql.NullString{String: "The content", Valid: true},
 		LastModified:    "2017-06-01T19:36:28+0200",
+		Created:         "2016-06-01T19:36:28+0200",
 		BlockType:       0,
 		BlockIdentifier: sql.NullInt32{},
 	}
@@ -86,10 +87,9 @@ func TestMakeModelCopy(t *testing.T) {
 	assert.Equal(t, 1, noteCp.ID())
 
 	tag := &Tag{
-		TagID:         1,
-		TagType:       1,
-		Name:          "FirstTag",
-		ImageFilename: sql.NullString{},
+		TagID:   1,
+		TagType: 1,
+		Name:    "FirstTag",
 	}
 	tagCp := MakeModelCopy(tag)
 	assert.Equal(t, tag, tagCp)

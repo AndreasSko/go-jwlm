@@ -1,8 +1,10 @@
 package model
 
 import (
+	"archive/zip"
 	"crypto/sha256"
 	"database/sql"
+	_ "embed"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -203,7 +205,7 @@ func TestDatabase_PurgeTables(t *testing.T) {
 func TestMakeDatabaseCopy(t *testing.T) {
 	db := &Database{}
 
-	path := filepath.Join("testdata", "user_data.db")
+	path := filepath.Join("testdata", userDataFilename)
 	assert.NoError(t, db.importSQLite(path))
 
 	dbCp := MakeDatabaseCopy(db)
@@ -282,7 +284,7 @@ func Test_getSliceCapacity(t *testing.T) {
 }
 
 func Test_fetchFromSQLite(t *testing.T) {
-	path := filepath.Join("testdata", "user_data.db")
+	path := filepath.Join("testdata", userDataFilename)
 	sqlite, err := sql.Open("sqlite3", path+"?immutable=1")
 	if err != nil {
 		t.Fatal(errors.Wrap(err, "Error while opening SQLite database"))
@@ -297,7 +299,7 @@ func Test_fetchFromSQLite(t *testing.T) {
 	bookmark, err := fetchFromSQLite(sqlite, &Bookmark{})
 	assert.NoError(t, err)
 	assert.Len(t, bookmark, 4)
-	assert.Equal(t, &Bookmark{2, 3, 7, 4, "Philippians 4", sql.NullString{String: "12 I know how to be low on provisions and how to have an abundance. In everything and in all circumstances I have learned the secret of both how to be full and how to hunger, both how to have an abundance and how to do without. ", Valid: true}, 0, sql.NullInt32{}}, bookmark[2])
+	assert.Equal(t, &Bookmark{2, 3, 7, 4, "Philippians 4", sql.NullString{String: "12I know how to be low on provisions and how to have an abundance. In everything and in all circumstances I have learned the secret of both how to be full and how to hunger, both how to have an abundance and how to do without. ", Valid: true}, 0, sql.NullInt32{}}, bookmark[2])
 
 	inputField, err := fetchFromSQLite(sqlite, &InputField{})
 	assert.NoError(t, err)
@@ -312,16 +314,16 @@ func Test_fetchFromSQLite(t *testing.T) {
 	note, err := fetchFromSQLite(sqlite, &Note{})
 	assert.NoError(t, err)
 	assert.Len(t, note, 3)
-	assert.Equal(t, &Note{2, "F75A18EE-FC17-4E0B-ABB6-CC16DABE9610", sql.NullInt32{Int32: 3, Valid: true}, sql.NullInt32{Int32: 3, Valid: true}, sql.NullString{String: "For all things I have the strength through the one who gives me power.", Valid: true}, sql.NullString{String: "", Valid: true}, "2020-04-14T18:42:14+00:00", 2, sql.NullInt32{Int32: 13, Valid: true}}, note[2])
+	assert.Equal(t, &Note{2, "F75A18EE-FC17-4E0B-ABB6-CC16DABE9610", sql.NullInt32{Int32: 3, Valid: true}, sql.NullInt32{Int32: 3, Valid: true}, sql.NullString{String: "For all things I have the strength through the one who gives me power.", Valid: true}, sql.NullString{String: "", Valid: true}, "2020-04-14T18:42:14+00:00", "2020-04-14T18:42:14+00:00", 2, sql.NullInt32{Int32: 13, Valid: true}}, note[2])
 
 	tag, err := fetchFromSQLite(sqlite, &Tag{})
 	assert.NoError(t, err)
 	assert.Len(t, tag, 3)
-	assert.Equal(t, &Tag{2, 1, "Strengthening", sql.NullString{}}, tag[2])
+	assert.Equal(t, &Tag{2, 1, "Strengthening"}, tag[2])
 
 	tagMap, err := fetchFromSQLite(sqlite, &TagMap{})
 	assert.NoError(t, err)
-	assert.Len(t, tagMap, 4)
+	assert.Len(t, tagMap, 3)
 	assert.Equal(t, &TagMap{2, sql.NullInt32{Int32: 0, Valid: false}, sql.NullInt32{Int32: 0, Valid: false}, sql.NullInt32{Int32: 2, Valid: true}, 2, 1}, tagMap[2])
 
 	userMark, err := fetchFromSQLite(sqlite, &UserMark{})
@@ -485,24 +487,307 @@ func mockSQLRows(t *testing.T, columns ...*sqlmock.Column) *sql.Rows {
 }
 
 func TestDatabase_importSQLite(t *testing.T) {
-	db := Database{}
+	tests := []struct {
+		name       string
+		db         *Database
+		filename   string
+		wantErr    assert.ErrorAssertionFunc
+		assertions func(t *testing.T, db *Database)
+	}{
+		{
+			name:     "Regular import",
+			db:       &Database{},
+			filename: filepath.Join("testdata", userDataFilename),
+			wantErr:  assert.NoError,
+			assertions: func(t *testing.T, db *Database) {
+				assert.Len(t, db.BlockRange, 5)
+				assert.Len(t, db.Bookmark, 4)
+				assert.Len(t, db.InputField, 4)
+				assert.Len(t, db.Location, 9)
+				assert.Len(t, db.Note, 3)
+				assert.Len(t, db.Tag, 3)
+				assert.Len(t, db.TagMap, 3)
+				assert.Len(t, db.UserMark, 5)
+			},
+		},
+		{
+			name:     "Playlists included, error!",
+			db:       &Database{},
+			filename: filepath.Join("testdata", "userData_withPlaylist.db"),
+			wantErr: func(tt assert.TestingT, err error, i ...interface{}) bool {
+				return assert.ErrorContains(t, err, "merging of playlists is not supported yet")
+			},
+			assertions: func(t *testing.T, db *Database) {},
+		},
+		{
+			name: "Playlists included, skip them!",
+			db: &Database{
+				SkipPlaylists: true,
+			},
+			filename: filepath.Join("testdata", "userData_withPlaylist.db"),
+			wantErr:  assert.NoError,
+			assertions: func(t *testing.T, db *Database) {
+				assert.Nil(t, db.Tag[3])
+				assert.NotNil(t, db.Tag[4])
+				assert.Nil(t, db.TagMap[3])
+				assert.Nil(t, db.TagMap[4])
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.db.importSQLite(tt.filename)
+			tt.wantErr(t, err)
+			tt.assertions(t, tt.db)
+		})
+	}
+}
 
-	path := filepath.Join("testdata", "user_data.db")
-	assert.NoError(t, db.importSQLite(path))
-
-	// As we already test the correctness in Test_fetchFromSQLite,
-	// it should be sufficient to just double-check the size of the slices.
-	assert.Len(t, db.BlockRange, 5)
-	assert.Len(t, db.Bookmark, 4)
-	assert.Len(t, db.InputField, 4)
-	assert.Len(t, db.Location, 9)
-	assert.Len(t, db.Note, 3)
-	assert.Len(t, db.Tag, 3)
-	assert.Len(t, db.TagMap, 4)
-	assert.Len(t, db.UserMark, 5)
-
-	path = filepath.Join("testdata", "error_playlistMedia.db")
-	assert.EqualError(t, db.importSQLite(path), "Table PlaylistMedia is not empty. Merging of these entries are not supported yet")
+func TestDatabase_removePlaylists(t *testing.T) {
+	tests := []struct {
+		name   string
+		db     *Database
+		wantDB *Database
+	}{
+		{
+			name: "No playlists",
+			db: &Database{
+				Tag: []*Tag{
+					nil,
+					{
+						TagID:   1,
+						TagType: 0,
+					},
+					{
+						TagID:   2,
+						TagType: 1,
+					},
+				},
+				TagMap: []*TagMap{
+					nil,
+					{
+						TagMapID:   1,
+						TagID:      1,
+						LocationID: sql.NullInt32{Int32: 1, Valid: true},
+					},
+					nil,
+					{
+						TagMapID:   3,
+						TagID:      2,
+						LocationID: sql.NullInt32{Int32: 2, Valid: true},
+					},
+				},
+			},
+			wantDB: &Database{
+				Tag: []*Tag{
+					nil,
+					{
+						TagID:   1,
+						TagType: 0,
+					},
+					{
+						TagID:   2,
+						TagType: 1,
+					},
+				},
+				TagMap: []*TagMap{
+					nil,
+					{
+						TagMapID:   1,
+						TagID:      1,
+						LocationID: sql.NullInt32{Int32: 1, Valid: true},
+					},
+					nil,
+					{
+						TagMapID:   3,
+						TagID:      2,
+						LocationID: sql.NullInt32{Int32: 2, Valid: true},
+					},
+				},
+			},
+		},
+		{
+			name: "Playlist tag included",
+			db: &Database{
+				Tag: []*Tag{
+					nil,
+					{
+						TagID:   1,
+						TagType: 2,
+					},
+					{
+						TagID:   2,
+						TagType: 1,
+					},
+				},
+				TagMap: []*TagMap{
+					nil,
+					{
+						TagMapID:   1,
+						TagID:      1,
+						LocationID: sql.NullInt32{Int32: 1, Valid: true},
+					},
+					nil,
+					{
+						TagMapID:   3,
+						TagID:      2,
+						LocationID: sql.NullInt32{Int32: 2, Valid: true},
+					},
+				},
+			},
+			wantDB: &Database{
+				ContainsPlaylists: true,
+				Tag: []*Tag{
+					nil,
+					nil,
+					{
+						TagID:   2,
+						TagType: 1,
+					},
+				},
+				TagMap: []*TagMap{
+					nil,
+					{
+						TagMapID:   1,
+						TagID:      1,
+						LocationID: sql.NullInt32{Int32: 1, Valid: true},
+					},
+					nil,
+					{
+						TagMapID:   3,
+						TagID:      2,
+						LocationID: sql.NullInt32{Int32: 2, Valid: true},
+					},
+				},
+			},
+		},
+		{
+			name: "Playlist entry in TagMap included",
+			db: &Database{
+				Tag: []*Tag{
+					nil,
+					{
+						TagID:   1,
+						TagType: 0,
+					},
+					{
+						TagID:   2,
+						TagType: 1,
+					},
+				},
+				TagMap: []*TagMap{
+					nil,
+					{
+						TagMapID:       1,
+						TagID:          1,
+						PlaylistItemID: sql.NullInt32{Int32: 1, Valid: true},
+					},
+					nil,
+					{
+						TagMapID:   3,
+						TagID:      2,
+						LocationID: sql.NullInt32{Int32: 2, Valid: true},
+					},
+				},
+			},
+			wantDB: &Database{
+				ContainsPlaylists: true,
+				Tag: []*Tag{
+					nil,
+					{
+						TagID:   1,
+						TagType: 0,
+					},
+					{
+						TagID:   2,
+						TagType: 1,
+					},
+				},
+				TagMap: []*TagMap{
+					nil,
+					nil,
+					nil,
+					{
+						TagMapID:   3,
+						TagID:      2,
+						LocationID: sql.NullInt32{Int32: 2, Valid: true},
+					},
+				},
+			},
+		},
+		{
+			name: "Playlist with entries included",
+			db: &Database{
+				Tag: []*Tag{
+					nil,
+					{
+						TagID:   1,
+						TagType: 1,
+					},
+					{
+						TagID:   2,
+						TagType: 2,
+					},
+					{
+						TagID:   3,
+						TagType: 2,
+					},
+				},
+				TagMap: []*TagMap{
+					nil,
+					{
+						TagMapID:       1,
+						TagID:          2,
+						PlaylistItemID: sql.NullInt32{Int32: 1, Valid: true},
+					},
+					{
+						TagMapID:       2,
+						TagID:          2,
+						PlaylistItemID: sql.NullInt32{Int32: 2, Valid: true},
+					},
+					{
+						TagMapID:       3,
+						TagID:          3,
+						PlaylistItemID: sql.NullInt32{Int32: 3, Valid: true},
+					},
+					{
+						TagMapID:   4,
+						TagID:      1,
+						LocationID: sql.NullInt32{Int32: 1, Valid: true},
+					},
+				},
+			},
+			wantDB: &Database{
+				ContainsPlaylists: true,
+				Tag: []*Tag{
+					nil,
+					{
+						TagID:   1,
+						TagType: 1,
+					},
+					nil,
+					nil,
+				},
+				TagMap: []*TagMap{
+					nil,
+					nil,
+					nil,
+					nil,
+					{
+						TagMapID:   4,
+						TagID:      1,
+						LocationID: sql.NullInt32{Int32: 1, Valid: true},
+					},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.db.removePlaylists()
+			assert.Equal(t, tt.wantDB, tt.db)
+		})
+	}
 }
 
 func TestDatabase_ImportJWLBackup(t *testing.T) {
@@ -539,6 +824,13 @@ func TestDatabase_ExportJWLBackup(t *testing.T) {
 	newPath := filepath.Join(testFolder, "backup.jwlibrary")
 	assert.NoError(t, db.ExportJWLBackup(newPath))
 
+	// Make sure all expected files are there
+	filenames, err := filenamesInZip(newPath)
+	assert.NoError(t, err)
+	for _, expected := range []string{"userData.db", "manifest.json", "default_thumbnail.png"} {
+		assert.Contains(t, filenames, expected)
+	}
+
 	db = Database{}
 	assert.NoError(t, db.ImportJWLBackup(newPath))
 
@@ -546,7 +838,7 @@ func TestDatabase_ExportJWLBackup(t *testing.T) {
 	assert.Equal(t, &BlockRange{3, 2, 13, sql.NullInt32{Int32: 0, Valid: true}, sql.NullInt32{Int32: 14, Valid: true}, 3}, db.BlockRange[3])
 
 	assert.Len(t, db.Bookmark, 3)
-	assert.Equal(t, &Bookmark{2, 3, 7, 4, "Philippians 4", sql.NullString{String: "12 I know how to be low on provisions and how to have an abundance. In everything and in all circumstances I have learned the secret of both how to be full and how to hunger, both how to have an abundance and how to do without. ", Valid: true}, 0, sql.NullInt32{}}, db.Bookmark[2])
+	assert.Equal(t, &Bookmark{2, 3, 7, 4, "Philippians 4", sql.NullString{String: "12I know how to be low on provisions and how to have an abundance. In everything and in all circumstances I have learned the secret of both how to be full and how to hunger, both how to have an abundance and how to do without. ", Valid: true}, 0, sql.NullInt32{}}, db.Bookmark[2])
 
 	assert.Len(t, db.InputField, 4)
 	assert.Equal(t, &InputField{8, "tt71", "First other..", 3}, db.InputField[3])
@@ -555,10 +847,10 @@ func TestDatabase_ExportJWLBackup(t *testing.T) {
 	assert.Equal(t, &Location{4, sql.NullInt32{Int32: 66, Valid: true}, sql.NullInt32{Int32: 21, Valid: true}, sql.NullInt32{}, sql.NullInt32{}, 0, sql.NullString{String: "nwtsty", Valid: true}, 2, 0, sql.NullString{String: "Offenbarung 21", Valid: true}}, db.Location[4])
 
 	assert.Len(t, db.Note, 3)
-	assert.Equal(t, &Note{2, "F75A18EE-FC17-4E0B-ABB6-CC16DABE9610", sql.NullInt32{Int32: 3, Valid: true}, sql.NullInt32{Int32: 3, Valid: true}, sql.NullString{String: "For all things I have the strength through the one who gives me power.", Valid: true}, sql.NullString{String: "", Valid: true}, "2020-04-14T18:42:14+00:00", 2, sql.NullInt32{Int32: 13, Valid: true}}, db.Note[2])
+	assert.Equal(t, &Note{2, "F75A18EE-FC17-4E0B-ABB6-CC16DABE9610", sql.NullInt32{Int32: 3, Valid: true}, sql.NullInt32{Int32: 3, Valid: true}, sql.NullString{String: "For all things I have the strength through the one who gives me power.", Valid: true}, sql.NullString{String: "", Valid: true}, "2020-04-14T18:42:14+00:00", "2020-04-14T18:42:14+00:00", 2, sql.NullInt32{Int32: 13, Valid: true}}, db.Note[2])
 
 	assert.Len(t, db.Tag, 3)
-	assert.Equal(t, &Tag{2, 1, "Strengthening", sql.NullString{}}, db.Tag[2])
+	assert.Equal(t, &Tag{2, 1, "Strengthening"}, db.Tag[2])
 
 	assert.Len(t, db.TagMap, 3)
 	assert.Equal(t, &TagMap{2, sql.NullInt32{Int32: 0, Valid: false}, sql.NullInt32{Int32: 0, Valid: false}, sql.NullInt32{Int32: 2, Valid: true}, 2, 1}, db.TagMap[2])
@@ -573,7 +865,7 @@ func Test_createEmptySQLiteDB(t *testing.T) {
 	assert.NoError(t, err)
 	defer os.RemoveAll(tmp)
 
-	path := filepath.Join(tmp, "user_data.db")
+	path := filepath.Join(tmp, userDataFilename)
 	err = createEmptySQLiteDB(path)
 	assert.NoError(t, err)
 
@@ -589,7 +881,7 @@ func Test_createEmptySQLiteDB(t *testing.T) {
 	}
 	hash := fmt.Sprintf("%x", hasher.Sum(nil))
 
-	assert.Equal(t, "3fae739471144fd8815344bf479fc5d8468df9e9d5a27aeae88a144e51c97bdd", hash)
+	assert.Equal(t, "774af7240646c49f6a55e40b6cdf681a6b04fbcf4acebdb19a6e0e2bef53d766", hash)
 }
 
 func TestDatabase_saveToNewSQLite(t *testing.T) {
@@ -603,12 +895,12 @@ func TestDatabase_saveToNewSQLite(t *testing.T) {
 		Bookmark:   []*Bookmark{{2, 3, 7, 4, "Philippians 4", sql.NullString{String: "12 I know how to be low on provisions and how to have an abundance. In everything and in all circumstances I have learned the secret of both how to be full and how to hunger, both how to have an abundance and how to do without. ", Valid: true}, 0, sql.NullInt32{}}},
 		InputField: []*InputField{{8, "tt56", "First lesson completed on..", 1}, {8, "tt66", "1", 3}, {8, "tt71", "First other..", 3}},
 		Location:   []*Location{{4, sql.NullInt32{Int32: 66, Valid: true}, sql.NullInt32{Int32: 21, Valid: true}, sql.NullInt32{}, sql.NullInt32{}, 0, sql.NullString{String: "nwtsty", Valid: true}, 2, 0, sql.NullString{String: "Offenbarung 21", Valid: true}}},
-		Note:       []*Note{{2, "F75A18EE-FC17-4E0B-ABB6-CC16DABE9610", sql.NullInt32{Int32: 3, Valid: true}, sql.NullInt32{Int32: 3, Valid: true}, sql.NullString{String: "For all things I have the strength through the one who gives me power.", Valid: true}, sql.NullString{String: "!", Valid: true}, "2020-04-14T18:42:14+00:00", 2, sql.NullInt32{Int32: 13, Valid: true}}},
-		Tag:        []*Tag{{2, 1, "Strengthening", sql.NullString{}}},
+		Note:       []*Note{{2, "F75A18EE-FC17-4E0B-ABB6-CC16DABE9610", sql.NullInt32{Int32: 3, Valid: true}, sql.NullInt32{Int32: 3, Valid: true}, sql.NullString{String: "For all things I have the strength through the one who gives me power.", Valid: true}, sql.NullString{String: "!", Valid: true}, "2020-04-14T18:42:14+00:00", "2020-04-14T18:42:14+00:00", 2, sql.NullInt32{Int32: 13, Valid: true}}},
+		Tag:        []*Tag{{2, 1, "Strengthening"}},
 		TagMap:     []*TagMap{{2, sql.NullInt32{Int32: 0, Valid: false}, sql.NullInt32{Int32: 0, Valid: false}, sql.NullInt32{Int32: 2, Valid: true}, 2, 1}},
 		UserMark:   []*UserMark{{2, 1, 2, 0, "2C5E7B4A-4997-4EDA-9CFF-38A7599C487B", 1}},
 	}
-	path := filepath.Join(tmp, "user_data.db")
+	path := filepath.Join(tmp, userDataFilename)
 	assert.NoError(t, db.saveToNewSQLite(path))
 
 	db2 := Database{}
@@ -650,4 +942,20 @@ func TestDatabase_Equals(t *testing.T) {
 	path = filepath.Join("testdata", "backup_shuffled.jwlibrary")
 	assert.NoError(t, db3.ImportJWLBackup(path))
 	assert.True(t, db2.Equals(db3))
+}
+
+// filenamesInZip returns the names of all files contained in a zip file.
+func filenamesInZip(path string) ([]string, error) {
+	r, err := zip.OpenReader(path)
+	if err != nil {
+		return nil, err
+	}
+	defer r.Close()
+
+	filenames := make([]string, len(r.File))
+	for i, f := range r.File {
+		filenames[i] = f.Name
+	}
+
+	return filenames, nil
 }

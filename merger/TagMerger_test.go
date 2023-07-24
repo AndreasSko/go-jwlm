@@ -1,7 +1,6 @@
 package merger
 
 import (
-	"database/sql"
 	"testing"
 
 	"github.com/AndreasSko/go-jwlm/model"
@@ -12,95 +11,81 @@ func TestMergeTags(t *testing.T) {
 	// Successful merge
 	left := []*model.Tag{
 		{
-			TagID:         1,
-			TagType:       1,
-			Name:          "A tag on the left",
-			ImageFilename: sql.NullString{},
+			TagID:   1,
+			TagType: 1,
+			Name:    "A tag on the left",
 		},
 		{
-			TagID:         2,
-			TagType:       1,
-			Name:          "Another tag on the left",
-			ImageFilename: sql.NullString{},
+			TagID:   2,
+			TagType: 1,
+			Name:    "Another tag on the left",
 		},
 		{
-			TagID:         3,
-			TagType:       1,
-			Name:          "A duplicate tag",
-			ImageFilename: sql.NullString{},
+			TagID:   3,
+			TagType: 1,
+			Name:    "A duplicate tag",
 		},
 		{
-			TagID:         4,
-			TagType:       1,
-			Name:          "A duplicate tag with imageFilename",
-			ImageFilename: sql.NullString{String: "aFileName.jpg", Valid: true},
+			TagID:   4,
+			TagType: 1,
+			Name:    "A duplicate tag with imageFilename",
 		},
 		nil,
 	}
 	right := []*model.Tag{
 		{
-			TagID:         1,
-			TagType:       1,
-			Name:          "A tag on the right",
-			ImageFilename: sql.NullString{},
+			TagID:   1,
+			TagType: 1,
+			Name:    "A tag on the right",
 		},
 		{
-			TagID:         2,
-			TagType:       1,
-			Name:          "A duplicate tag",
-			ImageFilename: sql.NullString{},
+			TagID:   2,
+			TagType: 1,
+			Name:    "A duplicate tag",
 		},
 		{
-			TagID:         3,
-			TagType:       1,
-			Name:          "A duplicate tag with imageFilename",
-			ImageFilename: sql.NullString{String: "aFileName.jpg", Valid: true},
+			TagID:   3,
+			TagType: 1,
+			Name:    "A duplicate tag with imageFilename",
 		},
 		{
-			TagID:         4,
-			TagType:       1,
-			Name:          "One more tag only on the right",
-			ImageFilename: sql.NullString{},
+			TagID:   4,
+			TagType: 1,
+			Name:    "One more tag only on the right",
 		},
 	}
 
 	expectedResult := []*model.Tag{
 		nil,
 		{
-			TagID:         1,
-			TagType:       1,
-			Name:          "A tag on the left",
-			ImageFilename: sql.NullString{},
+			TagID:   1,
+			TagType: 1,
+			Name:    "A tag on the left",
 		},
 		{
-			TagID:         2,
-			TagType:       1,
-			Name:          "A tag on the right",
-			ImageFilename: sql.NullString{},
+			TagID:   2,
+			TagType: 1,
+			Name:    "A tag on the right",
 		},
 		{
-			TagID:         3,
-			TagType:       1,
-			Name:          "Another tag on the left",
-			ImageFilename: sql.NullString{},
+			TagID:   3,
+			TagType: 1,
+			Name:    "Another tag on the left",
 		},
 		{
-			TagID:         4,
-			TagType:       1,
-			Name:          "A duplicate tag",
-			ImageFilename: sql.NullString{},
+			TagID:   4,
+			TagType: 1,
+			Name:    "A duplicate tag",
 		},
 		{
-			TagID:         5,
-			TagType:       1,
-			Name:          "A duplicate tag with imageFilename",
-			ImageFilename: sql.NullString{String: "aFileName.jpg", Valid: true},
+			TagID:   5,
+			TagType: 1,
+			Name:    "A duplicate tag with imageFilename",
 		},
 		{
-			TagID:         6,
-			TagType:       1,
-			Name:          "One more tag only on the right",
-			ImageFilename: sql.NullString{},
+			TagID:   6,
+			TagType: 1,
+			Name:    "One more tag only on the right",
 		},
 	}
 

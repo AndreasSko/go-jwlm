@@ -12,7 +12,6 @@ import (
 	"regexp"
 	"strconv"
 	"sync"
-	"time"
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/pkg/errors"
@@ -20,10 +19,20 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	// Register SQLite driver
+	_ "embed"
+
 	_ "github.com/mattn/go-sqlite3"
 )
 
+//go:embed data/userData.db
+var userDataDatabaseFile []byte
+
+//go:embed data/default_thumbnail.png
+var defaultThumbnailFile []byte
+
 const manifestFilename = "manifest.json"
+const userDataFilename = "userData.db"
+const defaultThumbnailFilename = "default_thumbnail.png"
 
 // Database represents the JW Library database as a struct
 type Database struct {
@@ -35,6 +44,12 @@ type Database struct {
 	Tag        []*Tag
 	TagMap     []*TagMap
 	UserMark   []*UserMark
+
+	// ContainsPlaylists indicates if the imported backup contains playlists.
+	ContainsPlaylists bool
+	// SkipPlaylists allows to skip prevention of merging if playlists exist in the database.
+	// It is meant as a temporary workaround until merging of playlists is implemented.
+	SkipPlaylists bool
 }
 
 // FetchFromTable tries to fetch a entry with the given ID. If it can't find it
@@ -94,6 +109,7 @@ func MakeDatabaseCopy(db *Database) *Database {
 			continue
 		}
 
+		cpField := reflect.ValueOf(newDB).Elem().Field(i)
 		tp := field.Kind()
 		switch tp {
 		case reflect.Slice:
@@ -113,8 +129,9 @@ func MakeDatabaseCopy(db *Database) *Database {
 					panic(fmt.Sprintf("Element type %T is not supported for copying", t))
 				}
 			}
-			cpField := reflect.ValueOf(newDB).Elem().Field(i)
 			cpField.Set(cpSlice)
+		case reflect.Bool:
+			cpField.SetBool(field.Bool())
 		default:
 			panic(fmt.Sprintf("Field type %T is not supported for copying", tp))
 		}
@@ -161,40 +178,51 @@ func (db *Database) Equals(other *Database) bool {
 	dbFields := reflect.ValueOf(dbCp).Elem()
 	otherFields := reflect.ValueOf(otherCp).Elem()
 	for i := 0; i < dbFields.NumField(); i++ {
-		dbSlice := dbFields.Field(i)
-		otherSlice := otherFields.Field(i)
-		if !dbSlice.CanInterface() || !otherSlice.CanInterface() {
-			continue
-		}
+		dbField := dbFields.Field(i)
+		otherField := otherFields.Field(i)
 
-		if dbSlice.Len() != otherSlice.Len() {
-			fmt.Printf("Length of slices at index %d are not equal: %d vs %d\n", i, dbSlice.Len(), otherSlice.Len())
-			return false
-		}
+		tp := dbField.Kind()
+		switch tp {
+		case reflect.Slice:
+			if !dbField.CanInterface() || !otherField.CanInterface() {
+				continue
+			}
 
-		for j := 0; j < dbSlice.Len(); j++ {
-			dElem := dbSlice.Index(j)
-			oElem := otherSlice.Index(j)
+			if dbField.Len() != otherField.Len() {
+				fmt.Printf("Length of slices at index %d are not equal: %d vs %d\n", i, dbField.Len(), otherField.Len())
+				return false
+			}
 
-			if dElem.IsNil() {
-				if oElem.IsNil() {
-					continue
-				} else {
+			for j := 0; j < dbField.Len(); j++ {
+				dElem := dbField.Index(j)
+				oElem := otherField.Index(j)
+
+				if dElem.IsNil() {
+					if oElem.IsNil() {
+						continue
+					} else {
+						return false
+					}
+				}
+
+				if !dElem.MethodByName("Equals").Call([]reflect.Value{oElem})[0].Bool() {
+					fmt.Println("Found different entries: ")
+					left := spew.Sdump(dElem.Interface())
+					right := spew.Sdump(oElem.Interface())
+					fmt.Printf("%s \nvs\n %s", left, right)
+					dmp := diffmatchpatch.New()
+					diffs := dmp.DiffMain(left, right, true)
+					fmt.Println("Diff:")
+					fmt.Println(dmp.DiffPrettyText(diffs))
 					return false
 				}
 			}
-
-			if !dElem.MethodByName("Equals").Call([]reflect.Value{oElem})[0].Bool() {
-				fmt.Println("Found different entries: ")
-				left := spew.Sdump(dElem.Interface())
-				right := spew.Sdump(oElem.Interface())
-				fmt.Printf("%s \nvs\n %s", left, right)
-				dmp := diffmatchpatch.New()
-				diffs := dmp.DiffMain(left, right, true)
-				fmt.Println("Diff:")
-				fmt.Println(dmp.DiffPrettyText(diffs))
+		case reflect.Bool:
+			if dbFields.Field(i).Bool() != otherFields.Field(i).Bool() {
 				return false
 			}
+		default:
+			panic(fmt.Sprintf("field type %T is not supported for checking equality", tp))
 		}
 	}
 
@@ -220,14 +248,14 @@ func (db *Database) ImportJWLBackup(filename string) error {
 	for _, file := range r.File {
 		fileReader, err := file.Open()
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to open file: %w", err)
 		}
 		defer fileReader.Close()
 
 		path := filepath.Join(tmp, file.Name)
 		targetFile, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, file.Mode())
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to open target file: %w", err)
 		}
 		defer targetFile.Close()
 
@@ -261,19 +289,6 @@ func (db *Database) importSQLite(filename string) error {
 		return errors.Wrap(err, "Error while opening SQLite database")
 	}
 	defer sqlite.Close()
-
-	// Make sure these tables are empty as we are not able to merge them yet.
-	// Better to fail, than to risk losing data..
-	emptyTables := []string{"PlaylistItem", "PlaylistItemChild", "PlaylistMedia"}
-	for _, table := range emptyTables {
-		count, err := getTableEntryCount(sqlite, table)
-		if err != nil {
-			return err
-		}
-		if count > 0 {
-			return fmt.Errorf("Table %s is not empty. Merging of these entries are not supported yet", table)
-		}
-	}
 
 	var wg sync.WaitGroup
 	wg.Add(8)
@@ -374,7 +389,54 @@ func (db *Database) importSQLite(filename string) error {
 	case err := <-errors:
 		return err
 	default:
-		return nil
+	}
+
+	// Make sure these tables are empty as we are not able to merge them yet.
+	// Better to fail, than to risk losing data..
+	emptyTables := []string{
+		"IndependentMedia",
+		"PlaylistItem",
+		"PlaylistItemIndependentMediaMap",
+		"PlaylistItemLocationMap",
+		"PlaylistItemMarker",
+		"PlaylistItemMarkerBibleVerseMap",
+		"PlaylistItemMarkerParagraphMap",
+	}
+	for _, table := range emptyTables {
+		count, err := getTableEntryCount(sqlite, table)
+		if err != nil {
+			return err
+		}
+		if count > 0 {
+			db.ContainsPlaylists = true
+		}
+	}
+
+	db.removePlaylists()
+
+	if db.ContainsPlaylists && !db.SkipPlaylists {
+		return fmt.Errorf("merging of playlists is not supported yet. Enable SkipPlaylists flag to skip this safety check")
+	}
+
+	return nil
+}
+
+// removePlaylists removes all playlists (represented as a Tag with type 2)
+// and its items from the database. It indicates that the database contained
+// playlists by setting the ContainedPlaylists field to true.
+func (db *Database) removePlaylists() {
+	for i, t := range db.Tag {
+		if t != nil && t.TagType == 2 {
+			db.ContainsPlaylists = true
+			db.Tag[i] = nil
+		}
+	}
+
+	for i, t := range db.TagMap {
+		if t != nil && t.PlaylistItemID.Valid && t.PlaylistItemID.Int32 != 0 {
+			db.ContainsPlaylists = true
+			db.TagMap[i] = nil
+		}
 	}
 }
 
@@ -536,8 +598,8 @@ func (db *Database) ExportJWLBackup(filename string) error {
 	}
 	defer os.RemoveAll(tmp)
 
-	// Create user_data.db
-	dbPath := filepath.Join(tmp, "user_data.db")
+	// Create userData.db
+	dbPath := filepath.Join(tmp, userDataFilename)
 	if err := db.saveToNewSQLite(dbPath); err != nil {
 		return errors.Wrap(err, "Could not create SQLite database for exporting")
 	}
@@ -552,8 +614,13 @@ func (db *Database) ExportJWLBackup(filename string) error {
 		return errors.Wrap(err, "Error while creating manifest.json")
 	}
 
+	defaultThumbnailPath := filepath.Join(tmp, defaultThumbnailFilename)
+	if err := os.WriteFile(defaultThumbnailPath, defaultThumbnailFile, 0644); err != nil {
+		return fmt.Errorf("writing default thumbnail to %s: %w", defaultThumbnailPath, err)
+	}
+
 	// Store files in .jwlibrary (zip)-file
-	files := []string{dbPath, manifestPath}
+	files := []string{dbPath, manifestPath, defaultThumbnailPath}
 	if err := zipFiles(filename, files); err != nil {
 		return errors.Wrap(err, fmt.Sprintf("Error while storing files in zip archive %s", filename))
 	}
@@ -561,7 +628,7 @@ func (db *Database) ExportJWLBackup(filename string) error {
 	return nil
 }
 
-// SaveToNewSQLite creates a new SQLite database with the JW Library scheme
+// saveToNewSQLite creates a new SQLite database with the JW Library scheme
 // and saves all entries of the Database{} struct to it
 func (db *Database) saveToNewSQLite(filename string) error {
 	if err := createEmptySQLiteDB(filename); err != nil {
@@ -578,6 +645,9 @@ func (db *Database) saveToNewSQLite(filename string) error {
 	// and use it to insert its entries to the new SQLite DB
 	dbFields := reflect.ValueOf(db).Elem()
 	for j := 0; j < dbFields.NumField(); j++ {
+		if dbFields.Field(j).Kind() != reflect.Slice {
+			continue
+		}
 		slice := dbFields.Field(j).Interface()
 		mdl, err := MakeModelSlice(slice)
 		if err != nil {
@@ -586,13 +656,6 @@ func (db *Database) saveToNewSQLite(filename string) error {
 		if err := insertEntries(sqlite, mdl); err != nil {
 			return errors.Wrapf(err, "Error while inserting entries of field %d", j)
 		}
-	}
-
-	// Update LastModified
-	lastModified := time.Now().Format("2006-01-02T15:04:05-07:00")
-	_, err = sqlite.Exec(fmt.Sprintf("UPDATE LastModified SET LastModified = \"%s\" WHERE LastModified = (SELECT * FROM LastModified)", lastModified))
-	if err != nil {
-		return errors.Wrap(err, "Error while updating LastModified")
 	}
 
 	// Vacuum to clean up SQLite DB
@@ -693,14 +756,9 @@ func insertEntries(sqlite *sql.DB, m []Model) error {
 	return nil
 }
 
-// createEmptySQLiteDB creates a new SQLite database at filename with the base user_data.db from JWLibrary
+// createEmptySQLiteDB creates a new SQLite database at filename with the base userData.db from JWLibrary
 func createEmptySQLiteDB(filename string) error {
-	userData, err := Asset("user_data.db")
-	if err != nil {
-		return errors.Wrap(err, "Error while fetching user_data.db")
-	}
-
-	if err := ioutil.WriteFile(filename, userData, 0644); err != nil {
+	if err := ioutil.WriteFile(filename, userDataDatabaseFile, 0644); err != nil {
 		return errors.Wrap(err, fmt.Sprintf("Error while saving new SQLite database at %s", filename))
 	}
 

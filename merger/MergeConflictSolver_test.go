@@ -4,6 +4,7 @@ import (
 	"reflect"
 	"runtime"
 	"testing"
+	"time"
 
 	"github.com/AndreasSko/go-jwlm/model"
 	"github.com/stretchr/testify/assert"
@@ -146,21 +147,25 @@ func TestSolveConflictByChoosingNewest(t *testing.T) {
 		"leftNewer": {
 			Left: &model.Note{
 				GUID:         "Left",
-				LastModified: "2020-09-15T13:00:00+00:00",
+				LastModified: "2020-09-15T13:00:00Z",
+				Created:      "2020-09-15T12:00:00+00:00",
 			},
 			Right: &model.Note{
 				GUID:         "Right",
-				LastModified: "2020-09-15T12:00:00+00:00",
+				LastModified: "2020-09-15T12:00:00+0000",
+				Created:      "2020-09-15T12:00:00+00:00",
 			},
 		},
 		"rightNewer": {
 			Left: &model.Note{
 				GUID:         "Left",
 				LastModified: "2020-09-15T13:00:00+00:00",
+				Created:      "2020-09-15T13:00:00+00:00",
 			},
 			Right: &model.Note{
 				GUID:         "Right",
-				LastModified: "2020-09-15T13:01:00+00:00",
+				LastModified: "2020-09-15T13:01:00+0000",
+				Created:      "2020-09-15T13:00:00+00:00",
 			},
 		},
 	}
@@ -170,22 +175,26 @@ func TestSolveConflictByChoosingNewest(t *testing.T) {
 			Side: LeftSide,
 			Solution: &model.Note{
 				GUID:         "Left",
-				LastModified: "2020-09-15T13:00:00+00:00",
+				LastModified: "2020-09-15T13:00:00Z",
+				Created:      "2020-09-15T12:00:00+00:00",
 			},
 			Discarded: &model.Note{
 				GUID:         "Right",
-				LastModified: "2020-09-15T12:00:00+00:00",
+				LastModified: "2020-09-15T12:00:00+0000",
+				Created:      "2020-09-15T12:00:00+00:00",
 			},
 		},
 		"rightNewer": {
 			Side: RightSide,
 			Solution: &model.Note{
 				GUID:         "Right",
-				LastModified: "2020-09-15T13:01:00+00:00",
+				LastModified: "2020-09-15T13:01:00+0000",
+				Created:      "2020-09-15T13:00:00+00:00",
 			},
 			Discarded: &model.Note{
 				GUID:         "Left",
 				LastModified: "2020-09-15T13:00:00+00:00",
+				Created:      "2020-09-15T13:00:00+00:00",
 			},
 		},
 	}
@@ -235,4 +244,62 @@ func Test_parseResolver(t *testing.T) {
 	resolver, err = parseResolver("nonexistent")
 	assert.EqualError(t, err, "nonexistent is not a valid conflict resolver. Can be 'chooseNewest', 'chooseLeft', or 'chooseRight'")
 	assert.Nil(t, resolver)
+}
+
+func Test_parseDateTimeString(t *testing.T) {
+	tests := []struct {
+		name     string
+		dateTime string
+		want     func(t *testing.T) time.Time
+		wantErr  assert.ErrorAssertionFunc
+	}{
+		{
+			name:     "Timezone without :",
+			dateTime: "2023-07-15T09:50:47+0200",
+			want: func(*testing.T) time.Time {
+				want, err := time.Parse("2006-01-02T15:04:05-0700", "2023-07-15T09:50:47+0200")
+				assert.NoError(t, err)
+				return want
+			},
+			wantErr: assert.NoError,
+		},
+		{
+			name:     "Timezone with :",
+			dateTime: "2023-07-13T05:36:36+00:00",
+			want: func(*testing.T) time.Time {
+				want, err := time.Parse("2006-01-02T15:04:05-07:00", "2023-07-13T05:36:36+00:00")
+				assert.NoError(t, err)
+				return want
+			},
+			wantErr: assert.NoError,
+		},
+		{
+			name:     "RFC3339",
+			dateTime: "2023-07-17T04:45:03Z",
+			want: func(*testing.T) time.Time {
+				want, err := time.Parse(time.RFC3339, "2023-07-17T04:45:03Z")
+				assert.NoError(t, err)
+				return want
+			},
+			wantErr: assert.NoError,
+		},
+		{
+			name:     "Wrong format",
+			dateTime: "2023-07-13T05:36:36Z+00:00",
+			want: func(t *testing.T) time.Time {
+				return time.Time{}
+			},
+			wantErr: func(tt assert.TestingT, err error, i ...interface{}) bool {
+				return assert.ErrorContains(t, err, "failed to parse dateTime 2023-07-13T05:36:36Z+00:00")
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := parseDateTimeString(tt.dateTime)
+			tt.wantErr(t, err)
+			want := tt.want(t)
+			assert.Equal(t, want, got)
+		})
+	}
 }

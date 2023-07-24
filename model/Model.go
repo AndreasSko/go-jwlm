@@ -114,16 +114,16 @@ func MakeModelCopy(mdl Model) Model {
 			Title:           sql.NullString{String: mdl.Title.String, Valid: mdl.Title.Valid},
 			Content:         sql.NullString{String: mdl.Content.String, Valid: mdl.Content.Valid},
 			LastModified:    mdl.LastModified,
+			Created:         mdl.Created,
 			BlockType:       mdl.BlockType,
 			BlockIdentifier: sql.NullInt32{Int32: mdl.BlockIdentifier.Int32, Valid: mdl.BlockIdentifier.Valid},
 		}
 	case *Tag:
 		mdl := mdl.(*Tag)
 		mdlCopy = &Tag{
-			TagID:         mdl.TagID,
-			TagType:       mdl.TagType,
-			Name:          mdl.Name,
-			ImageFilename: sql.NullString{String: mdl.ImageFilename.String, Valid: mdl.ImageFilename.Valid},
+			TagID:   mdl.TagID,
+			TagType: mdl.TagType,
+			Name:    mdl.Name,
 		}
 	case *TagMap:
 		mdl := mdl.(*TagMap)
