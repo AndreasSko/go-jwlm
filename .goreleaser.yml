@@ -32,14 +32,6 @@ archives:
     format_overrides:
       - goos: windows
         format: zip
-    replacements:
-      amd64: 64bit
-      386: 32bit
-      arm: ARM
-      arm64: ARM64
-      darwin: macOS
-      linux: Linux
-      windows: Windows
 changelog:
   sort: asc
   filters:
@@ -48,7 +40,7 @@ changelog:
       - '^test:'
 brews:
   - name: go-jwlm
-    tap:
+    repository:
       owner: andreassko
       name: homebrew-go-jwlm
     homepage: https://github.com/AndreasSko/go-jwlm

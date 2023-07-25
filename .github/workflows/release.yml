@@ -1,10 +1,9 @@
 name: Release
 on:
+  pull_request:
   push:
     tags:
       - '*'
-    paths:
-      - ".github/workflows/release.yml"
 jobs:
   goreleaser:
     runs-on: ubuntu-latest
@@ -13,5 +12,29 @@ jobs:
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
-      - name: Run GoReleaser
-        run: docker run -e GITHUB_TOKEN=${{ secrets.GORELEASER_GITHUB_TOKEN }} --rm --privileged -v $GITHUB_WORKSPACE:/go/src/github.com/AndreasSko/go-jwlm -v /var/run/docker.sock:/var/run/docker.sock -w /go/src/github.com/AndreasSko/go-jwlm andreassko/goreleaser-xcgo --rm-dist
+
+      - name: Run GoReleaser Validation
+        run: docker run 
+                    -e GITHUB_TOKEN=${{ secrets.GORELEASER_GITHUB_TOKEN }} 
+                    -e CGO_ENABLED=1 
+                    --rm 
+                    --privileged
+                    -v $GITHUB_WORKSPACE:/go/src/github.com/AndreasSko/go-jwlm 
+                    -v /var/run/docker.sock:/var/run/docker.sock 
+                    -w /go/src/github.com/AndreasSko/go-jwlm 
+                    goreleaser/goreleaser-cross:v1.20 
+                    --skip-publish
+                    --skip-validate
+        if: ${{ github.event_name == 'pull_request' }}
+
+      - name: Run GoReleaser Publish
+        run: docker run 
+                    -e GITHUB_TOKEN=${{ secrets.GORELEASER_GITHUB_TOKEN }} 
+                    -e CGO_ENABLED=1 
+                    --rm 
+                    --privileged
+                    -v $GITHUB_WORKSPACE:/go/src/github.com/AndreasSko/go-jwlm 
+                    -v /var/run/docker.sock:/var/run/docker.sock 
+                    -w /go/src/github.com/AndreasSko/go-jwlm 
+                    goreleaser/goreleaser-cross:v1.20 
+        if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') }}
