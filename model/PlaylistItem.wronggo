@@ -1,0 +1,105 @@
+package model
+
+import (
+	"database/sql"
+	"encoding/json"
+	"strconv"
+	"strings"
+)
+
+type PlaylistItem struct {
+	PlaylistItemID       int
+	Label                string
+	StartTrimOffsetTicks sql.NullInt32
+	EndTrimOffsetTicks   sql.NullInt32
+	Accuracy             int
+	EndAction            int
+	ThumbnailFilePath    sql.NullString
+}
+
+// ID returns the ID of the entry
+func (m *PlaylistItem) ID() int {
+	return m.PlaylistItemID
+}
+
+// SetID sets the ID of the entry
+func (m *PlaylistItem) SetID(id int) {
+	m.PlaylistItemID = id
+}
+
+// UniqueKey returns the key that makes this PlaylistItem unique,
+// so it can be used as a key in a map.
+func (m *PlaylistItem) UniqueKey() string {
+	var sb strings.Builder
+	sb.Grow(15)
+	sb.WriteString(strconv.FormatInt(int64(m.TagType), 10))
+	sb.WriteString("_")
+	sb.WriteString(m.Name)
+	return sb.String()
+}
+
+// Equals checks if the Tag is equal to the given one. The
+// check won't include the TagID.
+func (m *PlaylistItem) Equals(m2 Model) bool {
+	if m2, ok := m2.(*Tag); ok {
+		return m.TagType == m2.TagType &&
+			m.Name == m2.Name
+	}
+
+	return false
+}
+
+// RelatedEntries returns entries that are related to this one
+func (m *PlaylistItem) RelatedEntries(db *Database) Related {
+	return Related{}
+}
+
+// PrettyPrint prints Tag in a human readable format and
+// adds information about related entries if helpful.
+func (m *PlaylistItem) PrettyPrint(db *Database) string {
+	fields := []string{"Name"}
+	return prettyPrint(m, fields)
+}
+
+// MarshalJSON returns the JSON encoding of the entry
+func (m PlaylistItem) MarshalJSON() ([]byte, error) {
+	return json.Marshal(&struct {
+		Type    string `json:"type"`
+		TagID   int    `json:"tagId"`
+		TagType int    `json:"tagType"`
+		Name    string `json:"name"`
+	}{
+		Type:    "Tag",
+		TagID:   m.TagID,
+		TagType: m.TagType,
+		Name:    m.Name,
+	})
+}
+
+func (m *PlaylistItem) tableName() string {
+	return "PlaylistItem"
+}
+
+func (m *PlaylistItem) idName() string {
+	return "PlaylistItemId"
+}
+
+func (m *PlaylistItem) scanRow(rows *sql.Rows) (Model, error) {
+	err := rows.Scan(&m.PlaylistItemID, &m.Label, &m.StartTrimOffsetTicks,
+		&m.EndTrimOffsetTicks, &m.Accuracy, &m.EndAction, &m.ThumbnailFilePath)
+	return m, err
+}
+
+// MakeSlice converts a slice of the generice interface model
+func (PlaylistItem) MakeSlice(mdl []Model) []*PlaylistItem {
+	result := make([]*PlaylistItem, len(mdl))
+	for i := range mdl {
+		if mdl[i] == nil {
+			continue
+		}
+		item := mdl[i].(*PlaylistItem)
+
+		result[i] = item
+	}
+	return result
+}

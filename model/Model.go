@@ -26,6 +26,10 @@ type Model interface {
 	scanRow(row *sql.Rows) (Model, error)
 }
 
+type GenericModel[T Model] struct {
+	model T
+}
+
 // Related combines entries that are related to a given model
 type Related struct {
 	BlockRange          []*BlockRange       `json:"blockRange"`

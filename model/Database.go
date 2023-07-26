@@ -296,7 +296,7 @@ func (db *Database) importSQLite(filename string) error {
 
 	// Fill each table struct separately (did not find a DRYer solution yet..)
 	go func() {
-		mdl, err := fetchFromSQLite(sqlite, &BlockRange{})
+		mdl, err := fetchFromSQLite[*BlockRange](sqlite)
 		if err != nil {
 			errors <- err
 			wg.Done()
@@ -307,7 +307,7 @@ func (db *Database) importSQLite(filename string) error {
 	}()
 
 	go func() {
-		mdl, err := fetchFromSQLite(sqlite, &Bookmark{})
+		mdl, err := fetchFromSQLite[*Bookmark](sqlite)
 		if err != nil {
 			errors <- err
 			wg.Done()
@@ -318,7 +318,7 @@ func (db *Database) importSQLite(filename string) error {
 	}()
 
 	go func() {
-		mdl, err := fetchFromSQLite(sqlite, &InputField{})
+		mdl, err := fetchFromSQLite[*InputField](sqlite)
 		if err != nil {
 			errors <- err
 			wg.Done()
@@ -329,7 +329,7 @@ func (db *Database) importSQLite(filename string) error {
 	}()
 
 	go func() {
-		mdl, err := fetchFromSQLite(sqlite, &Location{})
+		mdl, err := fetchFromSQLite[*Location](sqlite)
 		if err != nil {
 			errors <- err
 			wg.Done()
@@ -340,7 +340,7 @@ func (db *Database) importSQLite(filename string) error {
 	}()
 
 	go func() {
-		mdl, err := fetchFromSQLite(sqlite, &Note{})
+		mdl, err := fetchFromSQLite[*Note](sqlite)
 		if err != nil {
 			errors <- err
 			wg.Done()
@@ -351,7 +351,7 @@ func (db *Database) importSQLite(filename string) error {
 	}()
 
 	go func() {
-		mdl, err := fetchFromSQLite(sqlite, &Tag{})
+		mdl, err := fetchFromSQLite[*Tag](sqlite)
 		if err != nil {
 			errors <- err
 			wg.Done()
@@ -362,7 +362,7 @@ func (db *Database) importSQLite(filename string) error {
 	}()
 
 	go func() {
-		mdl, err := fetchFromSQLite(sqlite, &TagMap{})
+		mdl, err := fetchFromSQLite[*TagMap](sqlite)
 		if err != nil {
 			errors <- err
 			wg.Done()
@@ -373,7 +373,7 @@ func (db *Database) importSQLite(filename string) error {
 	}()
 
 	go func() {
-		mdl, err := fetchFromSQLite(sqlite, &UserMark{})
+		mdl, err := fetchFromSQLite[*UserMark](sqlite)
 		if err != nil {
 			errors <- err
 			wg.Done()
@@ -442,15 +442,17 @@ func (db *Database) removePlaylists() {
 
 // fetchFromSQLite fetches the entries for a given modelType and returns a slice
 // of entries, for which the index corresponds to the ID in the SQLite DB
-func fetchFromSQLite(sqlite *sql.DB, modelType Model) ([]Model, error) {
+func fetchFromSQLite[modelType Model](sqlite *sql.DB) ([]Model, error) {
+	var bla modelType
+
 	// Create slice of correct size (number of entries)
-	capacity, err := getSliceCapacity(sqlite, modelType)
+	capacity, err := getSliceCapacity(sqlite, bla)
 	if err != nil {
 		return nil, errors.Wrap(err, "Could not determine number of entries in SQLite database")
 	}
 	result := make([]Model, capacity)
 
-	rows, err := sqlite.Query(fmt.Sprintf("SELECT * FROM %s", modelType.tableName()))
+	rows, err := sqlite.Query(fmt.Sprintf("SELECT * FROM %s", bla.tableName()))
 	if err != nil {
 		return nil, errors.Wrap(err, "Error while querying SQLite database")
 	}
@@ -459,8 +461,9 @@ func fetchFromSQLite(sqlite *sql.DB, modelType Model) ([]Model, error) {
 	i := 1
 	defer rows.Close()
 	for rows.Next() {
+
 		var m Model
-		switch tp := modelType.(type) {
+		switch tp := any(bla).(type) {
 		case *BlockRange:
 			m = &BlockRange{}
 		case *Bookmark:
@@ -480,13 +483,18 @@ func fetchFromSQLite(sqlite *sql.DB, modelType Model) ([]Model, error) {
 		default:
 			panic(fmt.Sprintf("Fetching %T is not supported!", tp))
 		}
+
+		test := m
+		spew.Dump(test)
+
+		m = reflect.New(reflect.TypeOf(bla).Elem()).Interface().(Model)
 		mn, err := m.scanRow(rows)
 		if err != nil {
 			// For some reason a row might contain NULL entries, even though the schema
 			// shouldn't allow this. Instead of failing the whole import, we can simply skip
 			// this entry as the data anyway wouldn't be valid.
 			if !isNullableMismatch(err, rows) {
-				return nil, errors.Wrapf(err, "Error while scanning row for %T", modelType)
+				return nil, errors.Wrapf(err, "Error while scanning row for %T", m)
 			}
 			log.Warnf("Nullable mismatch in %T at index %d detected. Skipping entry", m, i)
 			i++
@@ -497,7 +505,7 @@ func fetchFromSQLite(sqlite *sql.DB, modelType Model) ([]Model, error) {
 	}
 	err = rows.Err()
 	if err != nil {
-		return nil, errors.Wrapf(err, "Error while scanning results for %T from SQLite database", modelType)
+		return nil, errors.Wrapf(err, "Error while scanning results for %T from SQLite database", bla)
 	}
 
 	return result, nil
