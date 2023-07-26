@@ -122,8 +122,3 @@ func (m *UserMarkBlockRange) idName() string {
 func (m *UserMarkBlockRange) scanRow(rows *sql.Rows) (Model, error) {
 	panic("Not supported!")
 }
-
-// MakeSlice converts a slice of the generice interface model
-func (UserMarkBlockRange) MakeSlice(mdl []Model) []*UserMarkBlockRange {
-	panic("Not supported!")
-}

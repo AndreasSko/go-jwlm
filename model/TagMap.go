@@ -100,14 +100,3 @@ func (m *TagMap) scanRow(rows *sql.Rows) (Model, error) {
 	err := rows.Scan(&m.TagMapID, &m.PlaylistItemID, &m.LocationID, &m.NoteID, &m.TagID, &m.Position)
 	return m, err
 }
-
-// MakeSlice converts a slice of the generice interface model
-func (TagMap) MakeSlice(mdl []Model) []*TagMap {
-	result := make([]*TagMap, len(mdl))
-	for i := range mdl {
-		if mdl[i] != nil {
-			result[i] = mdl[i].(*TagMap)
-		}
-	}
-	return result
-}

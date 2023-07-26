@@ -101,17 +101,3 @@ func (m *InputField) scanRow(rows *sql.Rows) (Model, error) {
 	err := rows.Scan(&m.LocationID, &m.TextTag, &m.Value)
 	return m, err
 }
-
-// MakeSlice converts a slice of the generice interface model.
-func (InputField) MakeSlice(mdl []Model) []*InputField {
-	result := make([]*InputField, len(mdl))
-	for i := range mdl {
-		if mdl[i] == nil {
-			continue
-		}
-		inputField := mdl[i].(*InputField)
-
-		result[i] = inputField
-	}
-	return result
-}

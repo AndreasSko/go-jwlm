@@ -7,5 +7,5 @@ import "github.com/AndreasSko/go-jwlm/model"
 func MergeTags(left []*model.Tag, right []*model.Tag, conflictSolution map[string]MergeSolution) ([]*model.Tag, IDChanges, error) {
 	result, changes, err := tryMergeWithConflictSolver(left, right, conflictSolution, solveEqualityMergeConflict)
 
-	return model.Tag{}.MakeSlice(result), changes, err
+	return model.MakeSlice[*model.Tag](result), changes, err
 }

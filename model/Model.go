@@ -39,6 +39,20 @@ type Related struct {
 	UserMarkBlockRange  *UserMarkBlockRange `json:"userMarkBlockRange"`
 }
 
+// MakeSlice converts a slice of the generice `Model` interface to the specific model
+// type (like []Model->[]*Tag or []Model->[]*Note).
+func MakeSlice[T Model](mdl []Model) []T {
+	result := make([]T, len(mdl))
+	for i := range mdl {
+		if mdl[i] == nil {
+			continue
+		}
+
+		result[i] = any(mdl[i]).(T)
+	}
+	return result
+}
+
 // MakeModelSlice converts a slice of pointers of model-implementing structs to []model
 func MakeModelSlice(arg interface{}) ([]Model, error) {
 	slice := reflect.ValueOf(arg)

@@ -125,14 +125,3 @@ func (m *Location) scanRow(rows *sql.Rows) (Model, error) {
 		&m.IssueTagNumber, &m.KeySymbol, &m.MepsLanguage, &m.LocationType, &m.Title)
 	return m, err
 }
-
-// MakeSlice converts a slice of the generice interface model
-func (Location) MakeSlice(mdl []Model) []*Location {
-	result := make([]*Location, len(mdl))
-	for i := range mdl {
-		if mdl[i] != nil {
-			result[i] = mdl[i].(*Location)
-		}
-	}
-	return result
-}

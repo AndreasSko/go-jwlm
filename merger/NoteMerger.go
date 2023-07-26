@@ -7,5 +7,5 @@ import "github.com/AndreasSko/go-jwlm/model"
 func MergeNotes(left []*model.Note, right []*model.Note, conflictSolution map[string]MergeSolution) ([]*model.Note, IDChanges, error) {
 	result, changes, err := tryMergeWithConflictSolver(left, right, conflictSolution, solveEqualityMergeConflict)
 
-	return model.Note{}.MakeSlice(result), changes, err
+	return model.MakeSlice[*model.Note](result), changes, err
 }

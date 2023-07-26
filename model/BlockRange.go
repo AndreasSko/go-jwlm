@@ -102,14 +102,3 @@ func (m *BlockRange) scanRow(rows *sql.Rows) (Model, error) {
 	err := rows.Scan(&m.BlockRangeID, &m.BlockType, &m.Identifier, &m.StartToken, &m.EndToken, &m.UserMarkID)
 	return m, err
 }
-
-// MakeSlice converts a slice of the generice interface model
-func (BlockRange) MakeSlice(mdl []Model) []*BlockRange {
-	result := make([]*BlockRange, len(mdl))
-	for i := range mdl {
-		if mdl[i] != nil {
-			result[i] = mdl[i].(*BlockRange)
-		}
-	}
-	return result
-}

@@ -302,7 +302,7 @@ func (db *Database) importSQLite(filename string) error {
 			wg.Done()
 			return
 		}
-		db.BlockRange = BlockRange{}.MakeSlice(mdl)
+		db.BlockRange = MakeSlice[*BlockRange](mdl)
 		wg.Done()
 	}()
 
@@ -313,7 +313,7 @@ func (db *Database) importSQLite(filename string) error {
 			wg.Done()
 			return
 		}
-		db.Bookmark = Bookmark{}.MakeSlice(mdl)
+		db.Bookmark = MakeSlice[*Bookmark](mdl)
 		wg.Done()
 	}()
 
@@ -324,7 +324,7 @@ func (db *Database) importSQLite(filename string) error {
 			wg.Done()
 			return
 		}
-		db.InputField = InputField{}.MakeSlice(mdl)
+		db.InputField = MakeSlice[*InputField](mdl)
 		wg.Done()
 	}()
 
@@ -335,7 +335,7 @@ func (db *Database) importSQLite(filename string) error {
 			wg.Done()
 			return
 		}
-		db.Location = Location{}.MakeSlice(mdl)
+		db.Location = MakeSlice[*Location](mdl)
 		wg.Done()
 	}()
 
@@ -346,7 +346,7 @@ func (db *Database) importSQLite(filename string) error {
 			wg.Done()
 			return
 		}
-		db.Note = Note{}.MakeSlice(mdl)
+		db.Note = MakeSlice[*Note](mdl)
 		wg.Done()
 	}()
 
@@ -357,7 +357,7 @@ func (db *Database) importSQLite(filename string) error {
 			wg.Done()
 			return
 		}
-		db.Tag = Tag{}.MakeSlice(mdl)
+		db.Tag = MakeSlice[*Tag](mdl)
 		wg.Done()
 	}()
 
@@ -368,7 +368,7 @@ func (db *Database) importSQLite(filename string) error {
 			wg.Done()
 			return
 		}
-		db.TagMap = TagMap{}.MakeSlice(mdl)
+		db.TagMap = MakeSlice[*TagMap](mdl)
 		wg.Done()
 	}()
 
@@ -379,7 +379,7 @@ func (db *Database) importSQLite(filename string) error {
 			wg.Done()
 			return
 		}
-		db.UserMark = UserMark{}.MakeSlice(mdl)
+		db.UserMark = MakeSlice[*UserMark](mdl)
 		wg.Done()
 	}()
 

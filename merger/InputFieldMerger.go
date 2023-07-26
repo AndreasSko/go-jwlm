@@ -10,5 +10,5 @@ func MergeInputFields(left []*model.InputField, right []*model.InputField, confl
 	// sort it by UniqueKey to have a consistent result
 	model.SortByUniqueKey(&result)
 
-	return model.InputField{}.MakeSlice(result), changes, err
+	return model.MakeSlice[*model.InputField](result), changes, err
 }

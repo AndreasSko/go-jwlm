@@ -123,14 +123,3 @@ func (m *Note) scanRow(rows *sql.Rows) (Model, error) {
 		&m.LastModified, &m.Created, &m.BlockType, &m.BlockIdentifier)
 	return m, err
 }
-
-// MakeSlice converts a slice of the generice interface model
-func (Note) MakeSlice(mdl []Model) []*Note {
-	result := make([]*Note, len(mdl))
-	for i := range mdl {
-		if mdl[i] != nil {
-			result[i] = mdl[i].(*Note)
-		}
-	}
-	return result
-}

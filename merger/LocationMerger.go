@@ -12,7 +12,7 @@ import (
 func MergeLocations(left []*model.Location, right []*model.Location) ([]*model.Location, IDChanges, error) {
 	result, changes, err := tryMergeWithConflictSolver(left, right, nil, solveLocationMergeConflict)
 
-	return model.Location{}.MakeSlice(result), changes, err
+	return model.MakeSlice[*model.Location](result), changes, err
 }
 
 // solveLocationMergeConflict solves a merge conflict by trying to choose the Location that has

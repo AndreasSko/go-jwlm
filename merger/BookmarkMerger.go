@@ -9,5 +9,5 @@ import (
 func MergeBookmarks(left []*model.Bookmark, right []*model.Bookmark, conflictSolution map[string]MergeSolution) ([]*model.Bookmark, IDChanges, error) {
 	result, changes, err := tryMergeWithConflictSolver(left, right, conflictSolution, solveEqualityMergeConflict)
 
-	return model.Bookmark{}.MakeSlice(result), changes, err
+	return model.MakeSlice[*model.Bookmark](result), changes, err
 }

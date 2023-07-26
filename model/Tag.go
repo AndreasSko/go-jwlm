@@ -85,17 +85,3 @@ func (m *Tag) scanRow(rows *sql.Rows) (Model, error) {
 	err := rows.Scan(&m.TagID, &m.TagType, &m.Name)
 	return m, err
 }
-
-// MakeSlice converts a slice of the generice interface model
-func (Tag) MakeSlice(mdl []Model) []*Tag {
-	result := make([]*Tag, len(mdl))
-	for i := range mdl {
-		if mdl[i] == nil {
-			continue
-		}
-		tag := mdl[i].(*Tag)
-
-		result[i] = tag
-	}
-	return result
-}

@@ -90,14 +90,3 @@ func (m *UserMark) scanRow(rows *sql.Rows) (Model, error) {
 	err := rows.Scan(&m.UserMarkID, &m.ColorIndex, &m.LocationID, &m.StyleIndex, &m.UserMarkGUID, &m.Version)
 	return m, err
 }
-
-// MakeSlice converts a slice of the generice interface model
-func (UserMark) MakeSlice(mdl []Model) []*UserMark {
-	result := make([]*UserMark, len(mdl))
-	for i := range mdl {
-		if mdl[i] != nil {
-			result[i] = mdl[i].(*UserMark)
-		}
-	}
-	return result
-}
