@@ -78,6 +78,10 @@ func (dbw *DatabaseWrapper) DBIsLoaded(side string) bool {
 
 // DBContainsPlaylists indicates if a DB on the given side contains playlists.
 func (dbw *DatabaseWrapper) DBContainsPlaylists(side string) bool {
+	if !dbw.DBIsLoaded(side) {
+		return false
+	}
+
 	switch side {
 	case "leftSide":
 		return dbw.left.ContainsPlaylists
