@@ -294,6 +294,23 @@ func (db *Database) importSQLite(filename string) error {
 	wg.Add(8)
 	errors := make(chan error, 10)
 
+	dbFields := reflect.ValueOf(db).Elem()
+	for i := 0; i < dbFields.NumField(); i++ {
+		dbField := dbFields.Field(i)
+
+		switch dbField.Kind() {
+		case reflect.Slice:
+			if !dbField.CanInterface() {
+				continue
+			}
+			
+			mdl, err := fetchFromSQLite[](sqlite)
+			
+		default:
+			continue
+		}
+	}
+
 	// Fill each table struct separately (did not find a DRYer solution yet..)
 	go func() {
 		mdl, err := fetchFromSQLite[*BlockRange](sqlite)
@@ -461,7 +478,6 @@ func fetchFromSQLite[modelType Model](sqlite *sql.DB) ([]Model, error) {
 	i := 1
 	defer rows.Close()
 	for rows.Next() {
-
 		var m Model
 		switch tp := any(bla).(type) {
 		case *BlockRange:
@@ -484,10 +500,6 @@ func fetchFromSQLite[modelType Model](sqlite *sql.DB) ([]Model, error) {
 			panic(fmt.Sprintf("Fetching %T is not supported!", tp))
 		}
 
-		test := m
-		spew.Dump(test)
-
-		m = reflect.New(reflect.TypeOf(bla).Elem()).Interface().(Model)
 		mn, err := m.scanRow(rows)
 		if err != nil {
 			// For some reason a row might contain NULL entries, even though the schema
