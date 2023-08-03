@@ -246,6 +246,12 @@ func TestDatabaseWrapper_DBContainsPlaylists(t *testing.T) {
 			side: "wrong",
 			want: false,
 		},
+		{
+			name:      "DB not loaded",
+			dbWrapper: &DatabaseWrapper{},
+			side:      "rightSide",
+			want:      false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
