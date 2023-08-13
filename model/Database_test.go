@@ -881,7 +881,7 @@ func Test_createEmptySQLiteDB(t *testing.T) {
 	}
 	hash := fmt.Sprintf("%x", hasher.Sum(nil))
 
-	assert.Equal(t, "774af7240646c49f6a55e40b6cdf681a6b04fbcf4acebdb19a6e0e2bef53d766", hash)
+	assert.Equal(t, "78edd07c0b04212dcc2dd59be0a5d2edf91088136986378147cd8aa04cf4965c", hash)
 }
 
 func TestDatabase_saveToNewSQLite(t *testing.T) {

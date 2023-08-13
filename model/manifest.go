@@ -15,7 +15,7 @@ import (
 )
 
 const version = 1
-const schemaVersion = 13
+const schemaVersion = 14
 
 type manifest struct {
 	CreationDate   string         `json:"creationDate"`
