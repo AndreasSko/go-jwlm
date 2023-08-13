@@ -3,6 +3,7 @@ package model
 import (
 	"fmt"
 	"io/ioutil"
+	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -16,7 +17,7 @@ var exampleManifest = &manifest{
 		LastModifiedDate: time.Now().Format("2006-01-02T15:04:05-07:00"),
 		Hash:             "e2e09ceba668bb1ad093b2db317237451a01ae9ff435b38c840b70dc434f184f",
 		DatabaseName:     userDataFilename,
-		SchemaVersion:    13,
+		SchemaVersion:    14,
 		DeviceName:       "go-jwlm",
 	},
 	Name:    "test",
@@ -36,7 +37,7 @@ func Test_manifest_importManifest(t *testing.T) {
 			LastModifiedDate: "2020-04-09T05:47:26+02:00",
 			Hash:             "d87a67028133cc4de5536affe1b072841def95899b7f7450a5622112b4b5e63f",
 			DatabaseName:     userDataFilename,
-			SchemaVersion:    13,
+			SchemaVersion:    14,
 			DeviceName:       "iPhone",
 		},
 		Name:    "UserDataBackup_2020-04-11_iPhone",
@@ -48,7 +49,7 @@ func Test_manifest_importManifest(t *testing.T) {
 	assert.Error(t, mfst.importManifest("nonexistentpath"))
 }
 
-func Test_validateManifest(t *testing.T) {
+func Test_validateManifest1(t *testing.T) {
 	path := filepath.Join("testdata", "manifest_correct.json")
 
 	mfst := manifest{}
@@ -59,6 +60,79 @@ func Test_validateManifest(t *testing.T) {
 	mfst = manifest{}
 	assert.NoError(t, mfst.importManifest(path))
 	assert.Error(t, mfst.validateManifest())
+}
+
+func Test_manifest_validateManifest2(t *testing.T) {
+	tests := []struct {
+		name    string
+		mfst    *manifest
+		wantErr assert.ErrorAssertionFunc
+	}{
+		{
+			name: "All good",
+			mfst: &manifest{
+				UserDataBackup: userDataBackup{
+					SchemaVersion: 14,
+				},
+				Version: 1,
+			},
+			wantErr: assert.NoError,
+		},
+		{
+			name: "Manifest version too old",
+			mfst: &manifest{
+				UserDataBackup: userDataBackup{
+					SchemaVersion: 14,
+				},
+				Version: 0,
+			},
+			wantErr: func(tt assert.TestingT, err error, i ...interface{}) bool {
+				return assert.ErrorContains(tt, err, "manifest version is too old. Should be 1 is 0")
+			},
+		},
+		{
+			name: "Manifest version too new",
+			mfst: &manifest{
+				UserDataBackup: userDataBackup{
+					SchemaVersion: 14,
+				},
+				Version: 2,
+			},
+			wantErr: func(tt assert.TestingT, err error, i ...interface{}) bool {
+				return assert.ErrorContains(tt, err, "manifest version is too new. Should be 1 is 2")
+			},
+		},
+		{
+			name: "Schema version too old",
+			mfst: &manifest{
+				UserDataBackup: userDataBackup{
+					SchemaVersion: 13,
+				},
+				Version: 1,
+			},
+			wantErr: func(tt assert.TestingT, err error, i ...interface{}) bool {
+				return assert.ErrorContains(tt, err, "schema version is too old. Should be 14 is 13")
+			},
+		},
+		{
+			name: "Schema version too new",
+			mfst: &manifest{
+				UserDataBackup: userDataBackup{
+					SchemaVersion: 15,
+				},
+				Version: 1,
+			},
+			wantErr: func(tt assert.TestingT, err error, i ...interface{}) bool {
+				return assert.ErrorContains(tt, err, "schema version is too new. Should be 14 is 15")
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.mfst.validateManifest()
+			tt.wantErr(t, err)
+		})
+	}
 }
 
 func Test_generateManifest(t *testing.T) {
@@ -76,7 +150,7 @@ func Test_generateManifest(t *testing.T) {
 func Test_exportManifest(t *testing.T) {
 	tmp, err := ioutil.TempDir("", "go-jwlm")
 	assert.NoError(t, err)
-	//defer os.RemoveAll(tmp)
+	defer os.RemoveAll(tmp)
 
 	path := filepath.Join(tmp, "test_manifest.json")
 	fmt.Println(path)
