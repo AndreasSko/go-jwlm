@@ -52,13 +52,21 @@ func (mfst *manifest) importManifest(path string) error {
 
 // validateManifest checks if the backup file is compatible by validating the manifest
 func (mfst *manifest) validateManifest() error {
-	if mfst.Version != version {
-		return fmt.Errorf("Manifest version is incompatible. Should be %d is %d. "+
+	if mfst.Version > version {
+		return fmt.Errorf("manifest version is too new. Should be %d is %d. "+
+			"Make sure you use the latest version of the merger", version, mfst.Version)
+	}
+	if mfst.Version < version {
+		return fmt.Errorf("manifest version is too old. Should be %d is %d. "+
 			"You might need to upgrade to a newer version of JW Library first", version, mfst.Version)
 	}
 
-	if mfst.UserDataBackup.SchemaVersion != schemaVersion {
-		return fmt.Errorf("Schema version is incompatible. Should be %d is %d. "+
+	if mfst.UserDataBackup.SchemaVersion > schemaVersion {
+		return fmt.Errorf("schema version is too new. Should be %d is %d. "+
+			"Make sure you use the latest version of the merger", schemaVersion, mfst.UserDataBackup.SchemaVersion)
+	}
+	if mfst.UserDataBackup.SchemaVersion < schemaVersion {
+		return fmt.Errorf("schema version is too old. Should be %d is %d. "+
 			"You might need to upgrade to a newer version of JW Library first", schemaVersion, mfst.UserDataBackup.SchemaVersion)
 	}
 

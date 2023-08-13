@@ -49,7 +49,7 @@ func Test_manifest_importManifest(t *testing.T) {
 	assert.Error(t, mfst.importManifest("nonexistentpath"))
 }
 
-func Test_validateManifest(t *testing.T) {
+func Test_validateManifest1(t *testing.T) {
 	path := filepath.Join("testdata", "manifest_correct.json")
 
 	mfst := manifest{}
@@ -60,6 +60,79 @@ func Test_validateManifest(t *testing.T) {
 	mfst = manifest{}
 	assert.NoError(t, mfst.importManifest(path))
 	assert.Error(t, mfst.validateManifest())
+}
+
+func Test_manifest_validateManifest2(t *testing.T) {
+	tests := []struct {
+		name    string
+		mfst    *manifest
+		wantErr assert.ErrorAssertionFunc
+	}{
+		{
+			name: "All good",
+			mfst: &manifest{
+				UserDataBackup: userDataBackup{
+					SchemaVersion: 14,
+				},
+				Version: 1,
+			},
+			wantErr: assert.NoError,
+		},
+		{
+			name: "Manifest version too old",
+			mfst: &manifest{
+				UserDataBackup: userDataBackup{
+					SchemaVersion: 14,
+				},
+				Version: 0,
+			},
+			wantErr: func(tt assert.TestingT, err error, i ...interface{}) bool {
+				return assert.ErrorContains(tt, err, "manifest version is too old. Should be 1 is 0")
+			},
+		},
+		{
+			name: "Manifest version too new",
+			mfst: &manifest{
+				UserDataBackup: userDataBackup{
+					SchemaVersion: 14,
+				},
+				Version: 2,
+			},
+			wantErr: func(tt assert.TestingT, err error, i ...interface{}) bool {
+				return assert.ErrorContains(tt, err, "manifest version is too new. Should be 1 is 2")
+			},
+		},
+		{
+			name: "Schema version too old",
+			mfst: &manifest{
+				UserDataBackup: userDataBackup{
+					SchemaVersion: 13,
+				},
+				Version: 1,
+			},
+			wantErr: func(tt assert.TestingT, err error, i ...interface{}) bool {
+				return assert.ErrorContains(tt, err, "schema version is too old. Should be 14 is 13")
+			},
+		},
+		{
+			name: "Schema version too new",
+			mfst: &manifest{
+				UserDataBackup: userDataBackup{
+					SchemaVersion: 15,
+				},
+				Version: 1,
+			},
+			wantErr: func(tt assert.TestingT, err error, i ...interface{}) bool {
+				return assert.ErrorContains(tt, err, "schema version is too new. Should be 14 is 15")
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.mfst.validateManifest()
+			tt.wantErr(t, err)
+		})
+	}
 }
 
 func Test_generateManifest(t *testing.T) {
