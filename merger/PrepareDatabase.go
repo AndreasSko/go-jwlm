@@ -79,11 +79,11 @@ func needsNwtstyMigration(left *model.Database, right *model.Database) map[int]M
 		leftLocation := left.Location[leftUM.LocationID]
 		rightLocation := right.Location[rightUM.LocationID]
 		if leftLocation.KeySymbol.String == "nwt" && rightLocation.KeySymbol.String == "nwtsty" {
-			result[leftLocation.MepsLanguage] = LeftSide
+			result[int(leftLocation.MepsLanguage.Int32)] = LeftSide
 			continue
 		}
 		if leftLocation.KeySymbol.String == "nwtsty" && rightLocation.KeySymbol.String == "nwt" {
-			result[rightLocation.MepsLanguage] = RightSide
+			result[int(rightLocation.MepsLanguage.Int32)] = RightSide
 			continue
 		}
 	}
@@ -112,10 +112,10 @@ func moveToNwtsty(langs map[int]MergeSide, left []*model.Location, right []*mode
 			if location == nil {
 				continue
 			}
-			if _, exists := langs[location.MepsLanguage]; !exists {
+			if _, exists := langs[int(location.MepsLanguage.Int32)]; !exists {
 				continue
 			}
-			if side != langs[location.MepsLanguage] {
+			if side != langs[int(location.MepsLanguage.Int32)] {
 				continue
 			}
 			if location.KeySymbol.String != "nwt" {

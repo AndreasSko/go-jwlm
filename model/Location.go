@@ -16,7 +16,7 @@ type Location struct {
 	Track          sql.NullInt32
 	IssueTagNumber int
 	KeySymbol      sql.NullString
-	MepsLanguage   int
+	MepsLanguage   sql.NullInt32
 	LocationType   int
 	Title          sql.NullString
 }
@@ -48,7 +48,11 @@ func (m *Location) UniqueKey() string {
 	sb.WriteString("_")
 	sb.WriteString(m.KeySymbol.String)
 	sb.WriteString("_")
-	sb.WriteString(strconv.FormatInt(int64(m.MepsLanguage), 10))
+	if m.MepsLanguage.Valid {
+		sb.WriteString(strconv.FormatInt(int64(m.MepsLanguage.Int32), 10))
+	} else {
+		sb.WriteString("!")
+	}
 	sb.WriteString("_")
 	sb.WriteString(strconv.FormatInt(int64(m.LocationType), 10))
 	return sb.String()
@@ -94,7 +98,7 @@ func (m Location) MarshalJSON() ([]byte, error) {
 		Track          sql.NullInt32  `json:"track"`
 		IssueTagNumber int            `json:"issueTagNumber"`
 		KeySymbol      sql.NullString `json:"keySymbol"`
-		MepsLanguage   int            `json:"mepsLanguage"`
+		MepsLanguage   sql.NullInt32  `json:"mepsLanguage"`
 		LocationType   int            `json:"locationType"`
 		Title          sql.NullString `json:"title"`
 	}{

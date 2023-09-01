@@ -58,7 +58,7 @@ func TestMakeModelCopy(t *testing.T) {
 		Track:          sql.NullInt32{Int32: 5, Valid: true},
 		IssueTagNumber: 6,
 		KeySymbol:      sql.NullString{String: "nwtsty", Valid: true},
-		MepsLanguage:   7,
+		MepsLanguage:   sql.NullInt32{Int32: 7, Valid: true},
 		LocationType:   8,
 		Title:          sql.NullString{String: "ThisTitleShouldNotBeInUniqueKey", Valid: true},
 	}

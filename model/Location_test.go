@@ -30,7 +30,7 @@ func TestLocation_UniqueKey(t *testing.T) {
 		Track:          sql.NullInt32{Int32: 5, Valid: true},
 		IssueTagNumber: 6,
 		KeySymbol:      sql.NullString{String: "nwtsty", Valid: true},
-		MepsLanguage:   7,
+		MepsLanguage:   sql.NullInt32{Int32: 7, Valid: true},
 		LocationType:   8,
 		Title:          sql.NullString{String: "ThisTitleShouldNotBeInUniqueKey", Valid: true},
 	}
@@ -43,13 +43,27 @@ func TestLocation_UniqueKey(t *testing.T) {
 		Track:          sql.NullInt32{},
 		IssueTagNumber: 6,
 		KeySymbol:      sql.NullString{},
-		MepsLanguage:   7,
+		MepsLanguage:   sql.NullInt32{Int32: 7, Valid: true},
+		LocationType:   8,
+		Title:          sql.NullString{String: "ThisOTitleShouldNotBeInUniqueKeyEither", Valid: true},
+	}
+
+	m3 := &Location{
+		LocationID:     1,
+		BookNumber:     sql.NullInt32{},
+		ChapterNumber:  sql.NullInt32{},
+		DocumentID:     sql.NullInt32{},
+		Track:          sql.NullInt32{},
+		IssueTagNumber: 6,
+		KeySymbol:      sql.NullString{},
+		MepsLanguage:   sql.NullInt32{},
 		LocationType:   8,
 		Title:          sql.NullString{String: "ThisOTitleShouldNotBeInUniqueKeyEither", Valid: true},
 	}
 
 	assert.Equal(t, "2_3_4_5_6_nwtsty_7_8", m1.UniqueKey())
 	assert.Equal(t, "0_0_0_0_6__7_8", m2.UniqueKey())
+	assert.Equal(t, "0_0_0_0_6__!_8", m3.UniqueKey())
 }
 
 func TestLocation_PrettyPrint(t *testing.T) {
@@ -61,7 +75,7 @@ func TestLocation_PrettyPrint(t *testing.T) {
 		Track:          sql.NullInt32{Int32: 5, Valid: true},
 		IssueTagNumber: 6,
 		KeySymbol:      sql.NullString{String: "nwtsty", Valid: true},
-		MepsLanguage:   7,
+		MepsLanguage:   sql.NullInt32{Int32: 7, Valid: true},
 		LocationType:   8,
 		Title:          sql.NullString{String: "A title", Valid: true},
 	}
@@ -106,7 +120,7 @@ func TestLocation_Equals(t *testing.T) {
 		Track:          sql.NullInt32{Int32: 5, Valid: true},
 		IssueTagNumber: 6,
 		KeySymbol:      sql.NullString{String: "nwtsty", Valid: true},
-		MepsLanguage:   7,
+		MepsLanguage:   sql.NullInt32{Int32: 7, Valid: true},
 		LocationType:   8,
 		Title:          sql.NullString{String: "ThisTitleShouldNotBeInUniqueKey", Valid: true},
 	}
@@ -118,7 +132,7 @@ func TestLocation_Equals(t *testing.T) {
 		Track:          sql.NullInt32{Int32: 5, Valid: true},
 		IssueTagNumber: 6,
 		KeySymbol:      sql.NullString{String: "nwtsty", Valid: true},
-		MepsLanguage:   7,
+		MepsLanguage:   sql.NullInt32{Int32: 7, Valid: true},
 		LocationType:   8,
 	}
 
@@ -130,7 +144,7 @@ func TestLocation_Equals(t *testing.T) {
 		Track:          sql.NullInt32{},
 		IssueTagNumber: 6,
 		KeySymbol:      sql.NullString{},
-		MepsLanguage:   7,
+		MepsLanguage:   sql.NullInt32{Int32: 7, Valid: true},
 		LocationType:   8,
 		Title:          sql.NullString{String: "ThisOTitleShouldNotBeInUniqueKeyEither", Valid: true},
 	}
@@ -148,7 +162,7 @@ func TestLocation_RelatedEntries(t *testing.T) {
 		Track:          sql.NullInt32{Int32: 5, Valid: true},
 		IssueTagNumber: 6,
 		KeySymbol:      sql.NullString{String: "nwtsty", Valid: true},
-		MepsLanguage:   7,
+		MepsLanguage:   sql.NullInt32{Int32: 7, Valid: true},
 		LocationType:   8,
 		Title:          sql.NullString{String: "A title", Valid: true},
 	}
@@ -166,7 +180,7 @@ func TestLocation_MarshalJSON(t *testing.T) {
 		Track:          sql.NullInt32{Int32: 5, Valid: true},
 		IssueTagNumber: 6,
 		KeySymbol:      sql.NullString{String: "nwtsty", Valid: true},
-		MepsLanguage:   7,
+		MepsLanguage:   sql.NullInt32{Int32: 7, Valid: true},
 		LocationType:   8,
 		Title:          sql.NullString{String: "ThisTitleShouldNotBeInUniqueKey", Valid: true},
 	}
@@ -174,6 +188,6 @@ func TestLocation_MarshalJSON(t *testing.T) {
 	result, err := json.Marshal(m1)
 	assert.NoError(t, err)
 	assert.Equal(t,
-		`{"type":"Location","locationId":1,"bookNumber":{"Int32":2,"Valid":true},"chapterNumber":{"Int32":3,"Valid":true},"documentId":{"Int32":4,"Valid":true},"track":{"Int32":5,"Valid":true},"issueTagNumber":6,"keySymbol":{"String":"nwtsty","Valid":true},"mepsLanguage":7,"locationType":8,"title":{"String":"ThisTitleShouldNotBeInUniqueKey","Valid":true}}`,
+		`{"type":"Location","locationId":1,"bookNumber":{"Int32":2,"Valid":true},"chapterNumber":{"Int32":3,"Valid":true},"documentId":{"Int32":4,"Valid":true},"track":{"Int32":5,"Valid":true},"issueTagNumber":6,"keySymbol":{"String":"nwtsty","Valid":true},"mepsLanguage":{"Int32":7,"Valid":true},"locationType":8,"title":{"String":"ThisTitleShouldNotBeInUniqueKey","Valid":true}}`,
 		string(result))
 }
