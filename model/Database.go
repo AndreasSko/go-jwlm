@@ -273,7 +273,7 @@ func (db *Database) ImportJWLBackup(filename string) error {
 
 	// Make sure that we support this backup version
 	if err := manifest.validateManifest(); err != nil {
-		return err
+		return fmt.Errorf("backup incompatible: %w", err)
 	}
 
 	// Fill the Database with actual data
