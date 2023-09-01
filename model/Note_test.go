@@ -146,8 +146,9 @@ func TestNote_PrettyPrint(t *testing.T) {
 		Location: []*Location{
 			nil,
 			{
-				LocationID: 1,
-				Title:      sql.NullString{"Location-Title", true},
+				LocationID:   1,
+				Title:        sql.NullString{"Location-Title", true},
+				MepsLanguage: sql.NullInt32{Int32: 0, Valid: true},
 			},
 		},
 		UserMark: []*UserMark{

@@ -488,6 +488,7 @@ func fetchFromSQLite(sqlite *sql.DB, modelType Model) ([]Model, error) {
 			if !isNullableMismatch(err, rows) {
 				return nil, errors.Wrapf(err, "Error while scanning row for %T", modelType)
 			}
+			fmt.Println(err)
 			log.Warnf("Nullable mismatch in %T at index %d detected. Skipping entry", m, i)
 			i++
 			continue
