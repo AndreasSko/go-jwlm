@@ -69,7 +69,7 @@ func Test_manifest_validateManifest2(t *testing.T) {
 		wantErr assert.ErrorAssertionFunc
 	}{
 		{
-			name: "All good",
+			name: "Newest schema version",
 			mfst: &manifest{
 				UserDataBackup: userDataBackup{
 					SchemaVersion: 14,
@@ -77,6 +77,40 @@ func Test_manifest_validateManifest2(t *testing.T) {
 				Version: 1,
 			},
 			wantErr: assert.NoError,
+		},
+		{
+			name: "Older but supported schema version",
+			mfst: &manifest{
+				UserDataBackup: userDataBackup{
+					SchemaVersion: 13,
+				},
+				Version: 1,
+			},
+			wantErr: assert.NoError,
+		},
+		{
+			name: "Schema version too old",
+			mfst: &manifest{
+				UserDataBackup: userDataBackup{
+					SchemaVersion: 12,
+				},
+				Version: 1,
+			},
+			wantErr: func(tt assert.TestingT, err error, i ...interface{}) bool {
+				return assert.ErrorContains(tt, err, "schema version is too old. Should be at least 13 is 12")
+			},
+		},
+		{
+			name: "Schema version too new",
+			mfst: &manifest{
+				UserDataBackup: userDataBackup{
+					SchemaVersion: 15,
+				},
+				Version: 1,
+			},
+			wantErr: func(tt assert.TestingT, err error, i ...interface{}) bool {
+				return assert.ErrorContains(tt, err, "schema version is too new. Should be up to 14 is 15")
+			},
 		},
 		{
 			name: "Manifest version too old",
@@ -100,30 +134,6 @@ func Test_manifest_validateManifest2(t *testing.T) {
 			},
 			wantErr: func(tt assert.TestingT, err error, i ...interface{}) bool {
 				return assert.ErrorContains(tt, err, "manifest version is too new. Should be 1 is 2")
-			},
-		},
-		{
-			name: "Schema version too old",
-			mfst: &manifest{
-				UserDataBackup: userDataBackup{
-					SchemaVersion: 13,
-				},
-				Version: 1,
-			},
-			wantErr: func(tt assert.TestingT, err error, i ...interface{}) bool {
-				return assert.ErrorContains(tt, err, "schema version is too old. Should be 14 is 13")
-			},
-		},
-		{
-			name: "Schema version too new",
-			mfst: &manifest{
-				UserDataBackup: userDataBackup{
-					SchemaVersion: 15,
-				},
-				Version: 1,
-			},
-			wantErr: func(tt assert.TestingT, err error, i ...interface{}) bool {
-				return assert.ErrorContains(tt, err, "schema version is too new. Should be 14 is 15")
 			},
 		},
 	}

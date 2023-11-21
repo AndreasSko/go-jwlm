@@ -15,7 +15,8 @@ import (
 )
 
 const version = 1
-const schemaVersion = 14
+const supportedSchemaVersionMin = 13
+const supportedSchemaVersionMax = 14
 
 type manifest struct {
 	CreationDate   string         `json:"creationDate"`
@@ -61,13 +62,13 @@ func (mfst *manifest) validateManifest() error {
 			"You might need to upgrade to a newer version of JW Library first", version, mfst.Version)
 	}
 
-	if mfst.UserDataBackup.SchemaVersion > schemaVersion {
-		return fmt.Errorf("schema version is too new. Should be %d is %d. "+
-			"Make sure you use the latest version of the merger", schemaVersion, mfst.UserDataBackup.SchemaVersion)
+	if mfst.UserDataBackup.SchemaVersion > supportedSchemaVersionMax {
+		return fmt.Errorf("schema version is too new. Should be up to %d is %d. "+
+			"Make sure you use the latest version of the merger", supportedSchemaVersionMax, mfst.UserDataBackup.SchemaVersion)
 	}
-	if mfst.UserDataBackup.SchemaVersion < schemaVersion {
-		return fmt.Errorf("schema version is too old. Should be %d is %d. "+
-			"You might need to upgrade to a newer version of JW Library first", schemaVersion, mfst.UserDataBackup.SchemaVersion)
+	if mfst.UserDataBackup.SchemaVersion < supportedSchemaVersionMin {
+		return fmt.Errorf("schema version is too old. Should be at least %d is %d. "+
+			"You might need to upgrade to a newer version of JW Library first", supportedSchemaVersionMin, mfst.UserDataBackup.SchemaVersion)
 	}
 
 	return nil
@@ -94,7 +95,7 @@ func generateManifest(backupName string, dbFile string) (*manifest, error) {
 			LastModifiedDate: time.Now().Format("2006-01-02T15:04:05-07:00"),
 			Hash:             hash,
 			DatabaseName:     filepath.Base(dbFile),
-			SchemaVersion:    schemaVersion,
+			SchemaVersion:    supportedSchemaVersionMax,
 			DeviceName:       "go-jwlm",
 		},
 		Name:    backupName,
