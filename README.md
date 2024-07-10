@@ -48,7 +48,7 @@ You can enable these solvers with the `--bookmarks`, `--markings`,
 `--notes`, and `--inputFields` flags:
 
 ```shell
-go-jwlm merge <left-backup> <right-backup> <merged-backup> --bookmarks chooseLeft --markings chooseRight --notes chooseNewest --inputFields chooseLef
+go-jwlm merge <left-backup> <right-backup> <merged-backup> --bookmarks chooseLeft --markings chooseRight --notes chooseNewest --inputFields chooseLeft
 ```
 
 The conflict resolvers are helpful for regular merging when you are 
