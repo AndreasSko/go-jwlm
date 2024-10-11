@@ -1,6 +1,8 @@
 module github.com/AndreasSko/go-jwlm
 
-go 1.20
+go 1.21
+
+toolchain go1.23.2
 
 require (
 	github.com/AlecAivazis/survey/v2 v2.3.2
@@ -13,7 +15,7 @@ require (
 	github.com/davecgh/go-spew v1.1.1
 	github.com/hinshun/vt10x v0.0.0-20180809195222-d55458df857c
 	github.com/jedib0t/go-pretty v4.3.0+incompatible
-	github.com/klauspost/compress v1.15.1
+	github.com/klauspost/compress v1.17.11
 	github.com/mattn/go-sqlite3 v1.14.8
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/mitchellh/go-wordwrap v1.0.1
