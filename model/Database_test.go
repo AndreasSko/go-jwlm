@@ -812,10 +812,7 @@ func TestDatabase_ImportJWLBackup(t *testing.T) {
 
 func TestDatabase_ExportJWLBackup(t *testing.T) {
 	// Create tmp folder and place all files there
-	testFolder := ".jwlm-tmp_test"
-	err := os.Mkdir(testFolder, 0755)
-	assert.NoError(t, err)
-	defer os.RemoveAll(testFolder)
+	testFolder := t.TempDir()
 
 	// Test if import->export->import tweakes Data in wrong way
 	db := Database{}
