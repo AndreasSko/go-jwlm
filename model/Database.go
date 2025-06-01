@@ -50,6 +50,8 @@ type Database struct {
 	// SkipPlaylists allows to skip prevention of merging if playlists exist in the database.
 	// It is meant as a temporary workaround until merging of playlists is implemented.
 	SkipPlaylists bool
+	// TempDir is used for temporary files. If not set, os.TempDir() will be used.
+	TempDir string
 }
 
 // FetchFromTable tries to fetch a entry with the given ID. If it can't find it
@@ -132,6 +134,8 @@ func MakeDatabaseCopy(db *Database) *Database {
 			cpField.Set(cpSlice)
 		case reflect.Bool:
 			cpField.SetBool(field.Bool())
+		case reflect.String:
+			cpField.SetString(field.String())
 		default:
 			panic(fmt.Sprintf("Field type %T is not supported for copying", tp))
 		}
@@ -221,6 +225,10 @@ func (db *Database) Equals(other *Database) bool {
 			if dbFields.Field(i).Bool() != otherFields.Field(i).Bool() {
 				return false
 			}
+		case reflect.String:
+			if dbFields.Field(i).String() != otherFields.Field(i).String() {
+				return false
+			}
 		default:
 			panic(fmt.Sprintf("field type %T is not supported for checking equality", tp))
 		}
@@ -233,7 +241,7 @@ func (db *Database) Equals(other *Database) bool {
 // included SQLite DB to the Database struct
 func (db *Database) ImportJWLBackup(filename string) error {
 	// Create tmp folder and place all files there
-	tmp, err := ioutil.TempDir("", "go-jwlm")
+	tmp, err := os.MkdirTemp(db.TempDir, "go-jwlm")
 	if err != nil {
 		return errors.Wrap(err, "Error while creating temporary directory")
 	}
@@ -593,7 +601,7 @@ func getSliceCapacity(sqlite *sql.DB, modelType Model) (int, error) {
 // ExportJWLBackup creates a .jwlibrary backup file out of a Database{} struct
 func (db *Database) ExportJWLBackup(filename string) error {
 	// Create tmp folder and place all files there
-	tmp, err := ioutil.TempDir("", "go-jwlm")
+	tmp, err := os.MkdirTemp(db.TempDir, "go-jwlm")
 	if err != nil {
 		return errors.Wrap(err, "Error while creating temporary directory")
 	}

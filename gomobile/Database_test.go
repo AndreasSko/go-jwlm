@@ -39,11 +39,13 @@ func TestDatabaseWrapper_ImportJWLBackup(t *testing.T) {
 				assert.Len(t, dbWrapper.right.Tag, 3)
 				assert.Len(t, dbWrapper.right.TagMap, 3)
 				assert.Len(t, dbWrapper.right.UserMark, 5)
+				assert.Equal(t, dbWrapper.TempDir, dbWrapper.right.TempDir)
 			},
 		},
 		{
 			name: "contains playlists, skip playlists set, import left",
 			dbw: &DatabaseWrapper{
+				TempDir:       t.TempDir(),
 				skipPlaylists: true,
 			},
 			filename: filepath.Join(testdataDir, "backup_withPlaylist.jwlibrary"),
@@ -57,6 +59,7 @@ func TestDatabaseWrapper_ImportJWLBackup(t *testing.T) {
 				assert.Len(t, dbWrapper.left.Tag, 5)
 				assert.Len(t, dbWrapper.left.TagMap, 5)
 				assert.Len(t, dbWrapper.left.UserMark, 5)
+				assert.Equal(t, dbWrapper.TempDir, dbWrapper.left.TempDir)
 			},
 		},
 		{
@@ -89,6 +92,7 @@ func TestDatabaseWrapper_ImportJWLBackup(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			tt.dbw.TempDir = t.TempDir()
 			err := tt.dbw.ImportJWLBackup(tt.filename, tt.side)
 			tt.wantErr(t, err)
 
@@ -125,14 +129,18 @@ func TestDatabaseWrapper_SkipPlaylists(t *testing.T) {
 }
 
 func TestDatabaseWrapper_Init(t *testing.T) {
-	dbw := &DatabaseWrapper{}
+	dbw := &DatabaseWrapper{
+		TempDir: t.TempDir(),
+	}
 
 	assert.NoError(t, dbw.ImportJWLBackup(backupFile, "leftSide"))
 	assert.NoError(t, dbw.ImportJWLBackup(backupFile, "rightSide"))
 
 	dbw.Init()
 
-	assert.True(t, dbw.merged.Equals(&model.Database{}))
+	assert.True(t, dbw.merged.Equals(&model.Database{
+		TempDir: dbw.TempDir,
+	}))
 	assert.True(t, dbw.leftTmp.Equals(dbw.left))
 	assert.True(t, dbw.rightTmp.Equals(dbw.right))
 
@@ -141,9 +149,12 @@ func TestDatabaseWrapper_Init(t *testing.T) {
 
 	dbw.merged = model.MakeDatabaseCopy(dbw.left)
 	dbw.Init()
-	assert.True(t, dbw.merged.Equals(&model.Database{}))
+	assert.True(t, dbw.merged.Equals(&model.Database{
+		TempDir: dbw.TempDir,
+	}))
 	assert.True(t, dbw.leftTmp.Equals(dbw.left))
 	assert.True(t, dbw.rightTmp.Equals(dbw.right))
+	assert.Equal(t, dbw.TempDir, dbw.merged.TempDir)
 }
 
 func TestDatabaseWrapper_DBIsLoaded(t *testing.T) {

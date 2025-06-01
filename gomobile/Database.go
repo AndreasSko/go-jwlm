@@ -10,6 +10,8 @@ import (
 // DatabaseWrapper wraps the left, right, and merged
 // Database structs so they can be used with Gomobile.
 type DatabaseWrapper struct {
+	TempDir string
+
 	left   *model.Database
 	right  *model.Database
 	merged *model.Database
@@ -28,6 +30,7 @@ type DatabaseWrapper struct {
 // on the given side.
 func (dbw *DatabaseWrapper) ImportJWLBackup(filename string, side string) error {
 	db := &model.Database{
+		TempDir:       dbw.TempDir,
 		SkipPlaylists: dbw.skipPlaylists,
 	}
 
@@ -58,7 +61,9 @@ func (dbw *DatabaseWrapper) SkipPlaylists(skipPlaylists bool) {
 func (dbw *DatabaseWrapper) Init() {
 	dbw.leftTmp = model.MakeDatabaseCopy(dbw.left)
 	dbw.rightTmp = model.MakeDatabaseCopy(dbw.right)
-	dbw.merged = &model.Database{}
+	dbw.merged = &model.Database{
+		TempDir: dbw.TempDir,
+	}
 	merger.PrepareDatabasesPreMerge(dbw.leftTmp, dbw.rightTmp)
 }
 

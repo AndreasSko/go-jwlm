@@ -203,12 +203,15 @@ func TestDatabase_PurgeTables(t *testing.T) {
 }
 
 func TestMakeDatabaseCopy(t *testing.T) {
-	db := &Database{}
+	db := &Database{
+		TempDir: "a-temp-dir",
+	}
 
 	path := filepath.Join("testdata", userDataFilename)
 	assert.NoError(t, db.importSQLite(path))
 
 	dbCp := MakeDatabaseCopy(db)
+	assert.Equal(t, db.TempDir, dbCp.TempDir)
 	assertEqualNotDeepSame(t, db.BlockRange, dbCp.BlockRange)
 	assertEqualNotDeepSame(t, db.Bookmark, dbCp.Bookmark)
 	assertEqualNotDeepSame(t, db.InputField, dbCp.InputField)
