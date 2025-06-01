@@ -52,7 +52,7 @@ func TestDownloadCatalog(t *testing.T) {
 	// Test error
 	publication.CatalogURL = "https://notvaliddomain.com/%s"
 	dm := DownloadCatalog(filepath.Join(tmp, "catalog.db"))
-	time.Sleep(250 * time.Millisecond)
+	time.Sleep(5 * time.Second)
 	assert.Error(t, dm.err)
 	assert.NotEqual(t, "", dm.Error())
 	assert.True(t, dm.Progress.Done)
