@@ -22,8 +22,9 @@ func TestCatalogNeedsUpdate(t *testing.T) {
 	assert.True(t, CatalogNeedsUpdate("not-valid-path"))
 
 	filePath := filepath.Join(tmp, "catalog.db")
-	_, err := os.Create(filePath)
+	f, err := os.Create(filePath)
 	assert.NoError(t, err)
+	defer f.Close()
 
 	assert.False(t, CatalogNeedsUpdate(filePath))
 
@@ -35,8 +36,9 @@ func TestCatalogExists(t *testing.T) {
 	tmp := t.TempDir()
 
 	filePath := filepath.Join(tmp, "catalog.db")
-	_, err := os.Create(filePath)
+	f, err := os.Create(filePath)
 	assert.NoError(t, err)
+	defer f.Close()
 
 	assert.False(t, CatalogExists("not-valid-path"))
 	assert.True(t, CatalogExists(filePath))
@@ -151,6 +153,7 @@ func Test_fetchManifest(t *testing.T) {
 
 func hashFile(path string) string {
 	f, _ := os.Open(path)
+	defer f.Close()
 	hasher := sha256.New()
 	io.Copy(hasher, f)
 	return fmt.Sprintf("%x", hasher.Sum(nil))
