@@ -6,8 +6,6 @@ package cmd
 import (
 	"bytes"
 	"database/sql"
-	"io/ioutil"
-	"os"
 	"path/filepath"
 	"testing"
 
@@ -22,9 +20,7 @@ import (
 func Test_merge(t *testing.T) {
 	t.Parallel()
 
-	tmp, err := ioutil.TempDir("", "go-jwlm")
-	assert.NoError(t, err)
-	defer os.RemoveAll(tmp)
+	tmp := t.TempDir()
 
 	emptyFilename := filepath.Join(tmp, "empty.jwlibrary")
 	leftFilename := filepath.Join(tmp, "left.jwlibrary")

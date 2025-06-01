@@ -2,8 +2,6 @@ package model
 
 import (
 	"fmt"
-	"io/ioutil"
-	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -158,13 +156,11 @@ func Test_generateManifest(t *testing.T) {
 }
 
 func Test_exportManifest(t *testing.T) {
-	tmp, err := ioutil.TempDir("", "go-jwlm")
-	assert.NoError(t, err)
-	defer os.RemoveAll(tmp)
+	tmp := t.TempDir()
 
 	path := filepath.Join(tmp, "test_manifest.json")
 	fmt.Println(path)
-	err = exampleManifest.exportManifest(path)
+	err := exampleManifest.exportManifest(path)
 	assert.NoError(t, err)
 	assert.FileExists(t, path)
 

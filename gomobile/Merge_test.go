@@ -5,8 +5,6 @@ package gomobile
 
 import (
 	"database/sql"
-	"io/ioutil"
-	"os"
 	"path/filepath"
 	"testing"
 
@@ -164,9 +162,7 @@ func Test_MergeNwt(t *testing.T) {
 func Test_MergeNwtDifferentDocID(t *testing.T) {
 	// As the cleanup happens in the PostMerge hook, which is called on export,
 	// we also need to export the merged DB
-	tmp, err := ioutil.TempDir("", "go-jwlm")
-	assert.NoError(t, err)
-	defer os.RemoveAll(tmp)
+	tmp := t.TempDir()
 
 	dbw := DatabaseWrapper{
 		left:  model.MakeDatabaseCopy(leftDBNwtWithDifferentDocID),

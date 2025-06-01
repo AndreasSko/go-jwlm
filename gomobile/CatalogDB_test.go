@@ -1,3 +1,4 @@
+//go:build !windows
 // +build !windows
 
 package gomobile
@@ -6,7 +7,6 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -20,15 +20,13 @@ import (
 )
 
 func TestDownloadCatalog(t *testing.T) {
-	tmp, err := ioutil.TempDir("", "go-jwlm")
-	assert.NoError(t, err)
-	defer os.RemoveAll(tmp)
+	tmp := t.TempDir()
 
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		if strings.Contains(req.URL.String(), "manifest.json") {
 			rw.Write([]byte(`{"version": 1, "current": "164a1c4b-4dbd-4909-8f88-8e7a18c562f2"}`))
 		} else {
-			data, err := ioutil.ReadFile(filepath.Join("../publication/testdata", "catalog.db.gz"))
+			data, err := os.ReadFile(filepath.Join("../publication/testdata", "catalog.db.gz"))
 			assert.NoError(t, err)
 			rw.Write(data)
 		}
@@ -54,7 +52,7 @@ func TestDownloadCatalog(t *testing.T) {
 	// Test error
 	publication.CatalogURL = "https://notvaliddomain.com/%s"
 	dm := DownloadCatalog(filepath.Join(tmp, "catalog.db"))
-	time.Sleep(250 * time.Millisecond)
+	time.Sleep(5 * time.Second)
 	assert.Error(t, dm.err)
 	assert.NotEqual(t, "", dm.Error())
 	assert.True(t, dm.Progress.Done)
@@ -62,9 +60,7 @@ func TestDownloadCatalog(t *testing.T) {
 }
 
 func TestDownloadManager_CancelDownload(t *testing.T) {
-	tmp, err := ioutil.TempDir("", "go-jwlm")
-	assert.NoError(t, err)
-	defer os.RemoveAll(tmp)
+	tmp := t.TempDir()
 
 	dm := DownloadCatalog(filepath.Join(tmp, "catalog.db"))
 	dm.CancelDownload()
@@ -77,14 +73,13 @@ func TestDownloadManager_CancelDownload(t *testing.T) {
 }
 
 func TestCatalogNeedsUpdate(t *testing.T) {
-	tmp, err := ioutil.TempDir("", "go-jwlm")
-	assert.NoError(t, err)
-	defer os.RemoveAll(tmp)
+	tmp := t.TempDir()
 
 	assert.True(t, CatalogNeedsUpdate("not-valid-path"))
 
 	filePath := filepath.Join(tmp, "catalog.db")
-	_, err = os.Create(filePath)
+	_, err := os.Create(filePath)
+	assert.NoError(t, err)
 
 	assert.False(t, CatalogNeedsUpdate(filePath))
 
@@ -93,12 +88,11 @@ func TestCatalogNeedsUpdate(t *testing.T) {
 }
 
 func TestCatalogExists(t *testing.T) {
-	tmp, err := ioutil.TempDir("", "go-jwlm")
-	assert.NoError(t, err)
-	defer os.RemoveAll(tmp)
+	tmp := t.TempDir()
 
 	filePath := filepath.Join(tmp, "catalog.db")
-	_, err = os.Create(filePath)
+	_, err := os.Create(filePath)
+	assert.NoError(t, err)
 
 	assert.False(t, CatalogExists("not-valid-path"))
 	assert.True(t, CatalogExists(filePath))

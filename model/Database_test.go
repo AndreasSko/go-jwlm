@@ -7,7 +7,6 @@ import (
 	_ "embed"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -203,12 +202,15 @@ func TestDatabase_PurgeTables(t *testing.T) {
 }
 
 func TestMakeDatabaseCopy(t *testing.T) {
-	db := &Database{}
+	db := &Database{
+		TempDir: "a-temp-dir",
+	}
 
 	path := filepath.Join("testdata", userDataFilename)
 	assert.NoError(t, db.importSQLite(path))
 
 	dbCp := MakeDatabaseCopy(db)
+	assert.Equal(t, db.TempDir, dbCp.TempDir)
 	assertEqualNotDeepSame(t, db.BlockRange, dbCp.BlockRange)
 	assertEqualNotDeepSame(t, db.Bookmark, dbCp.Bookmark)
 	assertEqualNotDeepSame(t, db.InputField, dbCp.InputField)
@@ -810,10 +812,7 @@ func TestDatabase_ImportJWLBackup(t *testing.T) {
 
 func TestDatabase_ExportJWLBackup(t *testing.T) {
 	// Create tmp folder and place all files there
-	testFolder := ".jwlm-tmp_test"
-	err := os.Mkdir(testFolder, 0755)
-	assert.NoError(t, err)
-	defer os.RemoveAll(testFolder)
+	testFolder := t.TempDir()
 
 	// Test if import->export->import tweakes Data in wrong way
 	db := Database{}
@@ -861,13 +860,10 @@ func TestDatabase_ExportJWLBackup(t *testing.T) {
 
 func Test_createEmptySQLiteDB(t *testing.T) {
 	// Create tmp folder and place all files there
-	tmp, err := ioutil.TempDir("", "go-jwlm")
-	assert.NoError(t, err)
-	defer os.RemoveAll(tmp)
+	tmp := t.TempDir()
 
 	path := filepath.Join(tmp, userDataFilename)
-	err = createEmptySQLiteDB(path)
-	assert.NoError(t, err)
+	assert.NoError(t, createEmptySQLiteDB(path))
 
 	// Test if file has correct hash
 	f, err := os.Open(path)
@@ -886,9 +882,7 @@ func Test_createEmptySQLiteDB(t *testing.T) {
 
 func TestDatabase_saveToNewSQLite(t *testing.T) {
 	// Create tmp folder and place all files there
-	tmp, err := ioutil.TempDir("", "go-jwlm")
-	assert.NoError(t, err)
-	defer os.RemoveAll(tmp)
+	tmp := t.TempDir()
 
 	db := Database{
 		BlockRange: []*BlockRange{{3, 2, 13, sql.NullInt32{Int32: 0, Valid: true}, sql.NullInt32{Int32: 14, Valid: true}, 3}},
