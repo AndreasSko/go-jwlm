@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -767,7 +766,7 @@ func insertEntries(sqlite *sql.DB, m []Model) error {
 
 // createEmptySQLiteDB creates a new SQLite database at filename with the base userData.db from JWLibrary
 func createEmptySQLiteDB(filename string) error {
-	if err := ioutil.WriteFile(filename, userDataDatabaseFile, 0644); err != nil {
+	if err := os.WriteFile(filename, userDataDatabaseFile, 0644); err != nil {
 		return errors.Wrap(err, fmt.Sprintf("Error while saving new SQLite database at %s", filename))
 	}
 

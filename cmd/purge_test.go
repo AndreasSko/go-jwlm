@@ -4,8 +4,6 @@
 package cmd
 
 import (
-	"io/ioutil"
-	"os"
 	"path/filepath"
 	"testing"
 
@@ -18,9 +16,7 @@ import (
 func Test_purge(t *testing.T) {
 	t.Parallel()
 
-	tmp, err := ioutil.TempDir("", "go-jwlm")
-	assert.NoError(t, err)
-	defer os.RemoveAll(tmp)
+	tmp := t.TempDir()
 
 	inputFilename := filepath.Join(tmp, "left.jwlibrary")
 	assert.NoError(t, leftDB.ExportJWLBackup(inputFilename))

@@ -5,7 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"os"
 	"time"
@@ -75,7 +75,7 @@ func DownloadCatalog(ctx context.Context, prgrs chan Progress, dst string) error
 	}
 
 	// Create tmp folder and place all files there
-	tmp, err := ioutil.TempDir("", "go-jwlm")
+	tmp, err := os.MkdirTemp("", "go-jwlm")
 	if err != nil {
 		return errors.Wrap(err, "Error while creating temporary directory")
 	}
@@ -133,7 +133,7 @@ Loop:
 	}
 
 	// Extract and save at dst
-	data, err := ioutil.ReadFile(resp.Filename)
+	data, err := os.ReadFile(resp.Filename)
 	if err != nil {
 		return errors.Wrap(err, "Error while reading catalog.db.gz")
 	}
@@ -167,7 +167,7 @@ func fetchManifest(ctx context.Context) (catalogManifest, error) {
 	}
 	defer resp.Body.Close()
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return catalogManifest{}, errors.Wrap(err, "Error while reading response body for catalog manifest")
 	}

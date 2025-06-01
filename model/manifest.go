@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -41,7 +40,7 @@ func (mfst *manifest) importManifest(path string) error {
 	}
 	defer file.Close()
 
-	blob, _ := ioutil.ReadAll(file)
+	blob, _ := io.ReadAll(file)
 
 	err = json.Unmarshal([]byte(blob), &mfst)
 	if err != nil {
@@ -113,7 +112,7 @@ func (mfst *manifest) exportManifest(path string) error {
 		return errors.Wrap(err, "Error while marshalling manifest")
 	}
 
-	if err := ioutil.WriteFile(path, bytes, 0644); err != nil {
+	if err := os.WriteFile(path, bytes, 0644); err != nil {
 		return errors.Wrap(err, fmt.Sprintf("Error while saving manifest file at %v", path))
 	}
 

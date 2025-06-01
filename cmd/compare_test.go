@@ -1,10 +1,9 @@
+//go:build !windows
 // +build !windows
 
 package cmd
 
 import (
-	"io/ioutil"
-	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -17,9 +16,7 @@ import (
 func Test_compare(t *testing.T) {
 	t.Parallel()
 
-	tmp, err := ioutil.TempDir("", "go-jwlm")
-	assert.NoError(t, err)
-	defer os.RemoveAll(tmp)
+	tmp := t.TempDir()
 
 	emptyFilename := filepath.Join(tmp, "empty.jwlibrary")
 	leftFilename := filepath.Join(tmp, "left.jwlibrary")

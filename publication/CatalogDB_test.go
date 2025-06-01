@@ -5,7 +5,6 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -18,14 +17,13 @@ import (
 )
 
 func TestCatalogNeedsUpdate(t *testing.T) {
-	tmp, err := ioutil.TempDir("", "go-jwlm")
-	assert.NoError(t, err)
-	defer os.RemoveAll(tmp)
+	tmp := t.TempDir()
 
 	assert.True(t, CatalogNeedsUpdate("not-valid-path"))
 
 	filePath := filepath.Join(tmp, "catalog.db")
-	_, err = os.Create(filePath)
+	_, err := os.Create(filePath)
+	assert.NoError(t, err)
 
 	assert.False(t, CatalogNeedsUpdate(filePath))
 
@@ -34,12 +32,11 @@ func TestCatalogNeedsUpdate(t *testing.T) {
 }
 
 func TestCatalogExists(t *testing.T) {
-	tmp, err := ioutil.TempDir("", "go-jwlm")
-	assert.NoError(t, err)
-	defer os.RemoveAll(tmp)
+	tmp := t.TempDir()
 
 	filePath := filepath.Join(tmp, "catalog.db")
-	_, err = os.Create(filePath)
+	_, err := os.Create(filePath)
+	assert.NoError(t, err)
 
 	assert.False(t, CatalogExists("not-valid-path"))
 	assert.True(t, CatalogExists(filePath))
@@ -51,15 +48,12 @@ func TestCatalogSize(t *testing.T) {
 }
 
 func Test_DownloadCatalogRealLife(t *testing.T) {
-	tmp, err := ioutil.TempDir("", "go-jwlm")
-	assert.NoError(t, err)
-	defer os.RemoveAll(tmp)
+	tmp := t.TempDir()
 
 	prgrs := make(chan Progress)
 	done := make(chan struct{})
 	go func() {
-		err = DownloadCatalog(context.Background(), prgrs, filepath.Join(tmp, "catalog.db"))
-		assert.NoError(t, err)
+		assert.NoError(t, DownloadCatalog(context.Background(), prgrs, filepath.Join(tmp, "catalog.db")))
 		done <- struct{}{}
 	}()
 	for progress := range prgrs {
@@ -74,15 +68,13 @@ func Test_DownloadCatalogRealLife(t *testing.T) {
 }
 
 func Test_DownloadCatalog(t *testing.T) {
-	tmp, err := ioutil.TempDir("", "go-jwlm")
-	assert.NoError(t, err)
-	defer os.RemoveAll(tmp)
+	tmp := t.TempDir()
 
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		if strings.Contains(req.URL.String(), "manifest.json") {
 			rw.Write([]byte(`{"version": 1, "current": "164a1c4b-4dbd-4909-8f88-8e7a18c562f2"}`))
 		} else {
-			data, err := ioutil.ReadFile(filepath.Join("testdata", "catalog.db.gz"))
+			data, err := os.ReadFile(filepath.Join("testdata", "catalog.db.gz"))
 			assert.NoError(t, err)
 			rw.Write(data)
 		}
@@ -93,10 +85,9 @@ func Test_DownloadCatalog(t *testing.T) {
 	CatalogURL = server.URL + "/catalogs/publications/v4/%s/catalog.db.gz"
 
 	// Download without progress channel
-	err = DownloadCatalog(context.TODO(), nil, filepath.Join(tmp, "catalog.db"))
+	err := DownloadCatalog(context.TODO(), nil, filepath.Join(tmp, "catalog.db"))
 	assert.NoError(t, err)
 
-	assert.NoError(t, err)
 	assert.Equal(t, "7ebe98db8b5edd1ab901b7d6b43647fd35790b2a332c43739efdf9383d590651",
 		hashFile(filepath.Join(tmp, "catalog.db")))
 
@@ -104,7 +95,7 @@ func Test_DownloadCatalog(t *testing.T) {
 	prgrs := make(chan Progress)
 	done := make(chan struct{})
 	go func() {
-		err = DownloadCatalog(context.Background(), prgrs, filepath.Join(tmp, "catalog.db"))
+		err := DownloadCatalog(context.Background(), prgrs, filepath.Join(tmp, "catalog.db"))
 		assert.NoError(t, err)
 		done <- struct{}{}
 	}()

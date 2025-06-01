@@ -4,8 +4,6 @@
 package gomobile
 
 import (
-	"io/ioutil"
-	"os"
 	"path/filepath"
 	"testing"
 
@@ -181,9 +179,7 @@ func TestDatabaseWrapper_DBIsLoaded(t *testing.T) {
 }
 
 func TestDatabaseWrapper_ExportMerged(t *testing.T) {
-	tmp, err := ioutil.TempDir("", "go-jwlm")
-	assert.NoError(t, err)
-	defer os.RemoveAll(tmp)
+	tmp := t.TempDir()
 
 	dbw := &DatabaseWrapper{}
 	dbw.merged = &model.Database{}

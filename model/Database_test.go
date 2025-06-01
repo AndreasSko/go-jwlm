@@ -7,7 +7,6 @@ import (
 	_ "embed"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -864,13 +863,10 @@ func TestDatabase_ExportJWLBackup(t *testing.T) {
 
 func Test_createEmptySQLiteDB(t *testing.T) {
 	// Create tmp folder and place all files there
-	tmp, err := ioutil.TempDir("", "go-jwlm")
-	assert.NoError(t, err)
-	defer os.RemoveAll(tmp)
+	tmp := t.TempDir()
 
 	path := filepath.Join(tmp, userDataFilename)
-	err = createEmptySQLiteDB(path)
-	assert.NoError(t, err)
+	assert.NoError(t, createEmptySQLiteDB(path))
 
 	// Test if file has correct hash
 	f, err := os.Open(path)
@@ -889,9 +885,7 @@ func Test_createEmptySQLiteDB(t *testing.T) {
 
 func TestDatabase_saveToNewSQLite(t *testing.T) {
 	// Create tmp folder and place all files there
-	tmp, err := ioutil.TempDir("", "go-jwlm")
-	assert.NoError(t, err)
-	defer os.RemoveAll(tmp)
+	tmp := t.TempDir()
 
 	db := Database{
 		BlockRange: []*BlockRange{{3, 2, 13, sql.NullInt32{Int32: 0, Valid: true}, sql.NullInt32{Int32: 14, Valid: true}, 3}},
