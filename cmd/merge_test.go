@@ -6,6 +6,7 @@ package cmd
 import (
 	"bytes"
 	"database/sql"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -15,6 +16,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func Test_realMerge(t *testing.T) {
+	assert.NoError(t, merge("/Users/askorczyk/Downloads/playlist_test_1.jwlibrary", "/Users/askorczyk/Downloads/playlist_test_2.jwlibrary", "/tmp/merged.jwlibrary", terminal.Stdio{In: os.Stdin, Out: os.Stdout, Err: os.Stderr}))
+}
 
 func Test_merge(t *testing.T) {
 	t.Parallel()

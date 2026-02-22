@@ -49,8 +49,7 @@ var NoteResolver string
 // InputFieldResolver represents a resolver that should be used for conflicting InputFields
 var InputFieldResolver string
 
-// SkipPlaylists indicates if playlists should be skipped when importing backups.
-// It is meant as a temporary workaround until merging of playlists is implemented.
+// SkipPlaylists indicates if playlists should be skipped when importing and merging backups.
 var SkipPlaylists bool
 
 func merge(leftFilename string, rightFilename string, mergedFilename string, stdio terminal.Stdio) error {
@@ -76,6 +75,10 @@ func merge(leftFilename string, rightFilename string, mergedFilename string, std
 	merger.PrepareDatabasesPreMerge(&left, &right)
 
 	merged := model.Database{}
+	merged.IndependentMediaDir, err = os.MkdirTemp("", "go-jwlm-independent-media")
+	if err != nil {
+		return fmt.Errorf("failed to create temporary directory for independent media: %w", err)
+	}
 
 	fmt.Fprintln(stdio.Out, "🧭 Merging Locations")
 	mergedLocations, locationIDChanges, err := merger.MergeLocations(left.Location, right.Location)
@@ -89,6 +92,7 @@ func merge(leftFilename string, rightFilename string, mergedFilename string, std
 	merger.UpdateLRIDs(left.Note, right.Note, "LocationID", locationIDChanges)
 	merger.UpdateLRIDs(left.TagMap, right.TagMap, "LocationID", locationIDChanges)
 	merger.UpdateLRIDs(left.UserMark, right.UserMark, "LocationID", locationIDChanges)
+	merger.UpdateLRIDs(left.PlaylistItemLocationMap, right.PlaylistItemLocationMap, "LocationID", locationIDChanges)
 	fmt.Fprintln(stdio.Out, "Done.")
 
 	fmt.Fprintln(stdio.Out, "📑 Merging Bookmarks")
@@ -220,6 +224,79 @@ func merge(leftFilename string, rightFilename string, mergedFilename string, std
 	}
 	fmt.Fprintln(stdio.Out, "Done.")
 
+	fmt.Fprintln(stdio.Out, "🎵 Merging IndependentMedia")
+	mergedIndependentMedia, mergedIndependentMediaIDChanges, err := merger.MergeIndependentMedia(left.IndependentMedia, right.IndependentMedia)
+	if err != nil {
+		return fmt.Errorf("failed to merge independentMedia: %w", err)
+	}
+	merger.UpdateLRIDs(left.PlaylistItemIndependentMediaMap, right.PlaylistItemIndependentMediaMap, "IndependentMediaID", mergedIndependentMediaIDChanges)
+	merged.IndependentMedia = mergedIndependentMedia
+
+	if err := merger.CopyMergedIndependentMedia(merged.IndependentMedia, left.IndependentMediaDir, right.IndependentMediaDir, merged.IndependentMediaDir); err != nil {
+		return fmt.Errorf("failed to copy merged independent media: %w", err)
+	}
+
+	fmt.Fprintln(stdio.Out, "Done.")
+
+	fmt.Fprintln(stdio.Out, "🎵 Merging PlaylistItems")
+	playlistItemConflictSolution := map[string]merger.MergeSolution{}
+	for {
+		mergedPlaylistItems, playlistItemIDChanges, err := merger.MergePlaylistItems(left.PlaylistItem, right.PlaylistItem, playlistItemConflictSolution)
+		if err == nil {
+			merged.PlaylistItem = mergedPlaylistItems
+			merger.UpdateLRIDs(left.TagMap, right.TagMap, "PlaylistItemID", playlistItemIDChanges)
+			merger.UpdateLRIDs(left.PlaylistItemIndependentMediaMap, right.PlaylistItemIndependentMediaMap, "PlaylistItemID", playlistItemIDChanges)
+			merger.UpdateLRIDs(left.PlaylistItemLocationMap, right.PlaylistItemLocationMap, "PlaylistItemID", playlistItemIDChanges)
+			break
+		}
+		switch err := err.(type) {
+		case merger.MergeConflictError:
+			newSolutions := handleMergeConflict(err.Conflicts, &merged, stdio)
+			addToSolutions(playlistItemConflictSolution, newSolutions)
+		default:
+			return fmt.Errorf("failed to merge playlistItems: %w", err)
+		}
+	}
+	fmt.Fprintln(stdio.Out, "Done.")
+
+	fmt.Fprintln(stdio.Out, "🎵 Merging PlaylistItemIndependentMediaMap")
+	playlistItemIndependentMediaMapConflictSolution := map[string]merger.MergeSolution{}
+	for {
+		mergedPlaylistItemIndependentMediaMap, _, err := merger.MergePlaylistItemIndependentMediaMap(left.PlaylistItemIndependentMediaMap, right.PlaylistItemIndependentMediaMap, playlistItemIndependentMediaMapConflictSolution)
+		if err == nil {
+			merged.PlaylistItemIndependentMediaMap = mergedPlaylistItemIndependentMediaMap
+			break
+		}
+		switch err := err.(type) {
+		case merger.MergeConflictError:
+			newSolutions := handleMergeConflict(err.Conflicts, &merged, stdio)
+			addToSolutions(playlistItemIndependentMediaMapConflictSolution, newSolutions)
+		default:
+			return fmt.Errorf("failed to merge playlistItemIndependentMediaMap: %w", err)
+		}
+	}
+	fmt.Fprintln(stdio.Out, "Done.")
+
+	fmt.Fprintln(stdio.Out, "🎵 Merging PlaylistItemLocationMap")
+	playlistItemLocationMapConflictSolution := map[string]merger.MergeSolution{}
+	for {
+		mergedPlaylistItemLocationMap, _, err := merger.MergePlaylistItemLocationMap(left.PlaylistItemLocationMap, right.PlaylistItemLocationMap, playlistItemLocationMapConflictSolution)
+		if err == nil {
+			merged.PlaylistItemLocationMap = mergedPlaylistItemLocationMap
+			break
+		}
+		switch err := err.(type) {
+		case merger.MergeConflictError:
+			newSolutions := handleMergeConflict(err.Conflicts, &merged, stdio)
+			addToSolutions(playlistItemLocationMapConflictSolution, newSolutions)
+		default:
+			return fmt.Errorf("failed to merge playlistItemLocationMap: %w", err)
+		}
+	}
+	fmt.Fprintln(stdio.Out, "Done.")
+
+	// TODO: Merge actual files
+
 	fmt.Fprintln(stdio.Out, "🏷  Merging TagMaps")
 	var tagMapsConflictSolution map[string]merger.MergeSolution
 	for {
@@ -329,5 +406,5 @@ func init() {
 	mergeCmd.Flags().StringVar(&MarkingResolver, "markings", "", "Resolve conflicting markings with resolver (can be 'chooseLeft' or 'chooseRight')")
 	mergeCmd.Flags().StringVar(&NoteResolver, "notes", "", "Resolve conflicting notes with resolver (can be 'chooseNewest', 'chooseLeft', or 'chooseRight')")
 	mergeCmd.Flags().StringVar(&InputFieldResolver, "inputFields", "", "Resolve conflicting inputFields with resolver (can be 'chooseLeft', or 'chooseRight')")
-	mergeCmd.Flags().BoolVar(&SkipPlaylists, "skipPlaylists", false, "Skip playlists when importing backups. It is meant as a temporary workaround until merging of playlists is implemented.")
+	mergeCmd.Flags().BoolVar(&SkipPlaylists, "skipPlaylists", false, "Skip playlists when importing and merging backups.")
 }
