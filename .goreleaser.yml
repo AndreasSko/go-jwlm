@@ -1,8 +1,11 @@
+version: 2
+project_name: library-merger
 before:
   hooks:
     - go mod download
 builds:
   - id: darwin-amd64
+    binary: library-merger
     env:
       - CGO_ENABLED=1  
       - CC=o64-clang 
@@ -12,6 +15,7 @@ builds:
     goarch:
       - amd64
   - id: linux-amd64
+    binary: library-merger
     env:
       - CGO_ENABLED=1
     goos:
@@ -19,6 +23,7 @@ builds:
     goarch:
       - amd64 
   - id: linux-arm64
+    binary: library-merger
     env:
       - CGO_ENABLED=1
       - CC=aarch64-linux-gnu-gcc
@@ -28,6 +33,7 @@ builds:
     goarch:
       - arm64
   - id: windows-amd64
+    binary: library-merger
     env:
       - CGO_ENABLED=1
       - CC=x86_64-w64-mingw32-gcc
@@ -37,10 +43,10 @@ builds:
     goarch:
       - amd64 
 archives:
-  - format: tar.gz
+  - formats: [tar.gz]
     format_overrides:
       - goos: windows
-        format: zip
+        formats: [zip]
 changelog:
   sort: asc
   filters:
@@ -52,4 +58,5 @@ brews:
     repository:
       owner: andreassko
       name: homebrew-go-library-merger
+      token: "{{ .Env.HOMEBREW_TOKEN }}"
     homepage: https://github.com/AndreasSko/go-library-merger
