@@ -37,22 +37,29 @@ const (
 
 // Database represents the JW Library database as a struct
 type Database struct {
-	BlockRange []*BlockRange
-	Bookmark   []*Bookmark
-	InputField []*InputField
-	Location   []*Location
-	Note       []*Note
-	Tag        []*Tag
-	TagMap     []*TagMap
-	UserMark   []*UserMark
+	BlockRange                      []*BlockRange
+	Bookmark                        []*Bookmark
+	IndependentMedia                []*IndependentMedia
+	InputField                      []*InputField
+	Location                        []*Location
+	Note                            []*Note
+	PlaylistItem                    []*PlaylistItem
+	PlaylistItemIndependentMediaMap []*PlaylistItemIndependentMediaMap
+	PlaylistItemLocationMap         []*PlaylistItemLocationMap
+	Tag                             []*Tag
+	TagMap                          []*TagMap
+	UserMark                        []*UserMark
 
 	// ContainsPlaylists indicates if the imported backup contains playlists.
 	ContainsPlaylists bool
 	// SkipPlaylists allows to skip prevention of merging if playlists exist in the database.
 	// It is meant as a temporary workaround until merging of playlists is implemented.
-	SkipPlaylists bool
+	SkipPlaylists bool // TODO: Remove
 	// TempDir is used for temporary files. If not set, os.TempDir() will be used.
 	TempDir string
+	// IndependentMediaDir is a temporary directory where files from the independent media table are stored
+	// when importing. It is up to the caller to ensure the directory will be cleaned up after use.
+	IndependentMediaDir string
 }
 
 // FetchFromTable tries to fetch a entry with the given ID. If it can't find it
@@ -287,7 +294,20 @@ func (db *Database) ImportJWLBackup(filename string) error {
 
 	// Fill the Database with actual data
 	path = filepath.Join(tmp, manifest.UserDataBackup.DatabaseName)
-	return db.importSQLite(path)
+	if err = db.importSQLite(path); err != nil {
+		return fmt.Errorf("importSQLite: %w", err)
+	}
+
+	db.IndependentMediaDir, err = os.MkdirTemp(db.TempDir, "go-jwlm-independent-media")
+	if err != nil {
+		return errors.Wrap(err, "Error while creating temporary directory")
+	}
+
+	if err = CopyIndependentMedia(tmp, db.IndependentMediaDir, db.IndependentMedia); err != nil {
+		return fmt.Errorf("copyIndependentMedia: %w", err)
+	}
+
+	return nil
 }
 
 // importSQLite imports a given SQLite DB into the Database struct
@@ -299,8 +319,8 @@ func (db *Database) importSQLite(filename string) error {
 	}
 	defer sqlite.Close()
 
-	var wg sync.WaitGroup
-	wg.Add(8)
+	var wg sync.WaitGroup // TODO: Change to errGroup
+	wg.Add(12)
 	errors := make(chan error, 10)
 
 	// Fill each table struct separately (did not find a DRYer solution yet..)
@@ -392,7 +412,109 @@ func (db *Database) importSQLite(filename string) error {
 		wg.Done()
 	}()
 
+	go func() {
+		mdl, err := fetchFromSQLite(sqlite, &IndependentMedia{})
+		if err != nil {
+			errors <- err
+			wg.Done()
+			return
+		}
+		db.IndependentMedia = IndependentMedia{}.MakeSlice(mdl)
+		wg.Done()
+	}()
+
+	go func() {
+		mdl, err := fetchFromSQLite(sqlite, &PlaylistItem{})
+		if err != nil {
+			errors <- err
+			wg.Done()
+			return
+		}
+		db.PlaylistItem = PlaylistItem{}.MakeSlice(mdl)
+		wg.Done()
+	}()
+
+	go func() {
+		mdl, err := fetchFromSQLite(sqlite, &PlaylistItemIndependentMediaMap{})
+		if err != nil {
+			errors <- err
+			wg.Done()
+			return
+		}
+		db.PlaylistItemIndependentMediaMap = PlaylistItemIndependentMediaMap{}.MakeSlice(mdl)
+		wg.Done()
+	}()
+
+	go func() {
+		mdl, err := fetchFromSQLite(sqlite, &PlaylistItemLocationMap{})
+		if err != nil {
+			errors <- err
+			wg.Done()
+			return
+		}
+		db.PlaylistItemLocationMap = PlaylistItemLocationMap{}.MakeSlice(mdl)
+		wg.Done()
+	}()
+
 	wg.Wait()
+
+	for _, v := range db.TagMap {
+		if v == nil {
+			continue
+		}
+		if v.TagID >= len(db.Tag) {
+			return fmt.Errorf("tagMap entry has an invalid TagID %d", v.TagID)
+		}
+		if !v.PlaylistItemID.Valid {
+			continue
+		}
+		if int(v.PlaylistItemID.Int32) >= len(db.PlaylistItem) {
+			return fmt.Errorf("tagMap entry has an invalid PlaylistItemID %d", v.PlaylistItemID.Int32)
+		}
+		db.PlaylistItem[v.PlaylistItemID.Int32].tag = db.Tag[v.TagID]
+	}
+
+	for _, v := range db.PlaylistItemIndependentMediaMap {
+		if v == nil {
+			continue
+		}
+		if v.IndependentMediaID >= len(db.IndependentMedia) {
+			return fmt.Errorf("playlistItemIndependentMediaMap entry has an invalid IndependentMediaID %d", v.IndependentMediaID)
+		}
+		if v.PlaylistItemID >= len(db.PlaylistItem) {
+			return fmt.Errorf("playlistItemIndependentMediaMap entry has an invalid PlaylistItemID %d", v.PlaylistItemID)
+		}
+		db.PlaylistItem[v.PlaylistItemID].independentMedia = db.IndependentMedia[v.IndependentMediaID]
+	}
+
+	for _, v := range db.PlaylistItemLocationMap {
+		if v == nil {
+			continue
+		}
+		if v.LocationID >= len(db.Location) {
+			return fmt.Errorf("playlistItemLocationMap entry has an invalid LocationID %d", v.LocationID)
+		}
+		if v.PlaylistItemID >= len(db.PlaylistItem) {
+			return fmt.Errorf("playlistItemLocationMap entry has an invalid PlaylistItemID %d", v.PlaylistItemID)
+		}
+		db.PlaylistItem[v.PlaylistItemID].location = db.Location[v.LocationID]
+	}
+
+	// Make sure we matched playlistItems with all maps
+	for _, v := range db.PlaylistItem {
+		if v == nil {
+			continue
+		}
+		if v.tag == nil {
+			return fmt.Errorf("playlistItem %d has no related Tag", v.PlaylistItemID)
+		}
+		if v.independentMedia == nil && v.location == nil {
+			return fmt.Errorf("playlistItem %s has no related IndependentMedia or Location", v)
+		}
+		if v.independentMedia != nil && v.location != nil {
+			return fmt.Errorf("playlistItem %d has both IndependentMedia and Location set, which is unexpected", v.PlaylistItemID)
+		}
+	}
 
 	select {
 	case err := <-errors:
@@ -403,10 +525,6 @@ func (db *Database) importSQLite(filename string) error {
 	// Make sure these tables are empty as we are not able to merge them yet.
 	// Better to fail, than to risk losing data..
 	emptyTables := []string{
-		"IndependentMedia",
-		"PlaylistItem",
-		"PlaylistItemIndependentMediaMap",
-		"PlaylistItemLocationMap",
 		"PlaylistItemMarker",
 		"PlaylistItemMarkerBibleVerseMap",
 		"PlaylistItemMarkerParagraphMap",
@@ -417,36 +535,11 @@ func (db *Database) importSQLite(filename string) error {
 			return err
 		}
 		if count > 0 {
-			db.ContainsPlaylists = true
+			return fmt.Errorf("playlist table %s, which is part of a new JW Library feature, is not supported yet.", table)
 		}
-	}
-
-	db.removePlaylists()
-
-	if db.ContainsPlaylists && !db.SkipPlaylists {
-		return fmt.Errorf("merging of playlists is not supported yet. Enable SkipPlaylists flag to skip this safety check")
 	}
 
 	return nil
-}
-
-// removePlaylists removes all playlists (represented as a Tag with type 2)
-// and its items from the database. It indicates that the database contained
-// playlists by setting the ContainedPlaylists field to true.
-func (db *Database) removePlaylists() {
-	for i, t := range db.Tag {
-		if t != nil && t.TagType == 2 {
-			db.ContainsPlaylists = true
-			db.Tag[i] = nil
-		}
-	}
-
-	for i, t := range db.TagMap {
-		if t != nil && t.PlaylistItemID.Valid && t.PlaylistItemID.Int32 != 0 {
-			db.ContainsPlaylists = true
-			db.TagMap[i] = nil
-		}
-	}
 }
 
 // fetchFromSQLite fetches the entries for a given modelType and returns a slice
@@ -474,12 +567,20 @@ func fetchFromSQLite(sqlite *sql.DB, modelType Model) ([]Model, error) {
 			m = &BlockRange{}
 		case *Bookmark:
 			m = &Bookmark{}
+		case *IndependentMedia:
+			m = &IndependentMedia{}
 		case *InputField:
 			m = &InputField{pseudoID: i}
 		case *Location:
 			m = &Location{}
 		case *Note:
 			m = &Note{}
+		case *PlaylistItem:
+			m = &PlaylistItem{}
+		case *PlaylistItemIndependentMediaMap:
+			m = &PlaylistItemIndependentMediaMap{}
+		case *PlaylistItemLocationMap:
+			m = &PlaylistItemLocationMap{}
 		case *Tag:
 			m = &Tag{}
 		case *TagMap:
@@ -599,6 +700,21 @@ func getSliceCapacity(sqlite *sql.DB, modelType Model) (int, error) {
 	return capacity + 1, nil
 }
 
+// copyIndependentMedia copies all files referenced in IndependentMedia from src to dest.
+func CopyIndependentMedia(src, dst string, independentMedia []*IndependentMedia) error {
+	for _, im := range independentMedia {
+		if im == nil {
+			continue
+		}
+		err := im.CopyFile(src, dst)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 // ExportJWLBackup creates a .jwlibrary backup file out of a Database{} struct
 func (db *Database) ExportJWLBackup(filename string) error {
 	// Create tmp folder and place all files there
@@ -631,6 +747,12 @@ func (db *Database) ExportJWLBackup(filename string) error {
 
 	// Store files in .jwlibrary (zip)-file
 	files := []string{dbPath, manifestPath, defaultThumbnailPath}
+	for _, im := range db.IndependentMedia {
+		if im == nil {
+			continue
+		}
+		files = append(files, filepath.Join(db.IndependentMediaDir, im.FilePath))
+	}
 	if err := zipFiles(filename, files); err != nil {
 		return errors.Wrap(err, fmt.Sprintf("Error while storing files in zip archive %s", filename))
 	}

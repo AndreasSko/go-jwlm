@@ -28,15 +28,19 @@ type Model interface {
 
 // Related combines entries that are related to a given model
 type Related struct {
-	BlockRange          []*BlockRange       `json:"blockRange"`
-	Bookmark            *Bookmark           `json:"bookmark"`
-	Location            *Location           `json:"location"`
-	PublicationLocation *Location           `json:"publicationLocation"`
-	Note                *Note               `json:"note"`
-	Tag                 *Tag                `json:"tag"`
-	TagMap              *TagMap             `json:"tagMap"`
-	UserMark            *UserMark           `json:"userMark"`
-	UserMarkBlockRange  *UserMarkBlockRange `json:"userMarkBlockRange"`
+	BlockRange                      []*BlockRange                      `json:"blockRange"`
+	Bookmark                        *Bookmark                          `json:"bookmark"`
+	IndependentMedia                *IndependentMedia                  `json:"independentMedia"`
+	Location                        *Location                          `json:"location"`
+	PublicationLocation             *Location                          `json:"publicationLocation"`
+	Note                            *Note                              `json:"note"`
+	PlaylistItem                    *PlaylistItem                      `json:"playlistItem"`
+	PlaylistItemIndependentMediaMap []*PlaylistItemIndependentMediaMap `json:"playlistItemIndependentMediaMap"`
+	PlaylistItemLocationMap         []*PlaylistItemLocationMap         `json:"playlistItemLocationMap"`
+	Tag                             *Tag                               `json:"tag"`
+	TagMap                          *TagMap                            `json:"tagMap"`
+	UserMark                        *UserMark                          `json:"userMark"`
+	UserMarkBlockRange              *UserMarkBlockRange                `json:"userMarkBlockRange"`
 }
 
 // MakeModelSlice converts a slice of pointers of model-implementing structs to []model
@@ -146,6 +150,41 @@ func MakeModelCopy(mdl Model) Model {
 			StyleIndex:   mdl.StyleIndex,
 			UserMarkGUID: mdl.UserMarkGUID,
 			Version:      mdl.Version,
+		}
+	case *IndependentMedia:
+		mdl := mdl.(*IndependentMedia)
+		mdlCopy = &IndependentMedia{
+			IndependentMediaID: mdl.IndependentMediaID,
+			OriginalFilename:   mdl.OriginalFilename,
+			FilePath:           mdl.FilePath,
+			MimeType:           mdl.MimeType,
+			Hash:               mdl.Hash,
+		}
+	case *PlaylistItem:
+		mdl := mdl.(*PlaylistItem)
+		mdlCopy = &PlaylistItem{
+			PlaylistItemID:       mdl.PlaylistItemID,
+			Label:                mdl.Label,
+			StartTrimOffsetTicks: sql.NullInt32{Int32: mdl.StartTrimOffsetTicks.Int32, Valid: mdl.StartTrimOffsetTicks.Valid},
+			EndTrimOffsetTicks:   sql.NullInt32{Int32: mdl.EndTrimOffsetTicks.Int32, Valid: mdl.EndTrimOffsetTicks.Valid},
+			Accuracy:             mdl.Accuracy,
+			EndAction:            mdl.EndAction,
+			ThumbnailFilePath:    sql.NullString{String: mdl.ThumbnailFilePath.String, Valid: mdl.ThumbnailFilePath.Valid},
+		}
+	case *PlaylistItemIndependentMediaMap:
+		mdl := mdl.(*PlaylistItemIndependentMediaMap)
+		mdlCopy = &PlaylistItemIndependentMediaMap{
+			PlaylistItemID:     mdl.PlaylistItemID,
+			IndependentMediaID: mdl.IndependentMediaID,
+			DurationTicks:      mdl.DurationTicks,
+		}
+	case *PlaylistItemLocationMap:
+		mdl := mdl.(*PlaylistItemLocationMap)
+		mdlCopy = &PlaylistItemLocationMap{
+			PlaylistItemID:      mdl.PlaylistItemID,
+			LocationID:          mdl.LocationID,
+			MajorMultimediaType: mdl.MajorMultimediaType,
+			BaseDurationTicks:   sql.NullInt32{Int32: mdl.BaseDurationTicks.Int32, Valid: mdl.BaseDurationTicks.Valid},
 		}
 	case *UserMarkBlockRange:
 		mdl := mdl.(*UserMarkBlockRange)
